@@ -1,0 +1,29 @@
+/* $Id$ */
+
+.php {
+  font-family: monospace;
+}
+
+.php .php-comment {
+  color: #666;
+}
+
+.php .php-function {
+  color: #00a;
+}
+
+.php .php-variable {
+  color: #330;
+}
+
+.php .php-string {
+  color: #a00;
+}
+
+.php .php-constant {
+  color: #a33;
+}
+
+.php .php-keyword {
+  color: #066;
+}
