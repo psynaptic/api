@@ -459,7 +459,7 @@ function api_format_documentation($documentation, $branch_name) {
     return '';
   }
 
-  $documentation = drupal_specialchars($documentation);
+  $documentation = check_plain($documentation);
 
   // Process the @link tag.
   $documentation = preg_replace('!@link ([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+) (.*?) @endlink!', l('$2', 'api/'. $branch_name .'/file/$1'), $documentation);
