@@ -35,6 +35,7 @@ CREATE TABLE api_file (
 CREATE TABLE api_function (
   function_id varchar(255) NOT NULL default '',
   branch_id varchar(63) NOT NULL default '',
+  signature varchar(255) NOT NULL default '',
   documentation mediumtext NOT NULL,
   code mediumtext NOT NULL,
   file_id varchar(255) NOT NULL default '',
