@@ -44,5 +44,9 @@ Functions may be in multiple groups (Doxygen ignores all but the first group). T
 allows, for example, theme_menu_tree() to be marked as both "themeable" and part of
 the "menu system".
 
-Function calls that are to functions not found in the parsed source files are linked
-to the PHP manual.
+Function calls to PHP library functions are linked to the PHP manual.
+
+Function calls have tooltips briefly describing the called function.
+
+Documentation pages have non-volatile, predictable URLs, so links to individual
+functions will not be invalidated when the number of functions in a document changes.
