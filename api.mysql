@@ -52,7 +52,7 @@ CREATE TABLE api_function (
   signature varchar(255) NOT NULL default '',
   start_line int(10) NOT NULL default '0',
   parameters mediumtext NOT NULL,
-  return mediumtext NOT NULL,
+  `return` mediumtext NOT NULL,
   PRIMARY KEY  (did)
 ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;
 # --------------------------------------------------------

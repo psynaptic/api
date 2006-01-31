@@ -10,6 +10,7 @@ and supports the following Doxygen constructs:
   @param
   @return
   @link
+  @see
   @{
   @}
 
