@@ -124,7 +124,7 @@ function api_parse_html_file($file_path, $branch_name, $file_name) {
     $docblocks[0]['documentation'] = $documentation_match[2];
     $docblocks[0]['summary'] = api_documentation_summary($documentation_match[2]);
   }
-  
+
   $docblocks[0]['version'] = '';
   $version_match = array();
   if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
