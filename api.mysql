@@ -39,6 +39,7 @@ CREATE TABLE api_file (
   did int(10) unsigned NOT NULL default '0',
   modified int(11) NOT NULL default '0',
   version varchar(255) NOT NULL default '',
+  found tinyint(1) UNSIGNED NOT NULL default 0,
   PRIMARY KEY  (did)
 ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;
 # --------------------------------------------------------
