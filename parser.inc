@@ -656,7 +656,7 @@ function api_format_php($code) {
 
   // Manage whitespace:
   $output = preg_replace('!([\n ]+)!se', 'api_format_php_whitespace(\'$1\')', $output);
-  return '<div class="php">'. $output .'</div>';
+  return '<div class="php"><code>'. $output .'</code></div>';
 }
 
 /**
