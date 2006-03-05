@@ -244,7 +244,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       // Find referenced functions.
       $function_call_matches = array();
       $docblock['function calls'] = array();
-      preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', substr($docblock['code'], strlen('<div class="php"><span class="php-keyword">function</span> <span class="php-function-or-constant">')), $function_call_matches, PREG_SET_ORDER);
+      preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', substr($docblock['code'], strlen('<div class="php"><code><span class="php-keyword">function</span> <span class="php-function-or-constant">')), $function_call_matches, PREG_SET_ORDER);
       foreach($function_call_matches as $function_call_match) {
         $docblock['function calls'][$function_call_match[1]] = $function_call_match[1];
       }
@@ -551,7 +551,7 @@ function api_documentation_summary($documentation) {
   if ($pos !== FALSE) {
     $documentation = substr($documentation, 0, $pos);
   }
-  $documentation = trim(htmlentities(strip_tags($documentation)));
+  $documentation = trim(strip_tags($documentation));
 
   if (strlen($documentation) > 255) {
     return substr($documentation, 0, strrpos(substr($documentation, 0, 252), ' ')) .'...';
