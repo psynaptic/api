@@ -220,7 +220,7 @@ function api_autocomplete($branch_name, $search){
   while ($r = db_fetch_object($result)) {
     $matches[$r->object_name] = check_plain($r->object_name);
   }
-  print drupal_implode_autocomplete($matches);
+  print drupal_to_js($matches);
   exit();
 }
 
