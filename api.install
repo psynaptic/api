@@ -86,4 +86,5 @@ function api_uninstall() {
   variable_del('api_php_funcsummary');
   variable_del('api_php_funcpath');
   variable_del('api_files_per_cron');
+  variable_del('api_reference');
 }
