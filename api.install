@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 function api_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
