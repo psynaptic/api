@@ -69,7 +69,6 @@ The module indexes code branches during cron runs, so make sure the site has cro
 </p>
 ', array('!api_site' => l('http://api.drupal.org', 'http://api.drupal.org', array(), NULL, NULL, TRUE), '!api_settings_page' => l(t('API settings page'), 'admin/content/api')));
       return $output;
-      break;
   }
 }
 
