@@ -1,3 +1,4 @@
 ; $Id$
 name = API
 description = Generates and displays API documentation pages.
+package = Development
