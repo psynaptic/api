@@ -35,17 +35,17 @@ function api_parse_php_manual($location) {
  */
 function api_parse_file($file_path, $branch_name, $file_name) {
   if (preg_match('!\.(php|module|inc|engine|theme)$!', $file_name)) {
-    print('Parsing "'. $file_path .'"...<br />');
+    watchdog('api', t('Parsing %path...', array('%path' => $file_path)));
     api_parse_php_file($file_path, $branch_name, $file_name);
     return TRUE;
   }
   if (preg_match('!\.(txt)$!', $file_name)) {
-    print('Parsing "'. $file_path .'"...<br />');
+    watchdog('api', t('Parsing %path...', array('%path' => $file_path)));
     api_parse_text_file($file_path, $branch_name, $file_name);
     return TRUE;
   }
   if (preg_match('!\.(htm|html)$!', $file_name)) {
-    print('Parsing "'. $file_path .'"...<br />');
+    watchdog('api', t('Parsing %path...', array('%path' => $file_path)));
     api_parse_html_file($file_path, $branch_name, $file_name);
     return TRUE;
   }
