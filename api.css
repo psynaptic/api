@@ -2,6 +2,7 @@
 
 .php {
   font-family: monospace;
+  overflow: auto;
 }
 
 .php .php-comment {
