@@ -23,7 +23,12 @@ function api_parse_php_manual($location) {
         'title' => $function_match[1],
         'summary' => api_documentation_summary($function_match[0]),
         'documentation' => $function_match[0],
-        'code' => '');
+        'code' => '',
+        'signature' => '',
+        'start_line' => 0,
+        'parameters' => '',
+        'return' => '',
+      );
       api_save_documentation($docblock);
     }
   }
