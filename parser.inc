@@ -250,7 +250,8 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       // Find referenced functions.
       $function_call_matches = array();
       $docblock['function calls'] = array();
-      preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', substr($docblock['code'], strlen('<div class="php"><code><span class="php-keyword">function</span> <span class="php-function-or-constant">')), $function_call_matches, PREG_SET_ORDER);
+      preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', $docblock['code'], $function_call_matches, PREG_SET_ORDER);
+      array_shift($function_call_matches); // Remove the first match, the function declaration itself
       foreach ($function_call_matches as $function_call_match) {
         $docblock['function calls'][$function_call_match[1]] = $function_call_match[1];
       }
