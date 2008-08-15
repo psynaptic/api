@@ -1,11 +1,11 @@
 <?php
 // $Id$
 
-class ApiLinkCodeTest extends DrupalTestCase {
-  function get_info() {
+class ApiLinkCodeTest extends DrupalWebTestCase {
+  function getInfo() {
     return array(
       'name' => t('api_link_code()'),
-      'desc' => t('Test the api_link_code() function.'),
+      'description' => t('Test the api_link_code() function.'),
       'group' => 'API Module',
     );
   }
