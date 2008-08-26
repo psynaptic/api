@@ -818,7 +818,10 @@ function api_update_branch($branch) {
  * Find all the files in the directories specified for a branch.
  */
 function api_scan_directories($directories) {
-  $directory_array = explode(':', $directories);
+  $directory_array = explode("\n", $directories);
+  foreach ($directory_array as $key => $directory) {
+    $directory_array[$key] = trim($directory);
+  }
 
   if (count($directory_array) > 1) {
     $directories_components = array();

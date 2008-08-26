@@ -188,6 +188,20 @@ function api_update_8() {
   return $return;
 }
 
+/**
+ * Change the branch directories delimiter from : to \n.
+ */
+function api_update_9() {
+  $return = array();
+
+  $result = db_query("SELECT branch_name, directory FROM {api_branch} WHERE directory LIKE '%:%'");
+  while ($branch = db_fetch_object($result)) {
+    db_query("UPDATE {api_branch} SET directory = '%s' WHERE branch_name = '%s'", strtr($branch->directory, ':', "\n"), $branch->branch_name);
+  }
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');
