@@ -770,6 +770,7 @@ function api_update_branch($branch) {
     'install' => 'api_parse_php_file',
     'engine' => 'api_parse_php_file',
     'theme' => 'api_parse_php_file',
+    'profile' => 'api_parse_php_file',
 
     'txt' => 'api_parse_text_file',
 
