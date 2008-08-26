@@ -394,7 +394,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 /**
  * Save a documentation block into the database.
  *
- * @param $docblock
+ * @param $docblocks
  *   An array containing information about the documentation block.
  * @param $branch_name
  *   If set, old documentation will be removed for the branch and file name.
