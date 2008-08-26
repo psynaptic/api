@@ -649,8 +649,7 @@ function api_search_form_submit($form, &$form_state) {
 }
 
 function api_search_redirect() {
-  $search_text = func_get_args();
-  drupal_goto('api/search/'. variable_get('api_default_branch', 'HEAD') .'/'. implode('/', $search_text));
+  drupal_goto('api/search/'. variable_get('api_default_branch', 'HEAD') .'/'. implode('/', func_get_args()));
 }
 
 /**
