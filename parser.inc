@@ -479,10 +479,11 @@ function api_format_documentation($documentation, $branch_name) {
 
   $documentation = check_plain($documentation);
 
-  // Process @link to static URLs.
+  // @link full URLs.
   $documentation = preg_replace('!@link ((http://|https://|ftp://|mailto:|smb://|afp://|file://|gopher://|news://|ssl://|sslv2://|sslv3://|tls://|tcp://|udp://)([a-zA-Z0-9@:%_+*~#?&=.,/;-]*[a-zA-Z0-9@:%_+*~#&=/;-])) (.*?) @endlink!', '<a href="$1">$4</a>', $documentation);
+  // Site URLs.
   $documentation = preg_replace('!@link /([a-zA-Z0-9_/-]+) (.*?) @endlink!', str_replace('%24', '$', l('$2', '$1')), $documentation);
-  $documentation = preg_replace('!@link ([a-zA-Z0-9_]+) (.*?) @endlink!', str_replace('%24', '$', l('$2', 'api/group/$1/'. $branch_name)), $documentation);
+  //$documentation = preg_replace('!@link ([a-zA-Z0-9_]+) (.*?) @endlink!', str_replace('%24', '$', l('$2', 'api/group/$1/'. $branch_name)), $documentation);
 
   // Process the @see tag
   $documentation = preg_replace('!\n@see (.*[^.])\.?!', '<h3>See also</h3><p>$1</p>', $documentation);
