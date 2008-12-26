@@ -202,6 +202,17 @@ function api_update_9() {
   return $return;
 }
 
+/**
+ * Make sure block cache rules are set properly.
+ */
+function api_update_10() {
+  $return = array();
+
+  $return[] = update_sql("UPDATE {blocks} SET cache = ". (BLOCK_CACHE_PER_PAGE | BLOCK_CACHE_PER_ROLE) ." WHERE module = 'api'");
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');
