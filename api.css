@@ -42,14 +42,20 @@
 /* Function signature */
 
 #api-function-signature {
-  color: #808080;
   font-size: 1.2em;
 }
 
 #api-function-signature dt {
-  font-weight: normal;
   float: left;
   text-align: right;
+}
+
+#api-function-signature dt a,
+#api-function-signature dd a,
+#api-function-signature dt a:visited,
+#api-function-signature dd a:visited {
+  font-weight: normal;
+  color: #9d9d93;
 }
 
 #api-function-signature strong {
