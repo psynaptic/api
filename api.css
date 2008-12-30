@@ -94,3 +94,7 @@
 #api-search-form #edit-search {
   width: 115px;
 }
+
+#api-search-form #autocomplete {
+  width: 250px !important;
+}
