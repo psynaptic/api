@@ -1,5 +1,10 @@
 /* $Id$ */
 
+/* Expandable regions */
+html.js div.api-expandable div.content {
+  display: none;
+}
+
 /* PHP code */
 .php {
   font-family: monospace;
@@ -34,9 +39,11 @@
 
 /* Lists */
 dl.api-related-topics dt {
+  clear: both;
   float: left;
   padding: 0 1em 0 0;
 }
+dl.api-functions dd,
 dl.api-related-topics dd {
   margin: 0 0 0 1em;
 }
