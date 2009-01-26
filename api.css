@@ -5,11 +5,6 @@ html.js div.api-expandable div.content {
   display: none;
 }
 
-/* Expandable regions */
-html.js div.api-expandable div.content {
-  display: none;
-}
-
 /* PHP code */
 .php {
   font-family: monospace;
