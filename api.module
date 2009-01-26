@@ -754,7 +754,7 @@ function api_search_form($form_state, $branch_name) {
   );
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Go'),
+    '#value' => t('Search'),
   );
 
   return $form;
