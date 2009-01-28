@@ -82,7 +82,7 @@ function api_parse_html_file($file_path, $branch_name, $file_name) {
     'modified' => filemtime($file_path),
   );
   $title_match = array();
-  if (preg_match('!<title>(.*)</title>!is', $source, $title_match)) {
+  if (preg_match('!<title>\s*(\w.*)\s*</title>!is', $source, $title_match)) {
     $docblock['title'] = $title_match[1];
   }
   $documentation_match = array();
