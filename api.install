@@ -64,6 +64,7 @@ function api_schema() {
     ),
     'indexes' => array(
       'object_ref' => array('object_name', 'branch_name', 'object_type'),
+      'to_did' => array('to_did'),
     ),
   );
 
@@ -247,6 +248,17 @@ function api_update_12() {
       'weight' => array('weight'),
     ),
   ));
+
+  return $return;
+}
+
+/**
+ * Optimize the 'N functions call f()' query.
+ */
+function api_update_13() {
+  $return = array();
+
+  db_add_index($return, 'api_reference_storage', 'to_did', array('to_did'));
 
   return $return;
 }
