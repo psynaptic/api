@@ -875,6 +875,11 @@ function api_page_function_dump($branch_name) {
  */
 function api_page_function($function) {
   drupal_set_title($function->title);
+  drupal_set_breadcrumb(array(
+    l(t('Home'), ''),
+    l(t('API reference'), 'api'),
+    l(basename($function->file_name), 'api/file/'. $function->file_name .'/'. $function->branch_name),
+  ));
 
   $last_signature = '';
   $signatures = array();
