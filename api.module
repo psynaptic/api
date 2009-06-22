@@ -294,7 +294,7 @@ function api_menu() {
     $items['api/file/%api_filename'. $elements] = array(
       'title' => 'File',
       'load arguments' => array('%map', '%index', $default_branch),
-      'page callback' => 'api_page_file',
+      'page callback' => 'api_page_file_router',
       'page arguments' => array(2),
       'access callback' => $access_callback,
       'access arguments' => $access_arguments,
@@ -399,26 +399,32 @@ function api_menu() {
       $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array('%map', '%index', $branch->branch_name),
-        'page callback' => 'api_page_file',
+        'page callback' => 'api_page_file_router',
         'page arguments' => array(2),
         'access callback' => $access_callback,
         'access arguments' => $access_arguments,
         'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'tab_parent' => 'api/file/%'. $elements,
+        'tab_root' => 'api/file/%'. $elements,
       );
       $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name .'/documentation'] = array(
         'title' => 'View documentation',
         'load arguments' => array('%map', '%index', $branch->branch_name),
         'type' => MENU_DEFAULT_LOCAL_TASK,
+        'tab_parent' => 'api/file/%'. $elements .'/'. $branch->branch_name,
+        'tab_root' => 'api/file/%'. $elements,
         'weight' => -10,
       );
       $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name .'/source'] = array(
         'title' => 'View source',
         'load arguments' => array('%map', '%index', $branch->branch_name),
-        'page callback' => 'api_page_file_source',
-        'page arguments' => array(2),
+        'page callback' => 'api_page_file_router',
+        'page arguments' => array(2, 'source'),
         'access callback' => $access_callback,
         'access arguments' => $access_arguments,
         'type' => MENU_LOCAL_TASK,
+        'tab_parent' => 'api/file/%'. $elements .'/'. $branch->branch_name,
+        'tab_root' => 'api/file/%'. $elements,
       );
     }
     $items['api/group/%api_object/'. $branch->branch_name] = array(
@@ -1015,6 +1021,19 @@ function api_page_global($global) {
   $code = api_link_code($global->code, $global->branch_name);
 
   return theme('api_global_page', $global, $documentation, $code, $related_topics);
+}
+
+/**
+ * Lengthen the allowed path elements to get around MENU_MAX_PARTS
+ */
+function api_page_file_router($file, $page = 'documentation') {
+  switch ($page) {
+    case 'documentation':
+      return api_page_file($file);
+
+    case 'source':
+      return api_page_file_source($file);
+  }
 }
 
 /**
