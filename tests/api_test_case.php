@@ -11,7 +11,7 @@ class ApiTestCase extends DrupalWebTestCase {
     // Make a branch for sample code.
     $branch->branch_name = '6';
     $branch->title = 'Testing 6';
-    $branch->directory = drupal_get_path('module', 'api') .'/tests/sample';
+    $branch->directories = drupal_get_path('module', 'api') .'/tests/sample';
     api_save_branch($branch);
 
     // Parse the code.
@@ -19,4 +19,3 @@ class ApiTestCase extends DrupalWebTestCase {
     while (job_queue_dequeue()) { }
   }
 }
-

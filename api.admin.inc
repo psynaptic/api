@@ -21,8 +21,8 @@ function api_page_admin_form() {
       $form['branches'][$branch->branch_name]['branch_name'] = array(
         '#value' => $branch->branch_name,
       );
-      $form['branches'][$branch->branch_name]['directory'] = array(
-        '#value' => str_replace("\n", '<br />', check_plain($branch->directory)),
+      $form['branches'][$branch->branch_name]['directories'] = array(
+        '#value' => str_replace("\n", '<br />', check_plain($branch->directories)),
       );
     }
   }
@@ -74,7 +74,7 @@ function api_branch_edit_form($form_state, $branch_name = NULL) {
   if (is_null($branch_name)) {
     $branch->branch_name = '';
     $branch->title = '';
-    $branch->directory = '';
+    $branch->directories = '';
   }
   else {
     $branch = $branches[$branch_name];
@@ -93,10 +93,10 @@ function api_branch_edit_form($form_state, $branch_name = NULL) {
     '#default_value' => $branch->title,
     '#required' => TRUE,
   );
-  $form['directory'] = array(
+  $form['directories'] = array(
     '#title' => t('Directories'),
     '#type' => 'textarea',
-    '#default_value' => $branch->directory,
+    '#default_value' => $branch->directories,
     '#rows' => 3,
     '#description' => t('Absolute paths to index, one per line.'),
     '#required' => TRUE,
@@ -130,13 +130,13 @@ function api_branch_edit_form_validate($form, &$form_state) {
   }
 
   // Check for valid directories.
-  foreach (explode("\n", $form_state['values']['directory']) as $directory) {
+  foreach (explode("\n", $form_state['values']['directories']) as $directory) {
     $directory = trim($directory);
     if (!is_dir($directory)) {
-      form_set_error('directory', t('%directory is not a directory.', array('%directory' => $directory)));
+      form_set_error('directories', t('%directory is not a directory.', array('%directory' => $directory)));
     }
     elseif (!is_readable($directory)) {
-      form_set_error('directory', t('%directory is not readable by PHP.', array('%directory' => $directory)));
+      form_set_error('directories', t('%directory is not readable by PHP.', array('%directory' => $directory)));
     }
   }
 }
@@ -144,7 +144,7 @@ function api_branch_edit_form_validate($form, &$form_state) {
 function api_branch_edit_form_submit($form, &$form_state) {
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
-  $branch->directory = $form_state['values']['directory'];
+  $branch->directories = $form_state['values']['directories'];
 
   api_save_branch($branch, $form['branch_name']['#default_value']);
 
@@ -174,7 +174,7 @@ function api_branch_delete_form_submit($form, &$form_state) {
   db_query("DELETE FROM {api_reference_storage} WHERE from_did IN (". $placeholders .") OR to_did IN (". $placeholders .")", array_merge($dids, $dids));
   db_query("DELETE FROM {api_documentation} WHERE did IN (". $placeholders .")", $dids);
   db_query("DELETE FROM {api_branch} WHERE branch_name = '%s'", $form['branch_name']['#value']);
-	
+
   if (variable_get('api_default_branch', NULL) == $form['branch_name']['#value']) {
     variable_set('api_default_branch', NULL);
   }

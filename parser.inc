@@ -760,10 +760,10 @@ function api_update_branch($branch) {
   $files = array();
   $result = db_query("SELECT f.did, f.modified, d.object_name FROM {api_documentation} d INNER JOIN {api_file} f ON d.did = f.did WHERE d.branch_name = '%s' AND d.object_type = 'file'", $branch->branch_name);
   while ($file = db_fetch_object($result)) {
-    $files[$file->object_name] = $file; 
+    $files[$file->object_name] = $file;
   }
 
-  foreach (api_scan_directories($branch->directory) as $path => $file_name) {
+  foreach (api_scan_directories($branch->directories) as $path => $file_name) {
     preg_match('!\.([a-z]*)$!', $file_name, $matches);
     if (isset($parse_functions[$matches[1]])) {
       if (isset($files[$file_name])) {

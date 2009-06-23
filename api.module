@@ -93,7 +93,7 @@ function api_get_branches($_reset = FALSE) {
   static $branches;
 
   if (!isset($branches) || $_reset) {
-    $result = db_query('SELECT branch_name, title, directory FROM {api_branch} ORDER BY weight');
+    $result = db_query('SELECT branch_name, title, directories FROM {api_branch} ORDER BY weight');
     $branches = array();
     while ($branch = db_fetch_object($result)) {
       $branches[$branch->branch_name] = $branch;
@@ -656,7 +656,7 @@ function api_hide_l($text) {
  * Save an API branch.
  *
  * @param $branch
- *   A branch object, with branch_name, title, and directory variables.
+ *   A branch object, with branch_name, title, and directories variables.
  * @param $old_branch_name
  *   To replace a branch, provide the old branch name.
  */
