@@ -765,7 +765,7 @@ function api_update_branch($branch) {
 
   foreach (api_scan_directories($branch->directories) as $path => $file_name) {
     preg_match('!\.([a-z]*)$!', $file_name, $matches);
-    if (isset($parse_functions[$matches[1]])) {
+    if (isset($matches[1]) && isset($parse_functions[$matches[1]])) {
       if (isset($files[$file_name])) {
         $parse = (filemtime($path) > $files[$file_name]->modified);
         unset($files[$file_name]); // All remaining files will be removed.
