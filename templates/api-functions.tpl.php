@@ -1,6 +1,6 @@
 <dl class="api-functions">
 <?php foreach ($functions as $function) { ?>
-  <dt><?= $function['function'] ?> <small>in <?= $function['file'] ?></small></dt>
-  <dd><?= $function['description'] ?></dd>
+  <dt><?php print $function['function'] ?> <small>in <?php print $function['file'] ?></small></dt>
+  <dd><?php print $function['description'] ?></dd>
 <?php } ?>
 </dl>

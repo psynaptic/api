@@ -1,14 +1,14 @@
-<?= $documentation ?>
+<?php print $documentation ?>
 
 <?php if (!empty($constants)) { ?>
-<h3><?= t('Constants') ?></h3>
-<?= $constants ?>
+<h3><?php print t('Constants') ?></h3>
+<?php print $constants ?>
 <?php } ?>
 <?php if (!empty($globals)) { ?>
-<h3><?= t('Globals') ?></h3>
-<?= $globals ?>
+<h3><?php print t('Globals') ?></h3>
+<?php print $globals ?>
 <?php } ?>
 <?php if (!empty($functions)) { ?>
-<h3><?= t('Functions') ?></h3>
-<?= $functions ?>
+<h3><?php print t('Functions') ?></h3>
+<?php print $functions ?>
 <?php } ?>
