@@ -179,12 +179,6 @@ function api_menu() {
     'access arguments' => $access_arguments,
     'type' => MENU_CALLBACK,
   );
-  $items['api/autocomplete'] = array(
-    'page callback' => 'api_autocomplete',
-    'access callback' => $access_callback,
-    'access arguments' => $access_arguments,
-    'type' => MENU_CALLBACK,
-  );
   $items['admin/settings/api'] = array(
     'title' => 'API reference',
     'description' => 'Configure branches for documentation.',
@@ -287,20 +281,17 @@ function api_menu() {
     'access arguments' => $access_arguments,
     'type' => MENU_CALLBACK,
   );
-  // This is nonideal. We have a dynamic number of elments in the middle of the
-  // path when the menu system expects that sort of thing to be at the end.
-  for ($i = 0; $i < API_MAX_FILE_ELEMENTS; $i += 1) {
-    $elements = str_repeat('/%', $i);
-    $items['api/file/%api_filename'. $elements] = array(
-      'title' => 'File',
-      'load arguments' => array('%map', '%index', $default_branch),
-      'page callback' => 'api_page_file_router',
-      'page arguments' => array(2),
-      'access callback' => $access_callback,
-      'access arguments' => $access_arguments,
-      'type' => MENU_CALLBACK,
-    );
-  }
+
+  $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file'] = array(
+    'title' => 'File',
+    'load arguments' => array($default_branch),
+    'page callback' => 'api_page_file',
+    'page arguments' => array(2),
+    'access callback' => $access_callback,
+    'access arguments' => $access_arguments,
+    'type' => MENU_CALLBACK,
+  );
+
   $items['api/group/%api_object'] = array(
     'title' => 'Topic',
     'load arguments' => array('group', $default_branch),
@@ -312,6 +303,14 @@ function api_menu() {
   );
 
   foreach ($branches as $branch) {
+    $items['api/autocomplete/' . $branch->branch_name] = array(
+      'page callback' => 'api_autocomplete',
+      'page arguments' => array($branch->branch_name),
+      'access callback' => $access_callback,
+      'access arguments' => $access_arguments,
+      'type' => MENU_CALLBACK,
+    );
+
     // Part 3: No object, specific branch
     $items['api/'. $branch->branch_name] = array(
       'title' => $branch->title,
@@ -391,42 +390,32 @@ function api_menu() {
       'access arguments' => $access_arguments,
       'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
     );
-    // This is nonideal. We have a dynamic number of elments in the middle of
-    // the path when the menu system expects that sort of thing to be at the
-    // end.
-    for ($i = 0; $i < API_MAX_FILE_ELEMENTS; $i += 1) {
-      $elements = str_repeat('/%', $i);
-      $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name] = array(
-        'title' => $branch->title,
-        'load arguments' => array('%map', '%index', $branch->branch_name),
-        'page callback' => 'api_page_file_router',
-        'page arguments' => array(2),
-        'access callback' => $access_callback,
-        'access arguments' => $access_arguments,
-        'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
-        'tab_parent' => 'api/file/%'. $elements,
-        'tab_root' => 'api/file/%'. $elements,
-      );
-      $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name .'/documentation'] = array(
-        'title' => 'View documentation',
-        'load arguments' => array('%map', '%index', $branch->branch_name),
-        'type' => MENU_DEFAULT_LOCAL_TASK,
-        'tab_parent' => 'api/file/%'. $elements .'/'. $branch->branch_name,
-        'tab_root' => 'api/file/%'. $elements,
-        'weight' => -10,
-      );
-      $items['api/file/%api_filename'. $elements .'/'. $branch->branch_name .'/source'] = array(
-        'title' => 'View source',
-        'load arguments' => array('%map', '%index', $branch->branch_name),
-        'page callback' => 'api_page_file_router',
-        'page arguments' => array(2, 'source'),
-        'access callback' => $access_callback,
-        'access arguments' => $access_arguments,
-        'type' => MENU_LOCAL_TASK,
-        'tab_parent' => 'api/file/%'. $elements .'/'. $branch->branch_name,
-        'tab_root' => 'api/file/%'. $elements,
-      );
-    }
+
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name] = array(
+      'title' => $branch->title,
+      'load arguments' => array($branch->branch_name),
+      'page callback' => 'api_page_file',
+      'page arguments' => array(2),
+      'access callback' => $access_callback,
+      'access arguments' => $access_arguments,
+      'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+    );
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name .'/documentation'] = array(
+      'title' => 'View documentation',
+      'load arguments' => array($branch->branch_name),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+    );
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name .'/source'] = array(
+      'title' => 'View source',
+      'load arguments' => array($branch->branch_name),
+      'page callback' => 'api_page_file_source',
+      'page arguments' => array(2),
+      'access callback' => $access_callback,
+      'access arguments' => $access_arguments,
+      'type' => MENU_LOCAL_TASK,
+    );
+
     $items['api/group/%api_object/'. $branch->branch_name] = array(
       'title' => $branch->title,
       'load arguments' => array('group', $branch->branch_name),
@@ -445,18 +434,20 @@ function api_menu() {
       'type' => MENU_LOCAL_TASK,
     );
   }
+
+  // Redirect old links.
+  $items['api/file/%menu_tail'] = array(
+    'page callback' => 'api_file_redirect',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'file' => 'legacy.inc',
+  );
+
   return $items;
 }
 
-function api_filename_load($first, $map, $index, $branch_name = NULL) {
-  $branches = api_get_branches();
-
-  $end = count($map) - 1;
-  $end -= in_array($map[$end], array('source', 'documentation'));
-  $end -= isset($branches[$map[$end]]);
-  $filename = implode('/', array_slice($map, $index, $end - $index + 1));
-
-  return api_object_load($filename, 'file', $branch_name);
+function api_file_load($file_name, $branch_name = NULL) {
+  return api_object_load(str_replace('-', '/', $file_name), 'file', $branch_name);
 }
 
 /**
@@ -639,6 +630,32 @@ function api_block($op, $delta = NULL, $edit = array()) {
 }
 
 /**
+ * Construct a link to an API object page.
+ *
+ * @param $object
+ *   An API object with object_type, object_name, and branch_name properties.
+ * @param $file
+ *   TRUE links to the object’s containing file, FALSE links to the object
+ *   itself.
+ *
+ * @return
+ *   A URL string.
+ */
+function api_url($object, $file = FALSE) {
+  // api_default_project is a placeholder for when we have real project
+  // support.
+  if ($file) {
+    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '-', $object->file_name) . '/' . $object->branch_name;
+  }
+  elseif ($object->object_type === 'file') {
+    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '-', $object->object_name) . '/' . $object->branch_name;
+  }
+  else {
+    return 'api/' . $object->object_type . '/' . $object->object_name . '/' . $object->branch_name;
+  }
+}
+
+/**
  * Show link for theme('api_expandable').
  */
 function api_show_l($text) {
@@ -786,7 +803,7 @@ function api_search_listing($branch_name) {
   if ($count == 1) {
     // Exact match.
     $item = db_fetch_object(db_query("SELECT * FROM {api_documentation} WHERE branch_name = '%s' AND title = '%s'", $branch_name, $search_text));
-    drupal_goto('api/'. $item->object_type .'/'. $item->object_name .'/'. $item->branch_name);
+    drupal_goto(api_url($item));
   }
   else {
     // Wildcard search.
@@ -846,7 +863,7 @@ function api_render_listing($result, $empty_message = NULL) {
   $rows = array();
   while ($object = db_fetch_object($result)) {
     $rows[] = array(
-      l($object->title, 'api/'. $object->object_type .'/'. $object->object_name .'/'. $object->branch_name),
+      l($object->title, api_url($object)),
       '<small>'. api_file_link($object) .'</small>',
       api_link_documentation($object->summary, $object->branch_name),
     );
@@ -884,7 +901,7 @@ function api_page_function($function) {
   drupal_set_breadcrumb(array(
     l(t('Home'), ''),
     l(t('API reference'), 'api'),
-    l(basename($function->file_name), 'api/file/'. $function->file_name .'/'. $function->branch_name),
+    l(basename($function->file_name), api_url($function, TRUE)),
   ));
 
   $last_signature = '';
@@ -985,7 +1002,7 @@ function api_page_function($function) {
     $call_functions = array();
     while ($object = db_fetch_object($result)) {
       $call_functions[] = array(
-        'function' => l($object->title, 'api/'. $object->object_type .'/'. $object->object_name .'/'. $object->branch_name),
+        'function' => l($object->title, api_url($object)),
         'file' => api_file_link($object),
         'description' => api_link_documentation($object->summary, $object->branch_name),
       );
@@ -1024,19 +1041,6 @@ function api_page_global($global) {
 }
 
 /**
- * Lengthen the allowed path elements to get around MENU_MAX_PARTS
- */
-function api_page_file_router($file, $page = 'documentation') {
-  switch ($page) {
-    case 'documentation':
-      return api_page_file($file);
-
-    case 'source':
-      return api_page_file_source($file);
-  }
-}
-
-/**
  * Menu callback; displays documentation for a file.
  */
 function api_page_file($file) {
@@ -1051,7 +1055,7 @@ function api_page_file($file) {
   );
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, 'api/'. $object->object_type .'/'. $object->object_name .'/'. $object->branch_name),
+      l($object->title, api_url($object)),
       api_link_documentation($object->summary, $file->branch_name),
     );
   }
@@ -1100,7 +1104,7 @@ function api_page_group($group) {
   $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type, d.branch_name FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, 'api/'. $object->object_type .'/'. $object->object_name .'/'. $object->branch_name),
+      l($object->title, api_url($object)),
       '<small>'. api_file_link($object) .'</small>',
       api_link_documentation($object->summary, $object->branch_name),
     );
@@ -1143,7 +1147,7 @@ function api_related_topics($did, $branch_name) {
 }
 
 function api_file_link($object) {
-  return dirname($object->file_name) .'/'. l(basename($object->file_name), 'api/file/'. $object->file_name .'/'. $object->branch_name);
+  return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($object, TRUE));
 }
 
 function api_cron() {
@@ -1278,7 +1282,7 @@ function api_link_name($name, $branch_name, $prepend = '', $append = '', $text =
   static $local_objects, $php_functions;
 
   if (is_null($local_objects)) {
-    $result = db_query("SELECT object_name, title, object_type, summary FROM {api_documentation} WHERE branch_name = '%s'", $branch_name);
+    $result = db_query("SELECT object_name, title, object_type, summary, branch_name FROM {api_documentation} WHERE branch_name = '%s'", $branch_name);
     $local_objects = array(
       'function' => array(),
       'file' => array(),
@@ -1313,7 +1317,7 @@ function api_link_name($name, $branch_name, $prepend = '', $append = '', $text =
     return $prepend . l($text, 'api/function/'. $local_objects['function'][$name]->object_name .'/'. $branch_name, array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['file'])) {
-    return l($text, 'api/file/'. $local_objects['file'][$name]->object_name .'/'. $branch_name, array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local')));
+    return l($text, api_url($local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local')));
   }
   elseif (array_key_exists($name, $local_objects['constant'])) {
     return l($text, 'api/constant/'. $local_objects['constant'][$name]->object_name .'/'. $branch_name, array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local')));
