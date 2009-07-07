@@ -302,6 +302,21 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['api/opensearch/%'] = array(
+    'page callback' => 'api_opensearch',
+    'page arguments' => array(2),
+    'access callback' => $access_callback,
+    'access arguments' => $access_arguments,
+    'type' => MENU_CALLBACK,
+  );
+  $items['api/suggest/%/%'] = array(
+    'page callback' => 'api_suggest',
+    'page arguments' => array(2, 3),
+    'access callback' => $access_callback,
+    'access arguments' => $access_arguments,
+    'type' => MENU_CALLBACK,
+  );
+
   foreach ($branches as $branch) {
     $items['api/autocomplete/' . $branch->branch_name] = array(
       'page callback' => 'api_autocomplete',
@@ -571,6 +586,13 @@ function api_theme() {
 function api_init() {
   drupal_add_css(drupal_get_path('module', 'api') .'/api.css');
   drupal_add_js(drupal_get_path('module', 'api') .'/api.js');
+
+  // Add OpenSearch autodiscovery links.
+  foreach (array_keys(api_get_branches()) as $branch_name) {
+    $title = t('Drupal API @branch', array('@branch' => $branch_name));
+    $url = url('api/opensearch/'. $branch_name, array('absolute' => TRUE));
+    drupal_set_html_head('<link rel="search" type="application/opensearchdescription+xml" href="'. $url .'" title="'. $title .'" />');
+  }
 }
 
 function api_block($op, $delta = NULL, $edit = array()) {
@@ -814,14 +836,108 @@ function api_search_listing($branch_name) {
 
 /**
  * Prepare a listing of potential documentation matches for a branch.
+ *
+ * @param $branch_name
+ *   A branch name.
+ * @param ...
+ *   The string to search for.
  */
-function api_autocomplete($branch_name, $search = '') {
+function api_autocomplete($branch_name) {
   $matches = array();
-  $result = db_query_range("SELECT title FROM {api_documentation} WHERE title LIKE '%%%s%%' AND branch_name = '%s' ORDER BY LENGTH(title)", $search, $branch_name, 0, 20);
+  // Search strings containing slashes result in multiple args that need to be
+  // rebuilt.
+  $search = func_get_args();
+  array_shift($search);
+  $result = _api_fuzzy_search($branch_name, implode('/', $search), 20);
   while ($r = db_fetch_object($result)) {
     $matches[$r->title] = check_plain($r->title);
   }
   print drupal_json($matches);
+}
+
+/**
+ * Create an OpenSearch plugin for a branch.
+ *
+ * @param $branch_name
+ *   A branch name.
+ *
+ * @see https://developer.mozilla.org/en/Creating_OpenSearch_plugins_for_Firefox
+ */
+function api_opensearch($branch_name) {
+  $valid = api_get_branches();
+  if (!isset($valid[$branch_name])) {
+    return drupal_not_found();
+  }
+
+  drupal_set_header('Content-Type: text/xml; charset=utf-8');
+
+  $short_name = t('Drupal API @branch', array('@branch' => $branch_name));
+  $description = t('Drupal @branch API documentation', array('@branch' => $branch_name));
+  if ($image = theme_get_setting('favicon')) {
+    // Get rid of base_path that theme_get_setting() added.
+    $image = substr($image, strlen(base_path()));
+  }
+  else {
+    // Fall back on default favicon if the theme didn't provide one.
+    $image = 'misc/favicon.ico';
+  }
+  $image = url($image, array('absolute' => TRUE));
+  $search_url = url('api/search/'. $branch_name, array('absolute' => TRUE)) .'/{searchTerms}';
+  $suggest_url = url('api/suggest/'. $branch_name, array('absolute' => TRUE)) .'/{searchTerms}';
+  $search_form_url = url('api', array('absolute' => TRUE));
+  $self_url = url($_GET['q'], array('absolute' => TRUE));
+
+  print <<<EOD
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+<ShortName>$short_name</ShortName>
+<Description>$description</Description>
+<InputEncoding>UTF-8</InputEncoding>
+<Image width="16" height="16" type="image/x-icon">$image</Image>
+<Url type="text/html" method="GET" template="$search_url" />
+<Url type="application/x-suggestions+json" template="$suggest_url"/>
+<Url type="application/opensearchdescription+xml" rel="self" template="$self_url" />
+<moz:SearchForm>$search_form_url</moz:SearchForm>
+</OpenSearchDescription>
+EOD;
+}
+
+/**
+ * Prepare a listing of potential documentation matches for a branch for
+ * OpenSearch.
+ *
+ * @param $branch_name
+ *   A branch name.
+ * @param ...
+ *   The string to search for.
+ *
+ * @see http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.0
+ */
+function api_suggest($branch_name) {
+  $matches = array();
+  $search = func_get_args();
+  array_shift($search);
+  $result = _api_fuzzy_search($branch_name, implode('/', $search), 10);
+  while ($r = db_fetch_object($result)) {
+    $matches[] = $r->title;
+  }
+  print drupal_json(array($search, $matches));
+}
+
+/**
+ * Search the database and return the query result handle.
+ *
+ * @param $branch_name
+ *   A branch name.
+ * @param $search
+ *   The string to search for.
+ * @param $limit
+ *   Maximum number of search results to provide.
+ */
+function _api_fuzzy_search($branch_name, $search, $limit = 10) {
+  // Escape underscore to produce more accurate results.
+  $search = str_replace('_', '\_', $search);
+  return db_query_range("SELECT title FROM {api_documentation} WHERE title LIKE '%%%s%%' AND branch_name = '%s' ORDER BY LENGTH(title)", $search, $branch_name, 0, $limit);
 }
 
 /**
