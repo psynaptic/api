@@ -93,7 +93,7 @@ function api_get_branches($_reset = FALSE) {
   static $branches;
 
   if (!isset($branches) || $_reset) {
-    $result = db_query('SELECT branch_name, title, directories FROM {api_branch} ORDER BY weight');
+    $result = db_query('SELECT branch_name, title, directories, excluded_directories FROM {api_branch} ORDER BY weight');
     $branches = array();
     while ($branch = db_fetch_object($result)) {
       $branches[$branch->branch_name] = $branch;

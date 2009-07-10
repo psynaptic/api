@@ -763,7 +763,7 @@ function api_update_branch($branch) {
     $files[$file->object_name] = $file;
   }
 
-  foreach (api_scan_directories($branch->directories) as $path => $file_name) {
+  foreach (api_scan_directories($branch->directories, $branch->excluded_directories) as $path => $file_name) {
     preg_match('!\.([a-z]*)$!', $file_name, $matches);
     if (isset($matches[1]) && isset($parse_functions[$matches[1]])) {
       if (isset($files[$file_name])) {
@@ -796,11 +796,9 @@ function api_update_branch($branch) {
 /**
  * Find all the files in the directories specified for a branch.
  */
-function api_scan_directories($directories) {
+function api_scan_directories($directories, $excluded_directories) {
   $directory_array = explode("\n", $directories);
-  foreach ($directory_array as $key => $directory) {
-    $directory_array[$key] = trim($directory);
-  }
+  $excluded_array = explode("\n", $excluded_directories);
 
   if (count($directory_array) > 1) {
     $directories_components = array();
@@ -829,9 +827,17 @@ function api_scan_directories($directories) {
       if (strpos($path, '/.') !== FALSE) {
         continue;
       }
-      $file_name = substr($path, strlen($common_ancestor) + 1);
-
-      $source_files[$path] = $file_name;
+      $excluded = FALSE;
+      // If the file is in an excluded path, ignore it
+      foreach ($excluded_array as $excluded_path) {
+        if (!empty($excluded_path) && (strpos($path, $excluded_path) === 0)) {
+          $excluded = TRUE;
+        }
+      }
+      if (!$excluded) {
+        $file_name = substr($path, strlen($common_ancestor) + 1);
+        $source_files[$path] = $file_name;
+      }
     }
   }
   return $source_files;

@@ -7,6 +7,7 @@ function api_schema() {
       'branch_name' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'directories' => array('type' => 'text', 'not null' => TRUE),
+      'excluded_directories' => array('type' => 'text', 'not null' => TRUE),
       'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
     ),
     'primary key' => array('branch_name'),
@@ -267,11 +268,27 @@ function api_update_13() {
  * Convert {api_branch}.directory to a TEXT field.
  */
 function api_update_14() {
-  $ret = array();
-  db_change_field($ret, 'api_branch', 'directory', 'directories', array(
+  $return = array();
+
+  db_change_field($return, 'api_branch', 'directory', 'directories', array(
     'type' => 'text',
     'not null' => TRUE,
   ));
+
+  return $return;
+}
+
+/**
+ * Add excluded_directories column.
+ */
+function api_update_15() {
+  $ret = array();
+
+  db_add_field($ret, 'api_branch', 'excluded_directories', array(
+    'type' => 'text',
+    'not null' => TRUE,
+  ));
+
   return $ret;
 }
 

@@ -75,6 +75,7 @@ function api_branch_edit_form($form_state, $branch_name = NULL) {
     $branch->branch_name = '';
     $branch->title = '';
     $branch->directories = '';
+    $branch->excluded_directories = '';
   }
   else {
     $branch = $branches[$branch_name];
@@ -100,6 +101,15 @@ function api_branch_edit_form($form_state, $branch_name = NULL) {
     '#rows' => 3,
     '#description' => t('Absolute paths to index, one per line.'),
     '#required' => TRUE,
+    '#element_validate' => array('api_check_directories'),
+  );
+  $form['excluded_directories'] = array(
+    '#title' => t('Excluded directories'),
+    '#type' => 'textarea',
+    '#default_value' => $branch->excluded_directories,
+    '#rows' => 3,
+    '#description' => t('Absolute paths to exclude from the index, one per line.'),
+    '#element_validate' => array('api_check_directories'),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -128,15 +138,19 @@ function api_branch_edit_form_validate($form, &$form_state) {
   if (isset($branches[$form_state['values']['branch_name']])) {
     form_set_error('branch_name', t('%branch_name is already used by another branch.', array('%branch_name' => $form_state['values']['branch_name'])));
   }
+}
 
+function api_check_directories($element, &$form_state) {
   // Check for valid directories.
-  foreach (explode("\n", $form_state['values']['directories']) as $directory) {
+  foreach (explode("\n", $form_state['values'][$element['#name']]) as $directory) {
     $directory = trim($directory);
-    if (!is_dir($directory)) {
-      form_set_error('directories', t('%directory is not a directory.', array('%directory' => $directory)));
-    }
-    elseif (!is_readable($directory)) {
-      form_set_error('directories', t('%directory is not readable by PHP.', array('%directory' => $directory)));
+    if (!empty($directory)) {
+      if (!is_dir($directory)) {
+        form_set_error($element['#name'], t('%directory is not a directory.', array('%directory' => $directory)));
+      }
+      elseif (!is_readable($directory)) {
+        form_set_error($element['#name'], t('%directory is not readable by PHP.', array('%directory' => $directory)));
+      }
     }
   }
 }
@@ -144,12 +158,27 @@ function api_branch_edit_form_validate($form, &$form_state) {
 function api_branch_edit_form_submit($form, &$form_state) {
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
-  $branch->directories = $form_state['values']['directories'];
+  $branch->directories = api_clean_directory_list($form_state['values']['directories']);
+  $branch->excluded_directories = api_clean_directory_list($form_state['values']['excluded_directories']);
 
   api_save_branch($branch, $form['branch_name']['#default_value']);
 
   drupal_set_message(t('Saved %branch_name.', array('%branch_name' => $branch->branch_name)));
   $form_state['redirect'] = 'admin/settings/api';
+}
+
+/**
+ * Trim whitespace, trailing directory separators, and remove blank lines.
+ */
+function api_clean_directory_list($list) {
+  $array = explode("\n", $list);
+  foreach ($array as $key => $directory) {
+    $array[$key] = rtrim(trim($directory), DIRECTORY_SEPARATOR);
+    if (empty($array[$key])) {
+      unset($array[$key]);
+    }
+  }
+  return implode("\n", $array);
 }
 
 function api_branch_delete_form($form_state, $branch_name) {
