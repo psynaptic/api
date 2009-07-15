@@ -522,7 +522,7 @@ function api_format_embedded_php($matches) {
   return "\n\n". api_format_php("<?php\n". decode_entities($matches[1]) ."\n?>") ."\n\n";
 }
 
-/*
+/**
  * Parse a block of text for lists that use hyphens or asterisks as bullets, and
  * format them as proper HTML lists.
  */
