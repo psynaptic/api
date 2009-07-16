@@ -508,9 +508,7 @@ function api_format_documentation($documentation, $branch_name) {
   $documentation = api_format_documentation_lists($documentation);
 
   // Convert newlines into paragraphs.
-  $documentation = preg_replace('|\n*$|', '', $documentation) ."\n\n"; // just to make things a little easier, pad the end
-  $documentation = preg_replace('!\n?(.+?)(?:\n\s*\n|\z)!s', "<p>$1</p>\n", $documentation); // make paragraphs, including one at the end
-  $documentation = preg_replace('!<p>\s*?</p>!', '', $documentation); // under certain strange conditions it could create a P of entirely whitespace
+  $documentation = _filter_autop($documentation);
 
   return $documentation;
 }
