@@ -804,7 +804,7 @@ function api_scan_directories($directories, $excluded_directories) {
     $directories_components = array();
     foreach ($directory_array as $directory) {
       $directory_components = array();
-      $parts = explode('/', $directory);
+      $parts = explode(DIRECTORY_SEPARATOR, $directory);
       foreach ($parts as $part) {
         if (strlen($part)) {
           array_unshift($directory_components, reset($directory_components) .'/'. $part);
