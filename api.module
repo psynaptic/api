@@ -1339,7 +1339,7 @@ function _api_link_documentation($documentation, $branch_name, $stages = array()
     $callback = NULL;
   }
 
-  return api_split($patterns[$stage], $documentation, $callback_match, array($branch_name, $prepend, $append), $callback, array($branch_name, $stages));
+  return _filter_url(api_split($patterns[$stage], $documentation, $callback_match, array($branch_name, $prepend, $append), $callback, array($branch_name, $stages)), NULL);
 }
 
 /**
