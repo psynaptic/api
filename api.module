@@ -9,14 +9,14 @@
  * specification, tuned to produce output that best benefits the Drupal code base.
  * It is designed to assume the code it documents follows Drupal coding conventions,
  * and supports the following Doxygen constructs:
- *   @ mainpage
- *   @ file
- *   @ defgroup
- *   @ ingroup
- *   @ addtogroup (as a synonym of @ ingroup)
- *   @ param
- *   @ return
- *   @ link
+ *   \@mainpage
+ *   \@file
+ *   \@defgroup
+ *   \@ingroup
+ *   \@addtogroup (as a synonym of \@ ingroup)
+ *   \@param
+ *   \@return
+ *   \@link
  */
 
 /**
@@ -25,7 +25,7 @@
 define('API_RE_FILENAME', '([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)');
 
 /**
- * Regular expression for starting inline @tags.
+ * Regular expression for starting inline \@tags.
  */
 define('API_RE_TAG_START', '(?<!\\\)@');
 
@@ -49,17 +49,17 @@ This is an implementation of a subset of the Doxygen documentation generator spe
 It is designed to assume the code it documents follows Drupal coding conventions,
 and supports the following Doxygen constructs:
 <ul>
-  <li>@mainpage
-  <li>@file
-  <li>@defgroup
-  <li>@ingroup
-  <li>@addtogroup (as a synonym of @ ingroup)
-  <li>@param
-  <li>@return
-  <li>@link
-  <li>@see
-  <li>@{
-  <li>@}
+  <li>@mainpage</li>
+  <li>@file</li>
+  <li>@defgroup</li>
+  <li>@ingroup</li>
+  <li>@addtogroup (as a synonym of @ ingroup)</li>
+  <li>@param</li>
+  <li>@return</li>
+  <li>@link</li>
+  <li>@see</li>
+  <li>@{</li>
+  <li>@}</li>
 </ul>
 </p>
 
@@ -1294,7 +1294,7 @@ function _api_link_documentation($documentation, $branch_name, $stages = array()
     'tags' => '/(<[^>]+?>)/',
 
     // Find @link
-    'link' => '/'. API_RE_TAG_START .'link\s+(.*)\s+@endlink/',
+    'link' => '/' . API_RE_TAG_START . 'link\s+(.*)\s+' . API_RE_TAG_START . 'endlink/',
 
     // Find function names, which are preceded by white space and followed by
     // '('.

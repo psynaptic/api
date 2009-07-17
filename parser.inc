@@ -169,7 +169,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       $param_match = array();
       $offset = 0;
       $docblock['parameters'] = '';
-      while (preg_match('!@param(.*?)(?=\n@|\n\n|$)!s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
         $docblock['parameters'] .= "\n\n". $param_match[1][0];
         $offset = $param_match[0][1];
@@ -179,7 +179,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       // Find return value definitions.
       $return_matches = array();
       $docblock['return_value'] = '';
-      preg_match_all('!@return(.*?)(\n@|\n\n|$)!s', $docblock['content'], $return_matches, PREG_SET_ORDER);
+      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|\n\n|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
       foreach ($return_matches as $return_match) {
         $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
         $docblock['return_value'] .= "\n\n". $return_match[1];
@@ -190,9 +190,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 
       // Determine group membership.
       $group_matches = array();
-      preg_match_all('!@(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches);
+      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
       $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('!@ingroup.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
 
       foreach ($nested_groups as $group_id) {
         if (!empty($group_id)) {
@@ -214,9 +214,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 
       // Determine group membership.
       $group_matches = array();
-      preg_match_all('!@(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches);
+      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
       $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('!@ingroup.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
 
       foreach ($nested_groups as $group_id) {
         if (!empty($group_id)) {
@@ -240,9 +240,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 
       // Determine group membership.
       $group_matches = array();
-      preg_match_all('!@(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches);
+      preg_match_all('!' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches);
       $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('!@ingroup.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'ingroup.*?\n!', '', $docblock['content']);
 
       foreach ($nested_groups as $group_id) {
         if (!empty($group_id)) {
@@ -250,25 +250,25 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    else if (strpos($docblock['content'], '@mainpage') !== FALSE) {
+    elseif (strpos($docblock['content'], API_RE_TAG_START . 'mainpage') !== FALSE) {
       $mainpage_matches = array();
-      preg_match('!@mainpage (.*?)\n!', $docblock['content'], $mainpage_matches);
+      preg_match('!' . API_RE_TAG_START . 'mainpage (.*?)\n!', $docblock['content'], $mainpage_matches);
       $docblock['title'] = $mainpage_matches[1];
-      $docblock['content'] = preg_replace('!@mainpage.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'mainpage.*?\n!', '', $docblock['content']);
       $docblock['object_type'] = 'mainpage';
       $docblock['object_name'] = $branch_name;
     }
-    else if (strpos($docblock['content'], '@file') !== FALSE) {
-      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
+    elseif (strpos($docblock['content'], API_RE_TAG_START . 'file') !== FALSE) {
+      $docblocks[0]['content'] = str_replace(API_RE_TAG_START . 'file', '', $docblock['content']);
       $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $branch_name);
       $docblocks[0]['summary'] = api_documentation_summary($docblocks[0]['documentation']);
     }
-    else if (strpos($docblock['content'], '@defgroup') !== FALSE) {
+    elseif (strpos($docblock['content'], API_RE_TAG_START . 'defgroup') !== FALSE) {
       $group_matches = array();
-      if (preg_match('!@defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!', $docblock['content'], $group_matches)) {
+      if (preg_match('!' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
         $docblock['title'] = $group_matches[2];
-        $docblock['content'] = preg_replace('!@defgroup.*?\n!', '', $docblock['content']);
+        $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'defgroup.*?\n!', '', $docblock['content']);
         $docblock['object_type'] = 'group';
       }
       else {
@@ -277,13 +277,13 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
 
     // Handle nested function groups.
-    if (strpos($docblock['content'], '@{') !== FALSE) {
+    if (strpos($docblock['content'], API_RE_TAG_START . '{') !== FALSE) {
       if ($docblock['object_type'] == 'group') {
         array_push($nested_groups, $docblock['object_name']);
       }
       else {
         $group_matches = array();
-        if (preg_match('!@(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches)) {
+        if (preg_match('!' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches)) {
           array_push($nested_groups, $group_matches[2]);
         }
         else {
@@ -291,7 +291,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    if (strpos($docblock['content'], '@}') !== FALSE) {
+    if (strpos($docblock['content'], API_RE_TAG_START . '}') !== FALSE) {
       array_pop($nested_groups);
     }
 
@@ -490,19 +490,18 @@ function api_format_documentation($documentation, $branch_name) {
   $documentation = check_plain($documentation);
 
   // @link full URLs.
-  $documentation = preg_replace('!@link ((http://|https://|ftp://|mailto:|smb://|afp://|file://|gopher://|news://|ssl://|sslv2://|sslv3://|tls://|tcp://|udp://)([a-zA-Z0-9@:%_+*~#?&=.,/;-]*[a-zA-Z0-9@:%_+*~#&=/;-])) (.*?) @endlink!', '<a href="$1">$4</a>', $documentation);
+  $documentation = preg_replace('/' . API_RE_TAG_START . 'link ((http:\/\/|https:\/\/|ftp:\/\/|mailto:|smb:\/\/|afp:\/\/|file:\/\/|gopher:\/\/|news:\/\/|ssl:\/\/|sslv2:\/\/|sslv3:\/\/|tls:\/\/|tcp:\/\/|udp:\/\/)([a-zA-Z0-9@:%_+*~#?&=.,\/;-]*[a-zA-Z0-9@:%_+*~#&=\/;-])) (.*?) ' . API_RE_TAG_START . 'endlink/', '<a href="$1">$4</a>', $documentation);
   // Site URLs.
-  $documentation = preg_replace('!@link /([a-zA-Z0-9_/-]+) (.*?) @endlink!', str_replace('%24', '$', l('$2', '$1')), $documentation);
-  //$documentation = preg_replace('!@link ([a-zA-Z0-9_]+) (.*?) @endlink!', str_replace('%24', '$', l('$2', 'api/group/$1/'. $branch_name)), $documentation);
+  $documentation = preg_replace('/' . API_RE_TAG_START . 'link \/([a-zA-Z0-9_\/-]+) (.*?) ' . API_RE_TAG_START . 'endlink/', str_replace('%24', '$', l('$2', '$1')), $documentation);
 
   // Process the @see tag
-  $documentation = preg_replace('!\n@see (.*[^.])\.?!', '<h3>See also</h3><p>$1</p>', $documentation);
+  $documentation = preg_replace('/\n' . API_RE_TAG_START . 'see (.*[^.])\.?/', '<h3>See also</h3><p>$1</p>', $documentation);
 
   // Replace left over curly braces
-  $documentation = preg_replace('!@[{}]!', '', $documentation);
+  $documentation = preg_replace('/' . API_RE_TAG_START . '[{}]/', '', $documentation);
 
   // Process the @code @endcode tags.
-  $documentation = preg_replace_callback('!@code(.+?)@endcode!s', 'api_format_embedded_php', $documentation);
+  $documentation = preg_replace_callback('/' . API_RE_TAG_START . 'code(.+?)' . API_RE_TAG_START . 'endcode/s', 'api_format_embedded_php', $documentation);
 
   // Format lists
   $documentation = api_format_documentation_lists($documentation);
