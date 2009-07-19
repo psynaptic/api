@@ -447,7 +447,7 @@ function api_menu() {
 }
 
 function api_file_load($file_name, $branch_name = NULL) {
-  return api_object_load(str_replace('-', '/', $file_name), 'file', $branch_name);
+  return api_object_load(str_replace('--', '/', $file_name), 'file', $branch_name);
 }
 
 /**
@@ -652,10 +652,10 @@ function api_url($object, $file = FALSE) {
   // api_default_project is a placeholder for when we have real project
   // support.
   if ($file) {
-    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '-', $object->file_name) . '/' . $object->branch_name;
+    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->branch_name;
   }
   elseif ($object->object_type === 'file') {
-    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '-', $object->object_name) . '/' . $object->branch_name;
+    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '--', $object->object_name) . '/' . $object->branch_name;
   }
   else {
     return 'api/' . $object->object_type . '/' . $object->object_name . '/' . $object->branch_name;
