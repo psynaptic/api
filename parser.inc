@@ -250,7 +250,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    elseif (strpos($docblock['content'], API_RE_TAG_START . 'mainpage') !== FALSE) {
+    elseif (strpos($docblock['content'], '@mainpage') !== FALSE) {
       $mainpage_matches = array();
       preg_match('!' . API_RE_TAG_START . 'mainpage (.*?)\n!', $docblock['content'], $mainpage_matches);
       $docblock['title'] = $mainpage_matches[1];
@@ -258,12 +258,12 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       $docblock['object_type'] = 'mainpage';
       $docblock['object_name'] = $branch_name;
     }
-    elseif (strpos($docblock['content'], API_RE_TAG_START . 'file') !== FALSE) {
-      $docblocks[0]['content'] = str_replace(API_RE_TAG_START . 'file', '', $docblock['content']);
+    elseif (strpos($docblock['content'], '@file') !== FALSE) {
+      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
       $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $branch_name);
       $docblocks[0]['summary'] = api_documentation_summary($docblocks[0]['documentation']);
     }
-    elseif (strpos($docblock['content'], API_RE_TAG_START . 'defgroup') !== FALSE) {
+    elseif (strpos($docblock['content'], '@defgroup') !== FALSE) {
       $group_matches = array();
       if (preg_match('!' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
@@ -277,7 +277,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
 
     // Handle nested function groups.
-    if (strpos($docblock['content'], API_RE_TAG_START . '{') !== FALSE) {
+    if (strpos($docblock['content'], '@{') !== FALSE) {
       if ($docblock['object_type'] == 'group') {
         array_push($nested_groups, $docblock['object_name']);
       }
@@ -291,7 +291,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    if (strpos($docblock['content'], API_RE_TAG_START . '}') !== FALSE) {
+    if (strpos($docblock['content'], '@}') !== FALSE) {
       array_pop($nested_groups);
     }
 
