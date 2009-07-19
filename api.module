@@ -41,13 +41,9 @@ function api_help($path, $arg) {
   switch ($path) {
     case 'admin/help#api':
       return t('
-<p>
-This is an implementation of a subset of the Doxygen documentation generator specification, tuned to produce output that best benefits the Drupal code base.
-</p>
+<p>This is an implementation of a subset of the Doxygen documentation generator specification, tuned to produce output that best benefits the Drupal code base.</p>
 
-<p>
-It is designed to assume the code it documents follows Drupal coding conventions,
-and supports the following Doxygen constructs:
+<p>It is designed to assume the code it documents follows Drupal coding conventions, and supports the following Doxygen constructs:</p>
 <ul>
   <li>@mainpage</li>
   <li>@file</li>
@@ -61,27 +57,16 @@ and supports the following Doxygen constructs:
   <li>@{</li>
   <li>@}</li>
 </ul>
-</p>
 
-<p>
-The module was designed to produce the Drupal developer documentation available at !api_site.
-</p>
+<p>The module was designed to produce the Drupal developer documentation available at !api_site.</p>
 
-<p>
-<strong>Set up</strong>
-<p>
+<p><strong>Set up</strong><p>
 
-<p>
-Visit the !api_settings_page to configure the module. You must have the relevant Drupal code base on the same machine as the site hosting the API module. Follow the descriptions in the \'Branches to index\' section to set up the code base for indexing.
-</p>
+<p>Visit the !api_settings_page to configure the module. You must have the relevant Drupal code base on the same machine as the site hosting the API module. Follow the descriptions in the \'Branches to index\' section to set up the code base for indexing.</p>
 
-<p>
-Indexing of PHP functions is also supported. If the site has internet access, then the default settings for the \'PHP Manual\' section should work fine. For local development environments that have a PHP manual installed, you can edit the paths to point to the appropriate locations.
-</p>
+<p>Indexing of PHP functions is also supported. If the site has internet access, then the default settings for the \'PHP Manual\' section should work fine. For local development environments that have a PHP manual installed, you can edit the paths to point to the appropriate locations.</p>
 
-<p>
-The module indexes code branches during cron runs, so make sure the site has cron functionality set up properly.
-</p>
+<p>The module indexes code branches during cron runs, so make sure the site has cron functionality set up properly.</p>
 ', array('!api_site' => l('http://api.drupal.org', 'http://api.drupal.org', array('absolute' => TRUE)), '!api_settings_page' => l(t('API settings page'), 'admin/settings/api')));
 
     case 'admin/settings/api/refresh':
