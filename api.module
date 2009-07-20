@@ -30,11 +30,6 @@ define('API_RE_FILENAME', '([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)');
 define('API_RE_TAG_START', '(?<!\\\)@');
 
 /**
- * The maximum number of path elements to look for in file names.
- */
-define('API_MAX_FILE_ELEMENTS', 5);
-
-/**
  * Implementation of hook_help()
  */
 function api_help($path, $arg) {
