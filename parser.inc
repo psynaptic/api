@@ -240,9 +240,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 
       // Determine group membership.
       $group_matches = array();
-      preg_match_all('!' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches);
+      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
       $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'ingroup.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
 
       foreach ($nested_groups as $group_id) {
         if (!empty($group_id)) {
@@ -265,10 +265,10 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
     elseif (strpos($docblock['content'], '@defgroup') !== FALSE) {
       $group_matches = array();
-      if (preg_match('!' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!', $docblock['content'], $group_matches)) {
+      if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!/', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
         $docblock['title'] = $group_matches[2];
-        $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'defgroup.*?\n!', '', $docblock['content']);
+        $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'defgroup.*?\n/', '', $docblock['content']);
         $docblock['object_type'] = 'group';
       }
       else {
@@ -283,7 +283,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       }
       else {
         $group_matches = array();
-        if (preg_match('!' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)!', $docblock['content'], $group_matches)) {
+        if (preg_match('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches)) {
           array_push($nested_groups, $group_matches[2]);
         }
         else {
