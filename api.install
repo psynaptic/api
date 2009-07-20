@@ -76,6 +76,21 @@ function api_install() {
   drupal_install_schema('api');
 }
 
+function api_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if (!file_exists(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js')) {
+    // Required library wasn't found. Abort installation.
+    $requirements['api']['title'] = $t('jQuery autocomplete');
+    $requirements['api']['value'] = $t('Not found');
+    $requirements['api']['description'] = $t('Missing jQuery autocomplete plug-in. Please !download and extract it to your api module directory.', array('!download' => l($t('download the jQuery autocomplete plug-in'), 'http://bassistance.de/jquery-plugins/jquery-plugin-autocomplete/')));
+    $requirements['api']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  return $requirements;
+}
+
 function api_update_1() {
   return _system_update_utf8(array('api_branch', 'api_documentation', 'api_file', 'api_function', 'api_reference'));
 }

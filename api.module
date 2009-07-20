@@ -564,8 +564,10 @@ function api_theme() {
 }
 
 function api_init() {
-  drupal_add_css(drupal_get_path('module', 'api') .'/api.css');
-  drupal_add_js(drupal_get_path('module', 'api') .'/api.js');
+  drupal_add_css(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.css');
+  drupal_add_js(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js');
+  drupal_add_css(drupal_get_path('module', 'api') . '/api.css');
+  drupal_add_js(drupal_get_path('module', 'api') . '/api.js');
 
   // Add OpenSearch autodiscovery links.
   foreach (array_keys(api_get_branches()) as $branch_name) {
@@ -778,6 +780,8 @@ function api_get_active_branch() {
 }
 
 function api_search_form($form_state, $branch_name) {
+  //todo move to a file in the filesystem.
+  drupal_add_js(array('apiAutoCompletePath' => url('api/autocomplete/'. $branch_name)), 'setting');
   $form = array();
 
   $form['branch_name'] = array(
@@ -787,7 +791,6 @@ function api_search_form($form_state, $branch_name) {
   $form['search'] = array(
     '#title' => t('Function, file, or topic'),
     '#type' => 'textfield',
-    '#autocomplete_path' => 'api/autocomplete/'. $branch_name,
     '#default_value' => '',
     '#required' => TRUE,
   );
@@ -838,24 +841,17 @@ function api_search_listing($branch_name) {
 }
 
 /**
- * Prepare a listing of potential documentation matches for a branch.
+ * Prepare a listing of documentation objects for a branch.
  *
  * @param $branch_name
  *   A branch name.
- * @param ...
- *   The string to search for.
  */
 function api_autocomplete($branch_name) {
-  $matches = array();
-  // Search strings containing slashes result in multiple args that need to be
-  // rebuilt.
-  $search = func_get_args();
-  array_shift($search);
-  $result = _api_fuzzy_search($branch_name, implode('/', $search), 20);
-  while ($r = db_fetch_object($result)) {
-    $matches[$r->title] = check_plain($r->title);
+  $result = db_query("SELECT title, object_type FROM {api_documentation} WHERE branch_name = '%s' AND object_type <> 'mainpage' ORDER BY LENGTH(title)", $branch_name);
+  while ($object = db_fetch_object($result)) {
+    $objects[] = $object->title;
   }
-  print drupal_json($matches);
+  print drupal_json($objects);
 }
 
 /**
