@@ -631,6 +631,22 @@ function api_block($op, $delta = NULL, $edit = array()) {
   }
 }
 
+function api_filter($op, $delta = 0, $format = -1, $text = '') {
+  switch ($op) {
+    case 'list':
+      return array(0 => t('API filter'));
+
+    case 'description':
+      return t('Add links to API objects, like theme() or theme.inc.');
+
+    case 'process':
+      return api_filter_documentation($text, api_get_active_branch());
+
+    default:
+      return $text;
+  }
+}
+
 /**
  * Construct a link to an API object page.
  *
@@ -789,7 +805,14 @@ function api_search_form_submit($form, &$form_state) {
 
 function api_search_redirect() {
   $args = func_get_args();
-  drupal_goto('api/search/'. variable_get('api_default_branch', NULL) .'/'. implode('/', $args));
+  if (count($args) === 0 && strpos($_GET['q'], 'apis/') !== 0) {
+    // Handling 404.
+    $tail = $_REQUEST['q'];
+  }
+  else {
+    $tail = implode('/', $args);
+  }
+  drupal_goto('api/search/'. variable_get('api_default_branch', NULL) .'/'. $tail);
 }
 
 /**
@@ -1258,14 +1281,17 @@ function api_link_code($code, $branch_name) {
   return _api_link_documentation($code, $branch_name, array('code function'));
 }
 
+function api_link_documentation($documentation, $branch_name) {
+  return _filter_url(api_filter_documentation($documentation, $branch_name), NULL);
+}
+
 /**
  * Turn function and file names into links. This is done on output because the
  * identifiers which are linked frequently change.
  */
-function api_link_documentation($documentation, $branch_name) {
-  $documentation = _api_link_documentation($documentation, $branch_name, array('tags', 'link', 'function', 'file'));
+function api_filter_documentation($text, $branch_name) {
   // Remove escaping from \@.
-  return _filter_url(preg_replace('!\\\@!', '@', $documentation), NULL);
+  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch_name, array('tags', 'link', 'function', 'file')));
 }
 
 function _api_link_documentation($documentation, $branch_name, $stages = array()) {
