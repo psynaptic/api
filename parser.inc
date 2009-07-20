@@ -252,9 +252,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
     elseif (strpos($docblock['content'], '@mainpage') !== FALSE) {
       $mainpage_matches = array();
-      preg_match('!' . API_RE_TAG_START . 'mainpage (.*?)\n!', $docblock['content'], $mainpage_matches);
+      preg_match('/' . API_RE_TAG_START . 'mainpage (.*?)\n/', $docblock['content'], $mainpage_matches);
       $docblock['title'] = $mainpage_matches[1];
-      $docblock['content'] = preg_replace('!' . API_RE_TAG_START . 'mainpage.*?\n!', '', $docblock['content']);
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
       $docblock['object_type'] = 'mainpage';
       $docblock['object_name'] = $branch_name;
     }
@@ -265,7 +265,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
     elseif (strpos($docblock['content'], '@defgroup') !== FALSE) {
       $group_matches = array();
-      if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n!/', $docblock['content'], $group_matches)) {
+      if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n/', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
         $docblock['title'] = $group_matches[2];
         $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'defgroup.*?\n/', '', $docblock['content']);
