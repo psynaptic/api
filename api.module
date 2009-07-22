@@ -780,8 +780,7 @@ function api_get_active_branch() {
 }
 
 function api_search_form($form_state, $branch_name) {
-  //todo move to a file in the filesystem.
-  drupal_add_js(array('apiAutoCompletePath' => url('api/autocomplete/'. $branch_name)), 'setting');
+  drupal_add_js(array('apiAutoCompletePath' => variable_get('api_autocomplete_path_' . $branch_name, url('api/autocomplete/' . $branch_name))), 'setting');
   $form = array();
 
   $form['branch_name'] = array(
@@ -846,12 +845,18 @@ function api_search_listing($branch_name) {
  * @param $branch_name
  *   A branch name.
  */
-function api_autocomplete($branch_name) {
+function api_autocomplete($branch_name, $page = TRUE) {
   $result = db_query("SELECT title, object_type FROM {api_documentation} WHERE branch_name = '%s' AND object_type <> 'mainpage' ORDER BY LENGTH(title)", $branch_name);
   while ($object = db_fetch_object($result)) {
     $objects[] = $object->title;
   }
-  print drupal_json($objects);
+
+  if ($page) {
+    drupal_json($objects);
+  }
+  else {
+    return drupal_to_js($objects);
+  }
 }
 
 /**

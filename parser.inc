@@ -473,8 +473,7 @@ function api_save_documentation($docblocks, $branch_name = NULL, $file_name = NU
     }
   }
 
-  api_schedule_update_references();
-  api_schedule_cache_clear();
+  api_schedule_shutdown();
 }
 
 /**
@@ -760,29 +759,41 @@ function api_reference($branch_name, $to_type, $to_name, $from_did) {
   }
 }
 
-/**
- * References do not need to be repeatedly updated, just at the end of a
- * request that involved parsing.
- */
-function api_schedule_update_references() {
+function api_schedule_shutdown() {
   static $scheduled = FALSE;
 
   if (!$scheduled) {
-    register_shutdown_function('api_update_references');
+    register_shutdown_function('api_shutdown');
     $scheduled = TRUE;
   }
 }
 
 /**
- * Update the references that were collected.
+ * Update the references that were collected, update JSON object list, clear
+ * cache.
  */
-function api_update_references() {
+function api_shutdown() {
   // Figure out all the dids of the object/branch/types.
-  db_query('UPDATE {api_reference_storage} r, {api_documentation} d SET r.to_did = d.did WHERE r.object_name = d.object_name AND r.branch_name = d.branch_name AND r.object_type = d.object_type');
-}
+  db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_name = d.branch_name AND r.object_type = d.object_type SET r.to_did = d.did');
 
-function api_schedule_cache_clear() {
-  register_shutdown_function('cache_clear_all');
+  $directory = file_directory_path();
+  if (is_dir($directory) && is_writable($directory) && (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC)) {
+    $path = file_create_path('api');
+    file_check_directory($path, FILE_CREATE_DIRECTORY);
+    $date = gmdate('U');
+    foreach (api_get_branches() as $branch_name => $branch) {
+      $file_name = $path . '/api-' . $branch_name . '-' . $date . '.json';
+      file_save_data(api_autocomplete($branch_name, FALSE), $file_name, FILE_EXISTS_REPLACE);
+      $old_file_name = variable_get('api_autocomplete_path_' . $branch_name, FALSE);
+      variable_set('api_autocomplete_path_' . $branch_name, base_path() . $file_name);
+      if ($old_file_name !== FALSE) {
+        // todo it would be ideal to expire in an hour.
+        file_delete(str_replace(base_path(), '', $old_file_name));
+      }
+    }
+  }
+
+  cache_clear_all();
 }
 
 function api_update_all_branches() {
@@ -840,7 +851,7 @@ function api_update_branch($branch) {
       db_query("DELETE FROM {api_function} WHERE did = %d", $doc->did);
       db_query("DELETE FROM {api_reference_storage} WHERE from_did = %d OR to_did = %d", $doc->did, $doc->did);
     }
-    api_schedule_cache_clear();
+    api_schedule_shutdown();
   }
 }
 
