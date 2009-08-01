@@ -429,8 +429,13 @@ function api_save_documentation($docblocks, $branch_name = NULL, $file_name = NU
       db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s' WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $did);
     }
     else {
-      db_query("INSERT INTO {api_documentation} (object_name, branch_name, object_type, title, file_name, summary, documentation, code) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", $docblock['object_name'], $docblock['branch_name'], $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code']);
-      $did = db_last_insert_id('api_documentation', 'did');
+      $node = new stdClass();
+      $node->type = 'api';
+      $node->uid = 0;
+      $node->comment = COMMENT_NODE_READ_WRITE;
+      node_save($node);
+      $did = $node->nid;
+      db_query("INSERT INTO {api_documentation} (did, object_name, branch_name, object_type, title, file_name, summary, documentation, code) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", $did, $docblock['object_name'], $docblock['branch_name'], $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code']);
     }
 
     switch ($docblock['object_type']) {

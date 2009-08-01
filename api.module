@@ -575,6 +575,18 @@ function api_init() {
     $url = url('api/opensearch/'. $branch_name, array('absolute' => TRUE));
     drupal_set_html_head('<link rel="search" type="application/opensearchdescription+xml" href="'. $url .'" title="'. $title .'" />');
   }
+
+  // If we happen to be on an API node page, redirect.
+  if (($node = menu_get_object()) && $node->type == 'api') {
+    $documentation = db_fetch_object(db_query('SELECT * FROM {api_documentation} WHERE did = %d', $node->nid));
+    drupal_goto("api/$documentation->object_type/$documentation->object_name/$documentation->branch_name");
+  }
+}
+
+function api_db_rewrite_sql($query, $primary_table, $primary_field) {
+  if ($primary_table == 'n' && $primary_field == 'nid') {
+    return array('where' => "type <> 'api'");
+  }
 }
 
 function api_block($op, $delta = NULL, $edit = array()) {
@@ -1131,7 +1143,9 @@ function api_page_function($function) {
     $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
   }
 
-  return theme('api_function_page', $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code);
+  $output = theme('api_function_page', $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code);
+  $output .= _api_add_comments($function);
+  return $output;
 }
 
 /**
@@ -1144,7 +1158,9 @@ function api_page_constant($constant) {
   $code = api_link_code($constant->code, $constant->branch_name);
   $related_topics = api_related_topics($constant->did, $constant->branch_name);
 
-  return theme('api_constant_page', $constant, $documentation, $code, $related_topics);
+  $output = theme('api_constant_page', $constant, $documentation, $code, $related_topics);
+  $output .= _api_add_comments($constant);
+  return $output;
 }
 
 /**
@@ -1157,7 +1173,9 @@ function api_page_global($global) {
   $related_topics = api_related_topics($global->did, $global->branch_name);
   $code = api_link_code($global->code, $global->branch_name);
 
-  return theme('api_global_page', $global, $documentation, $code, $related_topics);
+  $output = theme('api_global_page', $global, $documentation, $code, $related_topics);
+  $output .= _api_add_comments($global);
+  return $output;
 }
 
 /**
@@ -1197,6 +1215,12 @@ function api_page_file($file) {
   }
 
   return theme('api_file_page', $file, $documentation, $constants, $globals, $functions);
+}
+
+function _api_add_comments($documentation_object) {
+  $output = comment_render(node_load($documentation_object->did));
+  $output .= comment_form_box(array('nid' => $documentation_object->did), t('Post new comment'));
+  return $output;
 }
 
 /**

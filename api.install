@@ -17,7 +17,7 @@ function api_schema() {
   );
   $schema['api_documentation'] = array(
     'fields' => array(
-      'did' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
       'branch_name' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
@@ -74,6 +74,7 @@ function api_schema() {
 
 function api_install() {
   drupal_install_schema('api');
+  variable_set('comment_preview_api', COMMENT_PREVIEW_OPTIONAL);
 }
 
 function api_requirements($phase) {
@@ -297,14 +298,23 @@ function api_update_14() {
  * Add excluded_directories column.
  */
 function api_update_15() {
-  $ret = array();
+  $return = array();
 
-  db_add_field($ret, 'api_branch', 'excluded_directories', array(
+  db_add_field($return, 'api_branch', 'excluded_directories', array(
     'type' => 'text',
     'not null' => TRUE,
   ));
 
-  return $ret;
+  return $return;
+}
+
+function api_update_16() {
+  $return = array();
+
+  // Force re-index.
+  $return[] = update_sql("DELETE FROM {api_documentation}");
+
+  return $return;  
 }
 
 function api_uninstall() {
@@ -314,4 +324,5 @@ function api_uninstall() {
   variable_del('api_php_funcpath');
   variable_del('api_files_per_cron');
   variable_del('api_reference');
+  db_query("DELETE FROM {node} WHERE type = 'api'");
 }
