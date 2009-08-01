@@ -26,7 +26,7 @@ Drupal.behaviors.apiAutoComplete = function (context) {
         // Attach to autocomplete.
         $this.autocomplete(data, {
           matchContains: true,
-          max: 100,
+          max: 200,
           scroll: true,
           scrollHeight: 360,
           width: 300
