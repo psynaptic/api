@@ -25,6 +25,9 @@ Drupal.behaviors.apiAutoComplete = function (context) {
       $.getJSON(Drupal.settings.apiAutoCompletePath, function (data) {
         // Attach to autocomplete.
         $this.autocomplete(data, {
+          sort: function (a, b) {
+            return a.value.length - b.value.length;
+          },
           matchContains: true,
           max: 200,
           scroll: true,
