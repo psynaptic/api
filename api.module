@@ -1224,8 +1224,26 @@ function api_page_file($file) {
 }
 
 function _api_add_comments($documentation_object) {
-  $output = comment_render(node_load($documentation_object->did));
-  $output .= comment_form_box(array('nid' => $documentation_object->did), t('Post new comment'));
+  $output = '';
+
+  if (module_exists('comment') && user_access('access comments')) {
+    $output .= comment_render(node_load($documentation_object->did));
+    if (user_access('post comments')) {
+      $output .= comment_form_box(array('nid' => $documentation_object->did), t('Post new comment'));
+    }
+    elseif (array_key_exists(DRUPAL_AUTHENTICATED_RID, user_roles(TRUE, 'post comments'))) {
+      // If authenticated users can post comments.
+      if (variable_get('user_register', 1)) {
+        // Users can register themselves.
+        $output .= t('<a href="@login">Login</a> or <a href="@register">register</a> to post comments', array('@login' => url('user/login', array('query' => $destination)), '@register' => url('user/register', array('query' => $destination))));
+      }
+      else {
+        // Only admins can add new users, no public registration.
+        $output .= t('<a href="@login">Login</a> to post comments', array('@login' => url('user/login', array('query' => $destination))));
+      }
+    }
+  }
+
   return $output;
 }
 
