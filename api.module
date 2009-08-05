@@ -560,6 +560,12 @@ function api_theme() {
       ),
       'template' => 'templates/api-group-page'
     ),
+    'api_branch_default_page' => array(
+      'arguments' => array(
+        'branch' => NULL,
+      ),
+      'template' => 'templates/api-branch-default-page'
+    ),
   );
 }
 
@@ -965,7 +971,7 @@ function api_page_branch($branch_name) {
     return api_link_documentation($branch->documentation, $branch_name);
   }
   else {
-    return t('A main page for this branch has not been indexed. A documentation comment with <code>@mainpage {title}</code> needs to exist, or has not been indexed yet. For Drupal core, this is available in the <a href="http://cvs.drupal.org/viewvc.py/drupal/contributions/docs/developer/">developer documentation</a> in the contributions repository.');
+    return theme('api_branch_default_page', $branch_name);
   }
 }
 
