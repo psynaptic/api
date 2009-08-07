@@ -1498,7 +1498,7 @@ function api_link_name($name, $branch_name, $prepend = '', $append = '', $text =
   }
   elseif (array_key_exists($name, $php_functions)) {
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
-    return l($text, $link, array('attributes' => array('title' => $php_functions[$name], 'class' => 'php-manual')));
+    return $prepend . l($text, $link, array('attributes' => array('title' => $php_functions[$name], 'class' => 'php-manual'))) . $append;
   }
   else {
     return $prepend . $text . $append;
