@@ -4,3 +4,4 @@ description = Generates and displays API documentation pages.
 package = Development
 core = 6.x
 dependencies[] = job_queue
+dependencies[] = node
