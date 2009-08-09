@@ -94,7 +94,6 @@ function api_menu() {
 
   $branches = api_get_branches();
   $default_branch = variable_get('api_default_branch', NULL);
-
   // Part 1: No object, Default branch
   $items['api'] = array(
     'title' => 'API reference',
@@ -224,13 +223,6 @@ function api_menu() {
     'page arguments' => array('api_reindex_form'),
     'file' => 'api.admin.inc',
     'type' => MENU_LOCAL_TASK,
-  );
-
-  // Function dumps for IDEs and code editors.
-  $items['api/function_dump/%api_branch'] = array(
-    'page callback' => 'api_page_function_dump',
-    'callback arguments' => array(2),
-    'type' => MENU_CALLBACK,
   );
 
   // Part 2: Object provided, default branch.
@@ -427,6 +419,15 @@ function api_menu() {
       'access callback' => $access_callback,
       'access arguments' => $access_arguments,
       'type' => MENU_LOCAL_TASK,
+    );
+
+    // Function dumps for IDEs and code editors.
+    $items['api/function_dump/'. $branch->branch_name] = array(
+      'page callback' => 'api_page_function_dump',
+      'page arguments' => array($branch->branch_name),
+      'access callback' => $access_callback,
+      'access arguments' => $access_arguments,
+      'type' => MENU_CALLBACK,
     );
   }
 
