@@ -591,8 +591,8 @@ function api_init() {
 }
 
 function api_db_rewrite_sql($query, $primary_table, $primary_field) {
-  if ($primary_table == 'n' && $primary_field == 'nid') {
-    return array('where' => "type <> 'api'");
+  if ($primary_field == 'nid') {
+    return array('where' => $primary_table . ".type <> 'api'");
   }
 }
 
