@@ -254,7 +254,7 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file'] = array(
+  $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename'] = array(
     'title' => 'File',
     'load arguments' => array($default_branch),
     'page callback' => 'api_page_file',
@@ -378,7 +378,7 @@ function api_menu() {
       'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
     );
 
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name] = array(
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name] = array(
       'title' => $branch->title,
       'load arguments' => array($branch->branch_name),
       'page callback' => 'api_page_file',
@@ -387,13 +387,13 @@ function api_menu() {
       'access arguments' => $access_arguments,
       'type' => ($branch->branch_name == $default_branch) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
     );
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name .'/documentation'] = array(
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name .'/documentation'] = array(
       'title' => 'View documentation',
       'load arguments' => array($branch->branch_name),
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -10,
     );
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_file/'. $branch->branch_name .'/source'] = array(
+    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name .'/source'] = array(
       'title' => 'View source',
       'load arguments' => array($branch->branch_name),
       'page callback' => 'api_page_file_source',
@@ -442,7 +442,7 @@ function api_menu() {
   return $items;
 }
 
-function api_file_load($file_name, $branch_name = NULL) {
+function api_filename_load($file_name, $branch_name = NULL) {
   return api_object_load(str_replace('--', '/', $file_name), 'file', $branch_name);
 }
 
