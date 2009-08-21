@@ -1221,7 +1221,9 @@ function api_page_file($file) {
     $functions = theme('table', $header, $rows['function']);
   }
 
-  return theme('api_file_page', $file, $documentation, $constants, $globals, $functions);
+  $output = theme('api_file_page', $file, $documentation, $constants, $globals, $functions);
+  $output .= _api_add_comments($file);
+  return $output;
 }
 
 function _api_add_comments($documentation_object) {
@@ -1296,7 +1298,9 @@ function api_page_group($group) {
     $functions = theme('table', $header, $rows['function']);
   }
 
-  return theme('api_group_page', $documentation, $constants, $globals, $functions);
+  $output = theme('api_group_page', $documentation, $constants, $globals, $functions);
+  $output .= _api_add_comments($group);
+  return $output;
 }
 
 function api_related_topics($did, $branch_name) {
