@@ -17,7 +17,7 @@ function api_file_redirect() {
     $file->branch_name = $branches[$args[$end]]->branch_name;
     $end -= 1;
   }
-  $file->object_name = implode('/', array_slice($args, $index, $end - $index + 1));
+  $file->object_name = implode('/', array_slice($args, 0, $end - 0 + 1));
 
   drupal_goto(api_url($file) . $suffix);
 }
