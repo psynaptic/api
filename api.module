@@ -1227,7 +1227,7 @@ function api_page_file($file) {
 function _api_add_comments($documentation_object) {
   $output = '';
 
-  if (module_exists('comment') && user_access('access comments')) {
+  if (module_exists('comment') && user_access('access comments') && variable_get('comment_api') != COMMENT_NODE_DISABLED) {
     $output .= comment_render(node_load($documentation_object->did));
     if (user_access('post comments')) {
       $output .= comment_form_box(array('nid' => $documentation_object->did), t('Post new comment'));
