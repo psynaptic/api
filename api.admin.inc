@@ -239,19 +239,3 @@ function api_php_manual_index_form_submit($form, &$form_state) {
   api_parse_php_manual($form_state['values']['api_php_funcsummary']);
   drupal_set_message(t('Manual pages scanned.'));
 }
-
-function api_reindex_form() {
-  $form = array();
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Reindex'),
-  );
-
-  return $form;
-}
-
-function api_reindex_form_submit($form, &$form_state) {
-  db_query("UPDATE {api_file} SET modified = 52");
-  drupal_set_message(t('All files have been tagged for reindexing. The index will be rebuilt during the next few runs of !cron.', array('!cron' => l('cron.php', 'admin/reports/status/run-cron'))));
-}
