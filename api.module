@@ -1234,13 +1234,16 @@ function _api_add_comments($documentation_object) {
     }
     elseif (array_key_exists(DRUPAL_AUTHENTICATED_RID, user_roles(TRUE, 'post comments'))) {
       // If authenticated users can post comments.
+      $options = array(
+        'query' => drupal_get_destination() . urlencode('#comment-form'),
+      );
       if (variable_get('user_register', 1)) {
         // Users can register themselves.
-        $output .= t('<a href="@login">Login</a> or <a href="@register">register</a> to post comments', array('@login' => url('user/login', array('query' => drupal_get_destination())), '@register' => url('user/register', array('query' => drupal_get_destination()))));
+        $output .= t('<a href="@login">Login</a> or <a href="@register">register</a> to post comments', array('@login' => url('user/login', $options), '@register' => url('user/register', $options)));
       }
       else {
         // Only admins can add new users, no public registration.
-        $output .= t('<a href="@login">Login</a> to post comments', array('@login' => url('user/login', array('query' => drupal_get_destination()))));
+        $output .= t('<a href="@login">Login</a> to post comments', array('@login' => url('user/login', $options)));
       }
     }
   }
