@@ -239,3 +239,34 @@ function api_php_manual_index_form_submit($form, &$form_state) {
   api_parse_php_manual($form_state['values']['api_php_funcsummary']);
   drupal_set_message(t('Manual pages scanned.'));
 }
+
+function api_comments_settings_form(&$form_state) {
+  $type = new stdClass();
+  $type->type = 'api';
+  $form = array(
+    '#node_type' => $type,
+    'identity' => array(
+      'type' => array(
+        '#type' => 'value',
+        '#value' => 'api',
+      ),
+    ),
+  );
+  comment_form_alter($form, $form_state, 'node_type_form');
+  unset($form['comment']['#type']);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save comment settings'),
+  );
+
+  return $form;
+}
+
+function api_comments_settings_form_submit($form, &$form_state) {
+  foreach ($form_state['values'] as $key => $value) {
+    if (strpos($key, 'comment') === 0) {
+      variable_set($key . '_api', $value);
+    }
+  }
+  drupal_set_message(t('Saved API comment settings.'));
+}

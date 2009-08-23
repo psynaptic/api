@@ -215,6 +215,13 @@ function api_menu() {
     'file' => 'api.admin.inc',
     'type' => MENU_LOCAL_TASK,
   );
+  $items['admin/settings/api/comments'] = array(
+    'title' => 'Comments',
+    'access arguments' => array('administer API reference'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('api_comments_settings_form'),
+    'file' => 'api.admin.inc',
+  );
 
   // Part 2: Object provided, default branch.
   $items['api/function/%api_object'] = array(
