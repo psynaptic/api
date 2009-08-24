@@ -600,7 +600,7 @@ function api_block($op, $delta = NULL, $edit = array()) {
       return array(
         'api-search' => array(
           'info' => t('API search'),
-          'cache' => BLOCK_CACHE_PER_PAGE | BLOCK_CACHE_PER_ROLE,
+          'cache' => BLOCK_CACHE_PER_PAGE | BLOCK_CACHE_PER_USER,
         ),
         'navigation' => array(
           'info' => t('API navigation'),
