@@ -798,7 +798,9 @@ function api_get_active_branch() {
 
 function api_search_form($form_state, $branch_name) {
   drupal_add_js(array('apiAutoCompletePath' => base_path() . variable_get('api_autocomplete_path_' . $branch_name, url('api/autocomplete/' . $branch_name))), 'setting');
-  $form = array();
+  $form = array(
+    '#token' => FALSE,
+  );
 
   $form['branch_name'] = array(
     '#type' => 'value',
