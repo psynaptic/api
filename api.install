@@ -317,6 +317,18 @@ function api_update_16() {
   return $return;  
 }
 
+/**
+ * Update #16 left {api_reference_storage} inconsistent.
+ */
+function api_update_17() {
+  $return = array();
+
+  $return[] = update_sql("DELETE FROM {api_reference_storage}");
+  $return[] = update_sql("UPDATE {api_file} SET modified = 52");
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');
