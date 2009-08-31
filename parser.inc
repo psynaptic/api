@@ -91,6 +91,7 @@ function api_parse_html_file($docblock) {
  * Read in the file at the given path and parse its documentation.
  */
 function api_parse_php_file($docblock) {
+  $docblock['code'] = api_format_php($docblock['source']);
   $docblocks = array($docblock);
   $nested_groups = array();
 
