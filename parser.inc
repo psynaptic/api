@@ -51,13 +51,9 @@ function api_parse_text_file($file_path, $branch_name, $file_name) {
     'summary' => api_documentation_summary(api_format_documentation($source, $branch_name)),
     'documentation' => api_format_documentation($source, $branch_name),
     'code' => api_format_php($source),
-    'version' => '',
+    'version' => api_parse_get_version($source),
     'modified' => filemtime($file_path),
   );
-  $version_match = array();
-  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
-    $docblock['version'] = $version_match[1] .' (checked in on '. $version_match[2] .' at '. $version_match[3] .' by '. $version_match[4] .')';
-  }
 
   api_save_documentation(array($docblock), $branch_name, $file_name);
 }
@@ -78,7 +74,7 @@ function api_parse_html_file($file_path, $branch_name, $file_name) {
     'summary' => '',
     'documentation' => '',
     'code' => '<pre>'. htmlspecialchars($source) .'</pre>',
-    'version' => '',
+    'version' => api_parse_get_version($source),
     'modified' => filemtime($file_path),
   );
   $title_match = array();
@@ -89,10 +85,6 @@ function api_parse_html_file($file_path, $branch_name, $file_name) {
   if (preg_match('!<body>(.*?</h1>)?(.*)</body>!is', $source, $documentation_match)) {
     $docblock['documentation'] = $documentation_match[2];
     $docblock['summary'] = api_documentation_summary($documentation_match[2]);
-  }
-  $version_match = array();
-  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
-    $docblock['version'] = $version_match[1] .' (checked in on '. $version_match[2] .' at '. $version_match[3] .' by '. $version_match[4] .')';
   }
 
   api_save_documentation(array($docblock), $branch_name, $file_name);
@@ -120,13 +112,9 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     'summary' => '',
     'documentation' => '',
     'code' => api_format_php($source),
-    'version' => '',
+    'version' => api_parse_get_version($source),
     'modified' => filemtime($file_path),
   );
-  $version_match = array();
-  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
-    $docblocks[0]['version'] = $version_match[1] .' (checked in on '. $version_match[2] .' at '. $version_match[3] .' by '. $version_match[4] .')';
-  }
 
   $nested_groups = array();
 
@@ -384,6 +372,13 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
   }
 
   api_save_documentation($docblocks, $branch_name, $file_name);
+}
+
+function api_parse_get_version($source) {
+  $version_match = array();
+  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
+    return $version_match[1] .' (checked in on '. $version_match[2] .' at '. $version_match[3] .' by '. $version_match[4] .')';
+  }
 }
 
 /**
