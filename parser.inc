@@ -152,18 +152,6 @@ function api_parse_php_file($docblock) {
       $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
 
       $docblock['function calls'] = api_parse_function_calls($docblock['code']);
-
-      // Determine group membership.
-      $group_matches = array();
-      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
-      $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
-
-      foreach ($nested_groups as $group_id) {
-        if (!empty($group_id)) {
-          $docblock['groups'][] = $group_id;
-        }
-      }
     }
     else if (substr($docblocks[0]['source'], $code_start, 6) == 'define') {
       $constant_matches = array();
@@ -176,18 +164,6 @@ function api_parse_php_file($docblock) {
       $code_end = strpos($docblocks[0]['source'], ';', $code_start) + 1;
       $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
       $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
-
-      // Determine group membership.
-      $group_matches = array();
-      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
-      $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
-
-      foreach ($nested_groups as $group_id) {
-        if (!empty($group_id)) {
-          $docblock['groups'][] = $group_id;
-        }
-      }
     }
     else if (substr($docblocks[0]['source'], $code_start, 6) == 'global') {
       $global_matches = array();
@@ -202,18 +178,6 @@ function api_parse_php_file($docblock) {
       $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
       $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
-
-      // Determine group membership.
-      $group_matches = array();
-      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
-      $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
-
-      foreach ($nested_groups as $group_id) {
-        if (!empty($group_id)) {
-          $docblock['groups'][] = $group_id;
-        }
-      }
     }
     elseif (strpos($docblock['content'], '@mainpage') !== FALSE) {
       $mainpage_matches = array();
@@ -241,7 +205,18 @@ function api_parse_php_file($docblock) {
       }
     }
 
+    // Determine group membership.
+    $group_matches = array();
+    preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
+    $docblock['groups'] = $group_matches[2];
+    $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
+
     // Handle nested function groups.
+    foreach ($nested_groups as $group_id) {
+      if (!empty($group_id)) {
+        $docblock['groups'][] = $group_id;
+      }
+    }
     if (strpos($docblock['content'], '@{') !== FALSE) {
       if ($docblock['object_type'] == 'group') {
         array_push($nested_groups, $docblock['object_name']);
@@ -279,7 +254,8 @@ function api_parse_php_file($docblock) {
       'title' => $function_match[2][0],
       'summary' => '',
       'documentation' => '',
-      'code' => '');
+      'code' => '',
+    );
     $docblock['signature'] = $function_match[1][0];
     $docblock['parameters'] = '';
     $docblock['return_value'] = '';
