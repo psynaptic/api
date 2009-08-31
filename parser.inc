@@ -34,99 +34,75 @@ function api_parse_php_manual($location) {
   }
 }
 
-/**
- * Read in the file at the given path and parse it as if it consisted entirely of
- * documentation.
- */
-function api_parse_text_file($file_path, $branch_name, $file_name) {
-  $source = file_get_contents($file_path);
-
-  // Set up documentation block for file, in case it is not explicitly defined.
+function api_parse_file($callback, $file_path, $branch_name, $file_name) {
   $docblock = array(
     'object_name' => $file_name,
     'branch_name' => $branch_name,
     'object_type' => 'file',
     'file_name' => $file_name,
     'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
-    'summary' => api_documentation_summary(api_format_documentation($source, $branch_name)),
-    'documentation' => api_format_documentation($source, $branch_name),
-    'code' => api_format_php($source),
-    'version' => api_parse_get_version($source),
+    'summary' => '',
+    'documentation' => '',
+    'code' => '',
+    'version' => '',
     'modified' => filemtime($file_path),
+    'source' => str_replace(array("\r\n", "\r"), array("\n", "\n"), file_get_contents($file_path)),
   );
 
-  api_save_documentation(array($docblock), $branch_name, $file_name);
+  $match = array();
+  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $docblock['source'], $match)) {
+    $docblock['version'] = $match[1] .' (checked in on '. $match[2] .' at '. $match[3] .' by '. $match[4] .')';
+  }
+
+  $callback($docblock);
+}
+
+/**
+ * Read in the file at the given path and parse it as if it consisted entirely of
+ * documentation.
+ */
+function api_parse_text_file($docblock) {
+  $docblock['summary'] = api_documentation_summary(api_format_documentation($docblock['source'], $docblock['branch_name']));
+  $docblock['documentation'] = api_format_documentation($docblock['source'], $docblock['branch_name']);
+  $docblock['code'] = api_format_php($docblock['source']);
+
+  api_save_documentation(array($docblock));
 }
 
 /**
  * Read in the file at the given path and parse it as an HTML file.
  */
-function api_parse_html_file($file_path, $branch_name, $file_name) {
-  $source = file_get_contents($file_path);
-
-  // Set up documentation block for file, in case it is not explicitly defined.
-  $docblock = array(
-    'object_name' => $file_name,
-    'branch_name' => $branch_name,
-    'object_type' => 'file',
-    'file_name' => $file_name,
-    'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
-    'summary' => '',
-    'documentation' => '',
-    'code' => '<pre>'. htmlspecialchars($source) .'</pre>',
-    'version' => api_parse_get_version($source),
-    'modified' => filemtime($file_path),
-  );
+function api_parse_html_file($docblock) {
+  $docblock['code'] = '<pre>' . htmlspecialchars($docblock['source']) . '</pre>';
   $title_match = array();
-  if (preg_match('!<title>\s*(\w.*)\s*</title>!is', $source, $title_match)) {
+  if (preg_match('!<title>\s*(\w.*)\s*</title>!is', $docblock['source'], $title_match)) {
     $docblock['title'] = $title_match[1];
   }
   $documentation_match = array();
-  if (preg_match('!<body>(.*?</h1>)?(.*)</body>!is', $source, $documentation_match)) {
+  if (preg_match('!<body>(.*?</h1>)?(.*)</body>!is', $docblock['source'], $documentation_match)) {
     $docblock['documentation'] = $documentation_match[2];
     $docblock['summary'] = api_documentation_summary($documentation_match[2]);
   }
 
-  api_save_documentation(array($docblock), $branch_name, $file_name);
+  api_save_documentation(array($docblock));
 }
 
 /**
  * Read in the file at the given path and parse its documentation.
  */
-function api_parse_php_file($file_path, $branch_name, $file_name) {
-  $source = file_get_contents($file_path);
-
-  // Convert Mac/Win line breaks to Unix format.
-  $source = str_replace("\r\n", "\n", $source);
-  $source = str_replace("\r", "\n", $source);
-
-  $docblocks = array();
-
-  // Set up documentation block for file, in case it is not explicitly defined.
-  $docblocks[0] = array(
-    'object_name' => $file_name,
-    'branch_name' => $branch_name,
-    'object_type' => 'file',
-    'file_name' => $file_name,
-    'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
-    'summary' => '',
-    'documentation' => '',
-    'code' => api_format_php($source),
-    'version' => api_parse_get_version($source),
-    'modified' => filemtime($file_path),
-  );
-
+function api_parse_php_file($docblock) {
+  $docblocks = array($docblock);
   $nested_groups = array();
 
   $docblock_matches = array();
-  preg_match_all('!/\*\*(.*?)\*/!s', $source, $docblock_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+  preg_match_all('!/\*\*(.*?)\*/!s', $docblocks[0]['source'], $docblock_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
 
   foreach ($docblock_matches as $docblock_match) {
     $docblock = array(
       'object_name' => '',
-      'branch_name' => $branch_name,
+      'branch_name' => $docblocks[0]['branch_name'],
       'object_type' => '',
-      'file_name' => $file_name,
+      'file_name' => $docblocks[0]['file_name'],
       'title' => '',
       'summary' => '',
       'documentation' => '',
@@ -136,21 +112,21 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     $docblock['start'] = $docblock_match[0][1];
     $docblock['length'] = strlen($docblock_match[0][0]);
     $code_start = $docblock['start'] + $docblock['length'] + 1;
-    $docblock['start_line'] = substr_count(substr($source, 0, $code_start), "\n");
+    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
 
     // Determine what kind of documentation block this is.
-    if (substr($source, $code_start, 8) == 'function') {
+    if (substr($docblocks[0]['source'], $code_start, 8) == 'function') {
       $function_matches = array();
 
       $docblock['object_type'] = 'function';
-      preg_match('!^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{!', substr($source, $code_start), $function_matches);
+      preg_match('!^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{!', substr($docblocks[0]['source'], $code_start), $function_matches);
       $docblock['object_name'] = $function_matches[2];
       $docblock['title'] = $function_matches[2];
       $docblock['signature'] = $function_matches[1];
 
       // We rely on the Drupal coding convention that functions are closed in column 1.
-      $code_end = strpos($source, "\n}", $code_start) + 2;
-      $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+      $code_end = strpos($docblocks[0]['source'], "\n}", $code_start) + 2;
+      $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
       $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
       // Find parameter definitions.
@@ -162,7 +138,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         $docblock['parameters'] .= "\n\n". $param_match[1][0];
         $offset = $param_match[0][1];
       }
-      $docblock['parameters'] = api_format_documentation($docblock['parameters'], $branch_name);
+      $docblock['parameters'] = api_format_documentation($docblock['parameters'], $docblocks[0]['branch_name']);
 
       // Find return value definitions.
       $return_matches = array();
@@ -172,7 +148,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
         $docblock['return_value'] .= "\n\n". $return_match[1];
       }
-      $docblock['return_value'] = api_format_documentation($docblock['return_value'], $branch_name);
+      $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
 
       $docblock['function calls'] = api_parse_function_calls($docblock['code']);
 
@@ -188,16 +164,16 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    else if (substr($source, $code_start, 6) == 'define') {
+    else if (substr($docblocks[0]['source'], $code_start, 6) == 'define') {
       $constant_matches = array();
 
       $docblock['object_type'] = 'constant';
-      preg_match('!^define\([\'"]([a-zA-Z0-9_]+)[\'"]!', substr($source, $code_start), $constant_matches);
+      preg_match('!^define\([\'"]([a-zA-Z0-9_]+)[\'"]!', substr($docblocks[0]['source'], $code_start), $constant_matches);
       $docblock['object_name'] = $constant_matches[1];
       $docblock['title'] = $constant_matches[1];
 
-      $code_end = strpos($source, ';', $code_start) + 1;
-      $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+      $code_end = strpos($docblocks[0]['source'], ';', $code_start) + 1;
+      $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
       $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
       // Determine group membership.
@@ -212,19 +188,19 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         }
       }
     }
-    else if (substr($source, $code_start, 6) == 'global') {
+    else if (substr($docblocks[0]['source'], $code_start, 6) == 'global') {
       $global_matches = array();
       $docblock['object_type'] = 'global';
-      preg_match('!^global (\$[a-zA-Z0-9_]+)!', substr($source, $code_start), $global_matches);
+      preg_match('!^global (\$[a-zA-Z0-9_]+)!', substr($docblocks[0]['source'], $code_start), $global_matches);
 
       $docblock['object_name'] = substr($global_matches[1], 1);
       $docblock['title'] = $global_matches[1];
 
-      $code_end = strpos($source, ';', $code_start) + 1;
-      $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+      $code_end = strpos($docblocks[0]['source'], ';', $code_start) + 1;
+      $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
       $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
-      $docblock['start_line'] = substr_count(substr($source, 0, $code_start), "\n");
+      $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
 
       // Determine group membership.
       $group_matches = array();
@@ -244,11 +220,11 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
       $docblock['title'] = $mainpage_matches[1];
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
       $docblock['object_type'] = 'mainpage';
-      $docblock['object_name'] = $branch_name;
+      $docblock['object_name'] = $docblocks[0]['branch_name'];
     }
     elseif (strpos($docblock['content'], '@file') !== FALSE) {
       $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
-      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $branch_name);
+      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $docblocks[0]['branch_name']);
       $docblocks[0]['summary'] = api_documentation_summary($docblocks[0]['documentation']);
     }
     elseif (strpos($docblock['content'], '@defgroup') !== FALSE) {
@@ -260,7 +236,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
         $docblock['object_type'] = 'group';
       }
       else {
-        watchdog('api', 'Malformed @defgroup in %file at line %line.', array('%file' => $file_path, '%line' => $docblock['start_line']), WATCHDOG_NOTICE);
+        watchdog('api', 'Malformed @defgroup in %file at line %line.', array('%file' => $docblocks[0]['file_path'], '%line' => $docblock['start_line']), WATCHDOG_NOTICE);
       }
     }
 
@@ -284,7 +260,7 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     }
 
     if ($docblock['object_type'] != '') {
-      $docblock['documentation'] = api_format_documentation($docblock['content'], $branch_name);
+      $docblock['documentation'] = api_format_documentation($docblock['content'], $docblocks[0]['branch_name']);
       $docblock['summary'] = api_documentation_summary($docblock['documentation']);
       $docblocks[] = $docblock;
     }
@@ -292,13 +268,13 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
 
   // Find undocumented functions.
   $function_matches = array();
-  preg_match_all('%(?<!\*/\n)^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{%sm', $source, $function_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+  preg_match_all('%(?<!\*/\n)^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{%sm', $docblocks[0]['source'], $function_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
   foreach ($function_matches as $function_match) {
     $docblock = array(
       'object_name' => $function_match[2][0],
-      'branch_name' => $branch_name,
+      'branch_name' => $docblocks[0]['branch_name'],
       'object_type' => 'function',
-      'file_name' => $file_name,
+      'file_name' => $docblocks[0]['file_name'],
       'title' => $function_match[2][0],
       'summary' => '',
       'documentation' => '',
@@ -309,26 +285,26 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     $docblock['groups'] = array();
 
     $code_start = $function_match[0][1];
-    $code_end = strpos($source, "\n}", $code_start) + 2;
-    $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+    $code_end = strpos($docblocks[0]['source'], "\n}", $code_start) + 2;
+    $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
     $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
     $docblock['function calls'] = api_parse_function_calls($docblock['code']);
 
-    $docblock['start_line'] = substr_count(substr($source, 0, $code_start), "\n");
+    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
 
     $docblocks[] = $docblock;
   }
 
   // Find undocumented constants.
   $constant_matches = array();
-  preg_match_all('%(?<!\*/\n)^define\([\'"]([a-zA-Z0-9_]+)[\'"]%sm', $source, $constant_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+  preg_match_all('%(?<!\*/\n)^define\([\'"]([a-zA-Z0-9_]+)[\'"]%sm', $docblocks[0]['source'], $constant_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
   foreach ($constant_matches as $constant_match) {
     $docblock = array(
       'object_name' => $constant_match[1][0],
-      'branch_name' => $branch_name,
+      'branch_name' => $docblocks[0]['branch_name'],
       'object_type' => 'constant',
-      'file_name' => $file_name,
+      'file_name' => $docblocks[0]['file_name'],
       'title' => $constant_match[1][0],
       'summary' => '',
       'documentation' => '',
@@ -336,24 +312,24 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     $docblock['groups'] = array();
 
     $code_start = $constant_match[0][1];
-    $code_end = strpos($source, ';', $code_start) + 1;
-    $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+    $code_end = strpos($docblocks[0]['source'], ';', $code_start) + 1;
+    $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
     $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
-    $docblock['start_line'] = substr_count(substr($source, 0, $code_start), "\n");
+    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
 
     $docblocks[] = $docblock;
   }
 
   // Find undocumented globals.
   $global_matches = array();
-  preg_match_all('%(?<!\*/\n)^global (\$[a-zA-Z0-9_]+)%sm', $source, $global_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+  preg_match_all('%(?<!\*/\n)^global (\$[a-zA-Z0-9_]+)%sm', $docblocks[0]['source'], $global_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
   foreach ($global_matches as $global_match) {
     $docblock = array(
       'object_name' => $global_match[1][0],
-      'branch_name' => $branch_name,
+      'branch_name' => $docblocks[0]['branch_name'],
       'object_type' => 'global',
-      'file_name' => $file_name,
+      'file_name' => $docblocks[0]['file_name'],
       'title' => $global_match[1][0],
       'summary' => '',
       'documentation' => '',
@@ -362,23 +338,16 @@ function api_parse_php_file($file_path, $branch_name, $file_name) {
     $docblock['groups'] = array();
 
     $code_start = $global_match[0][1];
-    $code_end = strpos($source, ';', $code_start) + 1;
-    $docblock['code'] = substr($source, $code_start, $code_end - $code_start);
+    $code_end = strpos($docblocks[0]['source'], ';', $code_start) + 1;
+    $docblock['code'] = substr($docblocks[0]['source'], $code_start, $code_end - $code_start);
     $docblock['code'] = api_format_php("<?php\n". $docblock['code'] ."\n?>");
 
-    $docblock['start_line'] = substr_count(substr($source, 0, $code_start), "\n");
+    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $code_start), "\n");
 
     $docblocks[] = $docblock;
   }
 
-  api_save_documentation($docblocks, $branch_name, $file_name);
-}
-
-function api_parse_get_version($source) {
-  $version_match = array();
-  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $source, $version_match)) {
-    return $version_match[1] .' (checked in on '. $version_match[2] .' at '. $version_match[3] .' by '. $version_match[4] .')';
-  }
+  api_save_documentation($docblocks);
 }
 
 /**
@@ -401,20 +370,14 @@ function api_parse_function_calls($code) {
  *
  * @param $docblocks
  *   An array containing information about the documentation block.
- * @param $branch_name
- *   If set, old documentation will be removed for the branch and file name.
- * @param $file_name
- *   If set, old documentation will be removed for the branch and file name.
  * @return
  *   The documentation ID of the inserted/updated construct.
  */
-function api_save_documentation($docblocks, $branch_name = NULL, $file_name = NULL) {
-  if (!is_null($branch_name)) {
-    $old_dids = array();
-    $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s' AND file_name = '%s'", $branch_name, $file_name);
-    while ($object = db_fetch_object($result)) {
-      $old_dids[] = $object->did;
-    }
+function api_save_documentation($docblocks) {
+  $old_dids = array();
+  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s' AND file_name = '%s'", $docblocks[0]['branch_name'], $docblocks[0]['file_name']);
+  while ($object = db_fetch_object($result)) {
+    $old_dids[] = $object->did;
   }
 
   $dids = array();
@@ -464,15 +427,13 @@ function api_save_documentation($docblocks, $branch_name = NULL, $file_name = NU
     $dids[] = $did;
   }
 
-  if (!is_null($branch_name)) {
-    $old_dids = array_diff($old_dids, $dids);
-    if (count($old_dids) > 0) {
-      $old_dids = implode(',', $old_dids);
-      db_query('DELETE FROM {api_documentation} WHERE did IN (%s)', $old_dids);
-      db_query('DELETE FROM {api_file} WHERE did IN (%s)', $old_dids);
-      db_query('DELETE FROM {api_function} WHERE did IN (%s)', $old_dids);
-      db_query('DELETE FROM {api_reference_storage} WHERE from_did IN (%s) OR to_did IN (%s)', $old_dids, $old_dids);
-    }
+  $old_dids = array_diff($old_dids, $dids);
+  if (count($old_dids) > 0) {
+    $old_dids = implode(',', $old_dids);
+    db_query('DELETE FROM {api_documentation} WHERE did IN (%s)', $old_dids);
+    db_query('DELETE FROM {api_file} WHERE did IN (%s)', $old_dids);
+    db_query('DELETE FROM {api_function} WHERE did IN (%s)', $old_dids);
+    db_query('DELETE FROM {api_reference_storage} WHERE from_did IN (%s) OR to_did IN (%s)', $old_dids, $old_dids);
   }
 
   api_schedule_shutdown();
@@ -844,7 +805,7 @@ function api_update_branch($branch) {
         $parse = TRUE;
       }
       if ($parse) {
-        job_queue_add($parse_functions[$matches[1]], t('API parse %branch %file'), array($path, '%branch' => $branch->branch_name, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
+        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch->branch_name, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
       }
     }
   }
