@@ -154,7 +154,7 @@ function api_parse_php_file($docblock) {
 
       $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
     }
-    elseif (strpos($docblock['content'], '@mainpage') !== FALSE) {
+    elseif (preg_match('/' . API_RE_TAG_START . 'mainpage/', $docblock['content'])) {
       $mainpage_matches = array();
       preg_match('/' . API_RE_TAG_START . 'mainpage (.*?)\n/', $docblock['content'], $mainpage_matches);
       $docblock['title'] = $mainpage_matches[1];
@@ -162,11 +162,11 @@ function api_parse_php_file($docblock) {
       $docblock['object_type'] = 'mainpage';
       $docblock['object_name'] = $docblocks[0]['branch_name'];
     }
-    elseif (strpos($docblock['content'], '@file') !== FALSE) {
+    elseif (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
       $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
       $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $docblocks[0]['branch_name']);
     }
-    elseif (strpos($docblock['content'], '@defgroup') !== FALSE) {
+    elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
       $group_matches = array();
       if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n/', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
@@ -191,7 +191,7 @@ function api_parse_php_file($docblock) {
         $docblock['groups'][] = $group_id;
       }
     }
-    if (strpos($docblock['content'], '@{') !== FALSE) {
+    if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
       if ($docblock['object_type'] == 'group') {
         array_push($nested_groups, $docblock['object_name']);
       }
@@ -205,7 +205,7 @@ function api_parse_php_file($docblock) {
         }
       }
     }
-    if (strpos($docblock['content'], '@}') !== FALSE) {
+    if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
       array_pop($nested_groups);
     }
 
