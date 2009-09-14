@@ -84,11 +84,9 @@ function api_parse_html_file($docblock) {
 function api_parse_php_file($docblock) {
   $docblock['code'] = api_format_php($docblock['source']);
   $docblocks = array($docblock);
-  $nested_groups = array();
 
   $docblock_matches = array();
   preg_match_all('!/\*\*(.*?)\*/!s', $docblocks[0]['source'], $docblock_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
-
   foreach ($docblock_matches as $docblock_match) {
     $docblock = array(
       'object_name' => '',
@@ -96,14 +94,14 @@ function api_parse_php_file($docblock) {
       'file_name' => $docblocks[0]['file_name'],
       'title' => '',
       'documentation' => '',
+      'content' => str_replace(array("\n *", "\n "), array("\n", "\n"), $docblock_match[1][0]),
+      'start' => $docblock_match[0][1],
+      'length' => strlen($docblock_match[0][0]),
     );
-    $docblock['content'] = str_replace(array("\n *", "\n "), array("\n", "\n"), $docblock_match[1][0]);
-    $docblock['start'] = $docblock_match[0][1];
-    $docblock['length'] = strlen($docblock_match[0][0]);
     $docblock['code_start'] = $docblock['start'] + $docblock['length'] + 1;
 
     // Determine what kind of documentation block this is.
-    if (substr($docblocks[0]['source'], $docblock['code_start'], 8) == 'function') {
+    if (substr($docblocks[0]['source'], $docblock['code_start'], 8) === 'function') {
       $docblock['object_type'] = 'function';
       $function_matches = array();
       preg_match('!^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{!', substr($docblocks[0]['source'], $docblock['code_start']), $function_matches);
@@ -135,7 +133,7 @@ function api_parse_php_file($docblock) {
       }
       $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
     }
-    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) == 'define') {
+    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) === 'define') {
       $docblock['object_type'] = 'constant';
       $constant_matches = array();
       preg_match('!^define\([\'"]([a-zA-Z0-9_]+)[\'"]!', substr($docblocks[0]['source'], $docblock['code_start']), $constant_matches);
@@ -144,7 +142,7 @@ function api_parse_php_file($docblock) {
 
       $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
     }
-    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) == 'global') {
+    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) === 'global') {
       $docblock['object_type'] = 'global';
       $global_matches = array();
       preg_match('!^global (\$[a-zA-Z0-9_]+)!', substr($docblocks[0]['source'], $docblock['code_start']), $global_matches);
@@ -179,40 +177,7 @@ function api_parse_php_file($docblock) {
       }
     }
 
-    // Determine group membership.
-    $group_matches = array();
-    preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
-    $docblock['groups'] = $group_matches[2];
-    $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
-
-    // Handle nested function groups.
-    foreach ($nested_groups as $group_id) {
-      if (!empty($group_id)) {
-        $docblock['groups'][] = $group_id;
-      }
-    }
-    if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
-      if ($docblock['object_type'] == 'group') {
-        array_push($nested_groups, $docblock['object_name']);
-      }
-      else {
-        $group_matches = array();
-        if (preg_match('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches)) {
-          array_push($nested_groups, $group_matches[2]);
-        }
-        else {
-          array_push($nested_groups, '');
-        }
-      }
-    }
-    if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
-      array_pop($nested_groups);
-    }
-
-    if ($docblock['object_type'] != '') {
-      $docblock['documentation'] = api_format_documentation($docblock['content'], $docblocks[0]['branch_name']);
-      $docblocks[] = $docblock;
-    }
+    $docblocks[] = $docblock;
   }
 
   // Find undocumented functions.
@@ -297,6 +262,7 @@ function api_parse_function_calls($code) {
  */
 function api_save_documentation($docblocks) {
   $old_dids = array();
+  $nested_groups = array();
   $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s' AND file_name = '%s'", $docblocks[0]['branch_name'], $docblocks[0]['file_name']);
   while ($object = db_fetch_object($result)) {
     $old_dids[] = $object->did;
@@ -304,6 +270,43 @@ function api_save_documentation($docblocks) {
 
   $dids = array();
   foreach ($docblocks as $docblock) {
+    if ($docblock['object_type'] === '') {
+      continue;
+    }
+
+    if (!empty($docblock['content'])) {
+      // Determine group membership.
+      $group_matches = array();
+      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
+      $docblock['groups'] = $group_matches[2];
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
+
+      // Handle nested function groups.
+      foreach ($nested_groups as $group_id) {
+        if (!empty($group_id)) {
+          $docblock['groups'][] = $group_id;
+        }
+      }
+      if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
+        if ($docblock['object_type'] === 'group') {
+          array_push($nested_groups, $docblock['object_name']);
+        }
+        else {
+          $group_matches = array();
+          if (preg_match('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches)) {
+            array_push($nested_groups, $group_matches[2]);
+          }
+          else {
+            array_push($nested_groups, '');
+          }
+        }
+      }
+      if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
+        array_pop($nested_groups);
+      }
+
+      $docblock['documentation'] = api_format_documentation($docblock['content'], $docblocks[0]['branch_name']);
+    }
     if (!isset($docblock['summary'])) {
       $docblock['summary'] = api_documentation_summary($docblock['documentation']);
     }
