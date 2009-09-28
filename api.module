@@ -833,7 +833,8 @@ function api_search_redirect() {
   else {
     $tail = implode('/', $args);
   }
-  drupal_goto('api/search/'. variable_get('api_default_branch', NULL) .'/'. $tail);
+  $_REQUEST['destination'] = 'api/search/'. variable_get('api_default_branch', NULL) .'/'. $tail;
+  drupal_goto();
 }
 
 /**
