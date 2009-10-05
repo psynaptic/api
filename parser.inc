@@ -111,27 +111,6 @@ function api_parse_php_file($docblock) {
 
       // We rely on the Drupal coding convention that functions are closed in column 1.
       $docblock['code_end'] = strpos($docblocks[0]['source'], "\n}", $docblock['code_start']) + 2;
-
-      // Find parameter definitions.
-      $param_match = array();
-      $offset = 0;
-      $docblock['parameters'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
-        $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
-        $docblock['parameters'] .= "\n\n". $param_match[1][0];
-        $offset = $param_match[0][1];
-      }
-      $docblock['parameters'] = api_format_documentation($docblock['parameters'], $docblocks[0]['branch_name']);
-
-      // Find return value definitions.
-      $return_matches = array();
-      $docblock['return_value'] = '';
-      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|\n\n|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
-      foreach ($return_matches as $return_match) {
-        $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
-        $docblock['return_value'] .= "\n\n". $return_match[1];
-      }
-      $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
     }
     elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) === 'define') {
       $docblock['object_type'] = 'constant';
@@ -275,6 +254,27 @@ function api_save_documentation($docblocks) {
     }
 
     if (!empty($docblock['content'])) {
+      // Find parameter definitions.
+      $param_match = array();
+      $offset = 0;
+      $docblock['parameters'] = '';
+      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
+        $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
+        $docblock['parameters'] .= "\n\n". $param_match[1][0];
+        $offset = $param_match[0][1];
+      }
+      $docblock['parameters'] = api_format_documentation($docblock['parameters'], $docblocks[0]['branch_name']);
+
+      // Find return value definitions.
+      $return_matches = array();
+      $docblock['return_value'] = '';
+      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|\n\n|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
+      foreach ($return_matches as $return_match) {
+        $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
+        $docblock['return_value'] .= "\n\n". $return_match[1];
+      }
+      $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
+
       // Determine group membership.
       $group_matches = array();
       preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
