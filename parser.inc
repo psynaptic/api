@@ -382,7 +382,6 @@ function api_save_documentation($docblocks) {
  */
 function api_format_documentation($documentation, $branch_name) {
   // Don't do processing on empty text (so we don't end up with empty paragraphs).
-  $documentation = trim($documentation);
   if (empty($documentation)) {
     return '';
   }
