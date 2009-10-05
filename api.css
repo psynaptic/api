@@ -104,3 +104,9 @@ dl.api-related-topics dd {
 #api-search-form #autocomplete {
   width: 250px !important;
 }
+
+/* Other styles */
+.api-defined {
+  color: #9d9d93;
+  font-size: 0.8333em;
+}
