@@ -131,30 +131,6 @@ function api_parse_php_file($docblock) {
 
       $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
     }
-    elseif (preg_match('/' . API_RE_TAG_START . 'mainpage/', $docblock['content'])) {
-      $mainpage_matches = array();
-      preg_match('/' . API_RE_TAG_START . 'mainpage (.*?)\n/', $docblock['content'], $mainpage_matches);
-      $docblock['title'] = $mainpage_matches[1];
-      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
-      $docblock['object_type'] = 'mainpage';
-      $docblock['object_name'] = $docblocks[0]['branch_name'];
-    }
-    elseif (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
-      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
-      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $docblocks[0]['branch_name']);
-    }
-    elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
-      $group_matches = array();
-      if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n/', $docblock['content'], $group_matches)) {
-        $docblock['object_name'] = $group_matches[1];
-        $docblock['title'] = $group_matches[2];
-        $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'defgroup.*?\n/', '', $docblock['content']);
-        $docblock['object_type'] = 'group';
-      }
-      else {
-        watchdog('api', 'Malformed @defgroup in %file at line %line.', array('%file' => $docblocks[0]['file_path'], '%line' => $docblock['start_line']), WATCHDOG_NOTICE);
-      }
-    }
 
     $docblocks[] = $docblock;
   }
@@ -249,6 +225,31 @@ function api_save_documentation($docblocks) {
 
   $dids = array();
   foreach ($docblocks as $docblock) {
+    if (preg_match('/' . API_RE_TAG_START . 'mainpage/', $docblock['content'])) {
+      $mainpage_matches = array();
+      preg_match('/' . API_RE_TAG_START . 'mainpage (.*?)\n/', $docblock['content'], $mainpage_matches);
+      $docblock['title'] = $mainpage_matches[1];
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
+      $docblock['object_type'] = 'mainpage';
+      $docblock['object_name'] = $docblocks[0]['branch_name'];
+    }
+    elseif (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
+      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
+      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $docblocks[0]['branch_name']);
+    }
+    elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
+      $group_matches = array();
+      if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n/', $docblock['content'], $group_matches)) {
+        $docblock['object_name'] = $group_matches[1];
+        $docblock['title'] = $group_matches[2];
+        $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'defgroup.*?\n/', '', $docblock['content']);
+        $docblock['object_type'] = 'group';
+      }
+      else {
+        watchdog('api', 'Malformed @defgroup in %file at line %line.', array('%file' => $docblocks[0]['file_path'], '%line' => $docblock['start_line']), WATCHDOG_NOTICE);
+      }
+    }
+
     if ($docblock['object_type'] === '') {
       continue;
     }
