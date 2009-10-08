@@ -26,6 +26,7 @@ function api_schema() {
       'summary' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
       'documentation' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
       'code' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
+      'start_line' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
     ),
     'primary key' => array('did'),
     'unique keys' => array(
@@ -49,7 +50,6 @@ function api_schema() {
     'fields' => array(
       'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'signature' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'start_line' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'parameters' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
       'return_value' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
     ),
@@ -335,6 +335,18 @@ function api_update_17() {
 function api_update_18() {
   variable_del('api_files_per_cron');
   return array();
+}
+
+/**
+ * Move start line next to code.
+ */
+function api_update_19() {
+  $return = array();
+
+  db_drop_field($return, 'api_function', 'start_line');
+  db_add_field($return, 'api_documentation', 'start_line', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+
+  return $return;
 }
 
 function api_uninstall() {

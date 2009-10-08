@@ -311,19 +311,18 @@ function api_save_documentation($docblocks) {
     if (!isset($docblock['summary'])) {
       $docblock['summary'] = api_documentation_summary($docblock['documentation']);
     }
+    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $docblock['code_start']), "\n");
     if (!isset($docblock['code'])) {
       if (isset($docblock['code_end'])) {
-        $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $docblock['code_start']), "\n");
         $docblock['code'] = api_format_php("<?php\n". substr($docblocks[0]['source'], $docblock['code_start'], $docblock['code_end'] - $docblock['code_start']) ."\n?>");
       }
       else {
-        $docblock['start_line'] = 0;
         $docblock['code'] = '';
       }
     }
     $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_name = '%s' AND object_type = '%s'", $docblock['object_name'], $docblocks[0]['branch_name'], $docblock['object_type'], $docblock['file_name']));
     if ($did > 0) {
-      db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s' WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $did);
+      db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $did);
     }
     else {
       $node = new stdClass();
@@ -334,13 +333,13 @@ function api_save_documentation($docblocks) {
       }
       node_save($node);
       $did = $node->nid;
-      db_query("INSERT INTO {api_documentation} (did, object_name, branch_name, object_type, title, file_name, summary, documentation, code) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", $did, $docblock['object_name'], $docblocks[0]['branch_name'], $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code']);
+      db_query("INSERT INTO {api_documentation} (did, object_name, branch_name, object_type, title, file_name, summary, documentation, code, start_line) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $did, $docblock['object_name'], $docblocks[0]['branch_name'], $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line']);
     }
 
     switch ($docblock['object_type']) {
       case 'function':
         db_query('DELETE FROM {api_function} WHERE did = %d', $did);
-        db_query("INSERT INTO {api_function} (did, signature, start_line, parameters, return_value) VALUES (%d, '%s', %d, '%s', '%s')", $did, $docblock['signature'], $docblock['start_line'], $docblock['parameters'], $docblock['return_value']);
+        db_query("INSERT INTO {api_function} (did, signature, parameters, return_value) VALUES (%d, '%s', '%s', '%s')", $did, $docblock['signature'], $docblock['parameters'], $docblock['return_value']);
 
         if (!empty($docblock['code'])) {
           db_query("DELETE FROM {api_reference_storage} WHERE branch_name = '%s' AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch_name'], $did);

@@ -12,3 +12,5 @@
 <h3><?php print t('Functions') ?></h3>
 <?php print $functions ?>
 <?php } ?>
+
+<?php print $defined; ?>

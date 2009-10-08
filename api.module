@@ -499,6 +499,12 @@ function api_theme() {
       ),
       'template' => 'templates/api-expandable',
     ),
+    'api_defined' => array(
+      'arguments' => array(
+        'object' => NULL,
+      ),
+      'template' => 'templates/api-defined',
+    ),
     'api_related_topics' => array(
       'arguments' => array(
         'topics' => array(),
@@ -554,6 +560,7 @@ function api_theme() {
     ),
     'api_group_page' => array(
       'arguments' => array(
+        'group' => NULL,
         'documentation' => NULL,
         'constants' => NULL,
         'globals' => NULL,
@@ -568,6 +575,22 @@ function api_theme() {
       'template' => 'templates/api-branch-default-page'
     ),
   );
+}
+
+function api_preprocess_api_function_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['function']);
+}
+
+function api_preprocess_api_constant_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['constant']);
+}
+
+function api_preprocess_api_global_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['global']);
+}
+
+function api_preprocess_api_group_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['group']);
 }
 
 function api_init() {
@@ -1304,7 +1327,7 @@ function api_page_group($group) {
     $functions = theme('table', $header, $rows['function']);
   }
 
-  $output = theme('api_group_page', $documentation, $constants, $globals, $functions);
+  $output = theme('api_group_page', $group, $documentation, $constants, $globals, $functions);
   $output .= _api_add_comments($group);
   return $output;
 }

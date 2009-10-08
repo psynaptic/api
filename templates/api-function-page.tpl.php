@@ -30,6 +30,6 @@
 
 <?php print $call ?>
 
-<h3><?php print t('Code') ?></h3>
-<p class="api-defined"><?php print t('!file, line @start_line', array('!file' => api_file_link($function), '@start_line' => $function->start_line)) ?></p>
-<?php print $code ?>
+<h3><?php print t('Code'); ?></h3>
+<?php print $defined; ?>
+<?php print $code; ?>
