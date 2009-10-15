@@ -1,22 +1,29 @@
 <?php
 
 function api_file_redirect() {
+  $branches = api_get_branches();
+  $branch = $branches[variable_get('api_default_branch', NULL)];
+
   $args = func_get_args();
   $suffix = '';
   $file = new StdClass();
   $file->object_type = 'file';
-  $file->branch_name = db_result(db_query("SELECT branch_name FROM {api_branch} WHERE branch_id = %d", variable_get('api_default_branch', NULL)));
+  $file->branch_name = $branch->branch_name;
 
   $end = count($args) - 1;
   if (in_array($args[$end], array('source', 'documentation'))) {
     $suffix = '/' . $args[$end];
     $end -= 1;
   }
-  if (db_result(db_query("SELECT 1 FROM {api_branch} WHERE branch_name = '%s'", $args[$end]))) {
-    $file->branch_name = $args[$end];
-    $end -= 1;
+  foreach ($branches as $b) {
+    if ($b->branch_name === $args[$end]) {
+      $branch = $b;
+      $file->branch_name = $args[$end];
+      $end -= 1;
+      break
+    }
   }
   $file->object_name = implode('/', array_slice($args, 0, $end + 1));
 
-  drupal_goto(api_url($file) . $suffix);
+  drupal_goto(api_url($branch, $file) . $suffix);
 }

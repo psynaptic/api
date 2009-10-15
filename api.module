@@ -253,7 +253,7 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename'] = array(
+  $items['api/' . $default_branch->project . '/%api_filename'] = array(
     'title' => 'File',
     'load arguments' => array($default_branch->branch_name),
     'page callback' => 'api_page_file',
@@ -377,7 +377,7 @@ function api_menu() {
       'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
     );
 
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name] = array(
+    $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name] = array(
       'title' => $branch->title,
       'load arguments' => array($branch->branch_name),
       'page callback' => 'api_page_file',
@@ -386,13 +386,13 @@ function api_menu() {
       'access arguments' => $access_arguments,
       'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
     );
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name .'/documentation'] = array(
+    $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name .'/documentation'] = array(
       'title' => 'View documentation',
       'load arguments' => array($branch->branch_name),
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -10,
     );
-    $items['api/' . variable_get('api_default_project', 'drupal') . '/%api_filename/'. $branch->branch_name .'/source'] = array(
+    $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name .'/source'] = array(
       'title' => 'View source',
       'load arguments' => array($branch->branch_name),
       'page callback' => 'api_page_file_source',
@@ -501,6 +501,7 @@ function api_theme() {
     ),
     'api_defined' => array(
       'arguments' => array(
+        'branch' => NULL,
         'object' => NULL,
       ),
       'template' => 'templates/api-defined',
@@ -519,6 +520,7 @@ function api_theme() {
     ),
     'api_function_page' => array(
       'arguments' => array(
+        'branch' => NULL,
         'function' => NULL,
         'signatures' => NULL,
         'documentation' => NULL,
@@ -532,6 +534,7 @@ function api_theme() {
     ),
     'api_constant_page' => array(
       'arguments' => array(
+        'branch' => NULL,
         'constant' => NULL,
         'documentation' => NULL,
         'code' => NULL,
@@ -541,6 +544,7 @@ function api_theme() {
     ),
     'api_global_page' => array(
       'arguments' => array(
+        'branch' => NULL,
         'global' => NULL,
         'documentation' => NULL,
         'code' => NULL,
@@ -560,6 +564,7 @@ function api_theme() {
     ),
     'api_group_page' => array(
       'arguments' => array(
+        'branch' => NULL,
         'group' => NULL,
         'documentation' => NULL,
         'constants' => NULL,
@@ -578,19 +583,19 @@ function api_theme() {
 }
 
 function api_preprocess_api_function_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['function']);
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['function']);
 }
 
 function api_preprocess_api_constant_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['constant']);
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['constant']);
 }
 
 function api_preprocess_api_global_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['global']);
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['global']);
 }
 
 function api_preprocess_api_group_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['group']);
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['group']);
 }
 
 function api_init() {
@@ -702,14 +707,14 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
  * @return
  *   A URL string.
  */
-function api_url($object, $file = FALSE) {
+function api_url($branch, $object, $file = FALSE) {
   // api_default_project is a placeholder for when we have real project
   // support.
   if ($file) {
-    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->branch_name;
+    return 'api/' . $branch->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->branch_name;
   }
   elseif ($object->object_type === 'file') {
-    return 'api/' . variable_get('api_default_project', 'drupal') . '/' . str_replace('/', '--', $object->object_name) . '/' . $object->branch_name;
+    return 'api/' . $branch->project . '/' . str_replace('/', '--', $object->object_name) . '/' . $object->branch_name;
   }
   else {
     return 'api/' . $object->object_type . '/' . $object->object_name . '/' . $object->branch_name;
@@ -846,7 +851,7 @@ function api_search_listing($branch) {
   if ($count == 1) {
     // Exact match.
     $item = db_fetch_object(db_query("SELECT * FROM {api_documentation} WHERE branch_name = '%s' AND title = '%s'", $branch->branch_name, $search_text));
-    drupal_goto(api_url($item));
+    drupal_goto(api_url($branch, $item));
   }
   else {
     // Wildcard search.
@@ -998,8 +1003,8 @@ function api_render_listing($result, $branch, $empty_message = NULL) {
   $rows = array();
   while ($object = db_fetch_object($result)) {
     $rows[] = array(
-      l($object->title, api_url($object)),
-      '<small>'. api_file_link($object) .'</small>',
+      l($object->title, api_url($branch, $object)),
+      '<small>'. api_file_link($branch, $object) .'</small>',
       api_link_documentation($object->summary, $branch),
     );
   }
@@ -1036,7 +1041,7 @@ function api_page_function($branch, $function) {
   drupal_set_breadcrumb(array(
     l(t('Home'), ''),
     l(t('API reference'), 'api'),
-    l(basename($function->file_name), api_url($function, TRUE)),
+    l(basename($function->file_name), api_url($branch, $function, TRUE)),
   ));
 
   $last_signature = '';
@@ -1137,8 +1142,8 @@ function api_page_function($branch, $function) {
     $call_functions = array();
     while ($object = db_fetch_object($result)) {
       $call_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
+        'function' => l($object->title, api_url($branch, $object)),
+        'file' => api_file_link($branch, $object),
         'description' => api_link_documentation($object->summary, $branch),
       );
     }
@@ -1146,7 +1151,7 @@ function api_page_function($branch, $function) {
     $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
   }
 
-  $output = theme('api_function_page', $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code);
+  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code);
   $output .= _api_add_comments($function);
   return $output;
 }
@@ -1161,7 +1166,7 @@ function api_page_constant($branch, $constant) {
   $code = api_link_code($constant->code, $branch);
   $related_topics = api_related_topics($constant->did, $branch);
 
-  $output = theme('api_constant_page', $constant, $documentation, $code, $related_topics);
+  $output = theme('api_constant_page', $branch, $constant, $documentation, $code, $related_topics);
   $output .= _api_add_comments($constant);
   return $output;
 }
@@ -1176,7 +1181,7 @@ function api_page_global($branch, $global) {
   $related_topics = api_related_topics($global->did, $branch);
   $code = api_link_code($global->code, $branch);
 
-  $output = theme('api_global_page', $global, $documentation, $code, $related_topics);
+  $output = theme('api_global_page', $branch, $global, $documentation, $code, $related_topics);
   $output .= _api_add_comments($global);
   return $output;
 }
@@ -1196,7 +1201,7 @@ function api_page_file($branch, $file) {
   );
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, api_url($object)),
+      l($object->title, api_url($branch, $object)),
       api_link_documentation($object->summary, $branch),
     );
   }
@@ -1274,8 +1279,8 @@ function api_page_group($branch, $group) {
   $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type, d.branch_name FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, api_url($object)),
-      '<small>'. api_file_link($object) .'</small>',
+      l($object->title, api_url($branch, $object)),
+      '<small>'. api_file_link($branch, $object) .'</small>',
       api_link_documentation($object->summary, $branch),
     );
   }
@@ -1297,7 +1302,7 @@ function api_page_group($branch, $group) {
     $functions = theme('table', $header, $rows['function']);
   }
 
-  $output = theme('api_group_page', $group, $documentation, $constants, $globals, $functions);
+  $output = theme('api_group_page', $branch, $group, $documentation, $constants, $globals, $functions);
   $output .= _api_add_comments($group);
   return $output;
 }
@@ -1318,8 +1323,8 @@ function api_related_topics($did, $branch) {
   return '';
 }
 
-function api_file_link($object) {
-  return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($object, TRUE));
+function api_file_link($branch, $object) {
+  return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($branch, $object, TRUE));
 }
 
 function api_cron() {
@@ -1492,7 +1497,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
     return $prepend . l($text, 'api/function/'. $local_objects['function'][$name]->object_name .'/'. $branch->branch_name, array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['file'])) {
-    return l($text, api_url($local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local')));
+    return l($text, api_url($branch, $local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local')));
   }
   elseif (array_key_exists($name, $local_objects['constant'])) {
     return l($text, 'api/constant/'. $local_objects['constant'][$name]->object_name .'/'. $branch->branch_name, array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local')));
