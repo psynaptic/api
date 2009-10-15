@@ -26,8 +26,7 @@ function api_drush_reparse($branch_or_file = NULL) {
     db_query("UPDATE {api_file} SET modified = 52");
   }
   else {
-    $branches = api_get_branches();
-    if (isset($branches[$branch_or_file])) {
+    if (db_result(db_query("SELECT 1 FROM {api_branch} WHERE branch_name = '%s'", $branch_or_file))) {
       // Reparse a branch.
       db_query("UPDATE {api_file} f INNER JOIN {api_documentation} d ON d.object_type = 'file' AND d.did = f.did SET f.modified = 52 WHERE d.branch_name = '%s'", $branch_or_file);
     }

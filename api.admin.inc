@@ -1,5 +1,5 @@
 <?php
-// $Id:
+// $Id$
 
 function api_page_admin_form() {
   $branches = api_get_branches();
@@ -10,18 +10,21 @@ function api_page_admin_form() {
       '#theme' => 'api_branch_table',
     );
     foreach ($branches as $branch) {
-      $form['branches'][$branch->branch_name]['default_branch'] = array(
+      $form['branches'][$branch->branch_id]['default_branch'] = array(
         '#type' => 'radio',
         '#default_value' => variable_get('api_default_branch', NULL),
-        '#return_value' => $branch->branch_name,
+        '#return_value' => $branch->branch_id,
       );
-      $form['branches'][$branch->branch_name]['title'] = array(
-        '#value' => l($branch->title, 'admin/settings/api/branches/'. $branch->branch_name),
+      $form['branches'][$branch->branch_id]['project'] = array(
+        '#value' => $branch->project,
       );
-      $form['branches'][$branch->branch_name]['branch_name'] = array(
+      $form['branches'][$branch->branch_id]['title'] = array(
+        '#value' => l($branch->title, 'admin/settings/api/branches/'. $branch->branch_id),
+      );
+      $form['branches'][$branch->branch_id]['branch_name'] = array(
         '#value' => $branch->branch_name,
       );
-      $form['branches'][$branch->branch_name]['directories'] = array(
+      $form['branches'][$branch->branch_id]['directories'] = array(
         '#value' => str_replace("\n", '<br />', check_plain($branch->directories)),
       );
     }
@@ -43,6 +46,7 @@ function api_page_admin_form() {
 function theme_api_branch_table($element) {
   $header = array(
     t('Default'),
+    t('Project'),
     t('Page label'),
     t('URL label'),
     t('Directories'),
@@ -69,19 +73,28 @@ function api_page_admin_form_submit($form, &$form_state) {
   drupal_set_message(t('Changes saved.'));
 }
 
-function api_branch_edit_form($form_state, $branch_name = NULL) {
+function api_branch_edit_form($form_state, $branch_id = NULL) {
   $branches = api_get_branches();
-  if (is_null($branch_name)) {
+  if (is_null($branch_id)) {
+    $branch->project = '';
     $branch->branch_name = '';
     $branch->title = '';
     $branch->directories = '';
     $branch->excluded_directories = '';
   }
   else {
-    $branch = $branches[$branch_name];
+    $branch = $branches[$branch_id];
   }
-  $form = array();
+  $form = array(
+    '#branch' => $branch,
+  );
 
+  $form['project'] = array(
+    '#title' => t('Project'),
+    '#type' => 'textfield',
+    '#default_value' => $branch->project,
+    '#required' => TRUE,
+  );
   $form['branch_name'] = array(
     '#title' => t('URL label'),
     '#type' => 'textfield',
@@ -115,9 +128,9 @@ function api_branch_edit_form($form_state, $branch_name = NULL) {
     '#type' => 'submit',
     '#value' => t('Save branch'),
   );
-  if (!is_null($branch_name)) {
+  if (!is_null($branch_id)) {
     $form[] = array(
-      '#value' => l(t('Delete'), 'admin/settings/api/branches/'. $branch->branch_name .'/delete'),
+      '#value' => l(t('Delete'), 'admin/settings/api/branches/'. $branch->branch_id .'/delete'),
     );
   }
 
@@ -131,12 +144,8 @@ function api_branch_edit_form_validate($form, &$form_state) {
   }
 
   // Check for duplicate branch names.
-  $branches = api_get_branches();
-  if (!empty($form['branch_name']['#default_value'])) {
-    unset($branches[$form['branch_name']['#default_value']]);
-  }
-  if (isset($branches[$form_state['values']['branch_name']])) {
-    form_set_error('branch_name', t('%branch_name is already used by another branch.', array('%branch_name' => $form_state['values']['branch_name'])));
+  if (db_result(db_query("SELECT 1 FROM {api_branch} WHERE branch_id <> %d AND project = '%s' AND branch_name = '%s'", $form['#branch']->branch_id, $form_state['values']['project'], $form_state['values']['branch_name']))) {
+    form_set_error('branch_name', t('%project and %branch_name is already used by another branch.', array('%project' => $form_state['values']['project'], '%branch_name' => $form_state['values']['branch_name'])));
   }
 }
 
@@ -156,12 +165,14 @@ function api_check_directories($element, &$form_state) {
 }
 
 function api_branch_edit_form_submit($form, &$form_state) {
+  $branch = $form['#branch'];
+  $branch->project = $form_state['values']['project'];
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
   $branch->directories = api_clean_directory_list($form_state['values']['directories']);
   $branch->excluded_directories = api_clean_directory_list($form_state['values']['excluded_directories']);
 
-  api_save_branch($branch, $form['branch_name']['#default_value']);
+  api_save_branch($branch);
 
   drupal_set_message(t('Saved %branch_name.', array('%branch_name' => $branch->branch_name)));
   $form_state['redirect'] = 'admin/settings/api';
@@ -181,30 +192,27 @@ function api_clean_directory_list($list) {
   return implode("\n", $array);
 }
 
-function api_branch_delete_form($form_state, $branch_name) {
-  $form = array();
-  $form['branch_name'] = array(
-    '#type' => 'value',
-    '#value' => $branch_name,
-  );
-  return confirm_form($form, t('Are you sure you want to delete %branch_name?', array('%branch_name' => $branch_name)), 'admin/settings/api', NULL, t('Delete'));
+function api_branch_delete_form($form_state, $branch_id) {
+  $branches = api_get_branches();
+  return confirm_form(array('#branch' => $branches[$branch_id]), t('Are you sure you want to delete %branch_name?', array('%branch_name' => $branches[$branch_id]->branch_name)), 'admin/settings/api', NULL, t('Delete'));
 }
 
 function api_branch_delete_form_submit($form, &$form_state) {
-  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s'", $form['branch_name']['#value']);
+  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s'", $form['#branch']->branch_name);
   $dids = array();
   while($did = db_fetch_object($result)) {
     $dids[] = $did->did;
   }
-  $placeholders = db_placeholders($dids);
+  if (count($dids) > 0) {
+    $placeholders = db_placeholders($dids);
+    db_query("DELETE FROM {api_file} WHERE did IN (". $placeholders .")", $dids);
+    db_query("DELETE FROM {api_function} WHERE did IN (". $placeholders .")", $dids);
+    db_query("DELETE FROM {api_reference_storage} WHERE from_did IN (". $placeholders .") OR to_did IN (". $placeholders .")", array_merge($dids, $dids));
+    db_query("DELETE FROM {api_documentation} WHERE did IN (". $placeholders .")", $dids);
+  }
+  db_query("DELETE FROM {api_branch} WHERE branch_id = '%s'", $form['#branch']->branch_id);
 
-  db_query("DELETE FROM {api_file} WHERE did IN (". $placeholders .")", $dids);
-  db_query("DELETE FROM {api_function} WHERE did IN (". $placeholders .")", $dids);
-  db_query("DELETE FROM {api_reference_storage} WHERE from_did IN (". $placeholders .") OR to_did IN (". $placeholders .")", array_merge($dids, $dids));
-  db_query("DELETE FROM {api_documentation} WHERE did IN (". $placeholders .")", $dids);
-  db_query("DELETE FROM {api_branch} WHERE branch_name = '%s'", $form['branch_name']['#value']);
-
-  if (variable_get('api_default_branch', NULL) == $form['branch_name']['#value']) {
+  if (variable_get('api_default_branch', NULL) == $form['#branch']->branch_id) {
     variable_set('api_default_branch', NULL);
   }
 

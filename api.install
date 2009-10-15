@@ -4,13 +4,32 @@
 function api_schema() {
   $schema['api_branch'] = array(
     'fields' => array(
-      'branch_name' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
+      'branch_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'branch_name' => array(
+        'type' => 'varchar',
+        'length' => '31',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'project' => array(
+        'type' => 'varchar',
+        'length' => '31',
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'directories' => array('type' => 'text', 'not null' => TRUE),
       'excluded_directories' => array('type' => 'text', 'not null' => TRUE),
       'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
     ),
-    'primary key' => array('branch_name'),
+    'primary key' => array('branch_id'),
+    'unique keys' => array(
+      'project_name' => array('project', 'branch_name'),
+    ),
     'indexes' => array(
       'weight' => array('weight'),
     ),
@@ -345,6 +364,36 @@ function api_update_19() {
 
   db_drop_field($return, 'api_function', 'start_line');
   db_add_field($return, 'api_documentation', 'start_line', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+
+  return $return;
+}
+
+/**
+ * Add project to branches.
+ */
+function api_update_20() {
+  $return = array();
+
+  db_drop_primary_key($return, 'api_branch');
+  db_add_field($return, 'api_branch', 'branch_id', array(
+    'type' => 'serial',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ), array(
+    'primary key' => array('branch_id'),
+  ));
+  db_add_field($return, 'api_branch', 'project', array(
+    'type' => 'varchar',
+    'length' => '31',
+    'not null' => TRUE,
+    'default' => '',
+  ), array(
+    'unique keys' => array(
+      'project_name' => array('project', 'branch_name'),
+    ),
+  ));
+  $return = update_sql("UPDATE {api_branch} SET project = 'drupal'");
+  variable_set('api_default_branch', db_result(db_query("SELECT branch_id FROM {api_branch} WHERE branch_name = '%s'", variable_get('api_default_branch', NULL))));
 
   return $return;
 }
