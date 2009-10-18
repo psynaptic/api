@@ -29,10 +29,10 @@ function api_parse_php_manual($location) {
   }
 }
 
-function api_parse_file($callback, $file_path, $branch_name, $file_name) {
+function api_parse_file($callback, $file_path, $branch, $file_name) {
   $docblock = array(
     'object_name' => $file_name,
-    'branch_name' => $branch_name,
+    'branch' => $branch,
     'object_type' => 'file',
     'file_name' => $file_name,
     'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
@@ -55,7 +55,7 @@ function api_parse_file($callback, $file_path, $branch_name, $file_name) {
  * documentation.
  */
 function api_parse_text_file($docblock) {
-  $docblock['documentation'] = api_format_documentation($docblock['source'], $docblock['branch_name']);
+  $docblock['documentation'] = api_format_documentation($docblock['source']);
   $docblock['code'] = api_format_php($docblock['source']);
 
   api_save_documentation(array($docblock));
@@ -218,7 +218,7 @@ function api_parse_function_calls($code) {
 function api_save_documentation($docblocks) {
   $old_dids = array();
   $nested_groups = array();
-  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s' AND file_name = '%s'", $docblocks[0]['branch_name'], $docblocks[0]['file_name']);
+  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d AND file_name = '%s'", $docblocks[0]['branch']->branch_id, $docblocks[0]['file_name']);
   while ($object = db_fetch_object($result)) {
     $old_dids[] = $object->did;
   }
@@ -231,11 +231,11 @@ function api_save_documentation($docblocks) {
       $docblock['title'] = $mainpage_matches[1];
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
       $docblock['object_type'] = 'mainpage';
-      $docblock['object_name'] = $docblocks[0]['branch_name'];
+      $docblock['object_name'] = $docblocks[0]['branch']->branch_name;
     }
     elseif (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
       $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
-      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content'], $docblocks[0]['branch_name']);
+      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content']);
     }
     elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
       $group_matches = array();
@@ -264,7 +264,7 @@ function api_save_documentation($docblocks) {
         $docblock['parameters'] .= "\n\n". $param_match[1][0];
         $offset = $param_match[0][1];
       }
-      $docblock['parameters'] = api_format_documentation($docblock['parameters'], $docblocks[0]['branch_name']);
+      $docblock['parameters'] = api_format_documentation($docblock['parameters']);
 
       // Find return value definitions.
       $return_matches = array();
@@ -274,7 +274,7 @@ function api_save_documentation($docblocks) {
         $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
         $docblock['return_value'] .= "\n\n". $return_match[1];
       }
-      $docblock['return_value'] = api_format_documentation($docblock['return_value'], $docblocks[0]['branch_name']);
+      $docblock['return_value'] = api_format_documentation($docblock['return_value']);
 
       // Determine group membership.
       $group_matches = array();
@@ -306,7 +306,7 @@ function api_save_documentation($docblocks) {
         array_pop($nested_groups);
       }
 
-      $docblock['documentation'] = api_format_documentation($docblock['content'], $docblocks[0]['branch_name']);
+      $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
     if (!isset($docblock['summary'])) {
       $docblock['summary'] = api_documentation_summary($docblock['documentation']);
@@ -320,7 +320,7 @@ function api_save_documentation($docblocks) {
         $docblock['code'] = '';
       }
     }
-    $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_name = '%s' AND object_type = '%s'", $docblock['object_name'], $docblocks[0]['branch_name'], $docblock['object_type'], $docblock['file_name']));
+    $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($did > 0) {
       db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $did);
     }
@@ -333,7 +333,7 @@ function api_save_documentation($docblocks) {
       }
       node_save($node);
       $did = $node->nid;
-      db_query("INSERT INTO {api_documentation} (did, object_name, branch_name, object_type, title, file_name, summary, documentation, code, start_line) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $did, $docblock['object_name'], $docblocks[0]['branch_name'], $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line']);
+      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $did, $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line']);
     }
 
     switch ($docblock['object_type']) {
@@ -342,9 +342,9 @@ function api_save_documentation($docblocks) {
         db_query("INSERT INTO {api_function} (did, signature, parameters, return_value) VALUES (%d, '%s', '%s', '%s')", $did, $docblock['signature'], $docblock['parameters'], $docblock['return_value']);
 
         if (!empty($docblock['code'])) {
-          db_query("DELETE FROM {api_reference_storage} WHERE branch_name = '%s' AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch_name'], $did);
+          db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch']->branch_id, $did);
           foreach (api_parse_function_calls($docblock['code']) as $function_name) {
-            api_reference($docblocks[0]['branch_name'], 'function', $function_name, $did);
+            api_reference($docblocks[0]['branch'], 'function', $function_name, $did);
           }
         }
         break;
@@ -356,9 +356,9 @@ function api_save_documentation($docblocks) {
     }
 
     if (isset($docblock['groups'])) {
-      db_query("DELETE FROM {api_reference_storage} WHERE branch_name = '%s' AND object_type = 'group' AND from_did = %d", $docblocks[0]['branch_name'], $did);
+      db_query("DELETE FROM {api_reference_storage} WHERE branch_id = '%s' AND object_type = 'group' AND from_did = %d", $docblocks[0]['branch']->branch_id, $did);
       foreach ($docblock['groups'] as $group_name) {
-        api_reference($docblocks[0]['branch_name'], 'group', $group_name, $did);
+        api_reference($docblocks[0]['branch'], 'group', $group_name, $did);
       }
     }
 
@@ -380,7 +380,7 @@ function api_save_documentation($docblocks) {
 /**
  * Format a documentation block as HTML.
  */
-function api_format_documentation($documentation, $branch_name) {
+function api_format_documentation($documentation) {
   // Don't do processing on empty text (so we don't end up with empty paragraphs).
   if (empty($documentation)) {
     return '';
@@ -647,15 +647,16 @@ function api_format_php($code) {
  * using a scratch table and save the references to the database table after the
  * referenced object has been parsed.
  */
-function api_reference($branch_name, $to_type, $to_name, $from_did) {
+function api_reference($branch, $to_type, $to_name, $from_did) {
   static $is_php_function = array();
 
   if ($to_type == 'function' && !isset($is_php_function[$to_name])) {
+    //todo
     $is_php_function[$to_name] = (db_result(db_query("SELECT COUNT(*) FROM {api_documentation} WHERE object_name = '%s' AND branch_name = 'php'", $to_name)) == 1);
   }
 
   if ($to_type != 'function' || !$is_php_function[$to_name]) {
-    db_query("INSERT INTO {api_reference_storage} (object_name, branch_name, object_type, from_did) VALUES ('%s', '%s', '%s', %d)", $to_name, $branch_name, $to_type, $from_did);
+    db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did) VALUES ('%s', '%s', '%s', %d)", $to_name, $branch->branch_id, $to_type, $from_did);
   }
 }
 
@@ -674,7 +675,7 @@ function api_schedule_shutdown() {
  */
 function api_shutdown() {
   // Figure out all the dids of the object/branch/types.
-  db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_name = d.branch_name AND r.object_type = d.object_type SET r.to_did = d.did');
+  db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
   $directory = file_directory_path();
   if (is_dir($directory) && is_writable($directory) && (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC)) {
@@ -682,7 +683,7 @@ function api_shutdown() {
     file_check_directory($path, FILE_CREATE_DIRECTORY);
     $date = gmdate('U');
     foreach (api_get_branches() as $branch) {
-      $new_json = api_autocomplete($branch->branch_name, FALSE);
+      $new_json = api_autocomplete($branch, FALSE);
 
       $old_file_path = variable_get('api_autocomplete_path_' . $branch->branch_name, FALSE);
       if ($old_file_path !== FALSE) {
@@ -693,7 +694,7 @@ function api_shutdown() {
         job_queue_add('file_delete', t('Remove expired API JSON, %path.'), array('%path' => $old_file_path));
       }
 
-      $file_name = $path . '/api-' . $branch->branch_name . '-' . $date . '.json';
+      $file_name = $path . '/api-' . $branch->branch_id . '-' . $date . '.json';
       file_save_data($new_json, $file_name, FILE_EXISTS_REPLACE);
       variable_set('api_autocomplete_path_' . $branch->branch_name, $file_name);
     }
@@ -726,7 +727,7 @@ function api_update_branch($branch) {
 
   // List all documented files for the branch.
   $files = array();
-  $result = db_query("SELECT f.did, f.modified, d.object_name FROM {api_documentation} d INNER JOIN {api_file} f ON d.did = f.did WHERE d.branch_name = '%s' AND d.object_type = 'file'", $branch->branch_name);
+  $result = db_query("SELECT f.did, f.modified, d.object_name FROM {api_documentation} d INNER JOIN {api_file} f ON d.did = f.did WHERE d.branch_id = %d AND d.object_type = 'file'", $branch->branch_id);
   while ($file = db_fetch_object($result)) {
     $files[$file->object_name] = $file;
   }
@@ -742,7 +743,7 @@ function api_update_branch($branch) {
         $parse = TRUE;
       }
       if ($parse) {
-        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch->branch_name, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
+        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
       }
     }
   }
@@ -750,7 +751,7 @@ function api_update_branch($branch) {
   // Remove outdated files.
   foreach (array_keys($files) as $file_name) {
     watchdog('api', 'Removing %file.', array('%file' => $file_name));
-    $result = db_query("SELECT ad.did FROM {api_documentation} ad WHERE ad.file_name = '%s' AND ad.branch_name = '%s'", $file_name, $branch->branch_name);
+    $result = db_query("SELECT ad.did FROM {api_documentation} ad WHERE ad.file_name = '%s' AND ad.branch_id = %d", $file_name, $branch->branch_id);
     while ($doc = db_fetch_object($result)) {
       db_query("DELETE FROM {api_documentation} WHERE did = %d", $doc->did);
       db_query("DELETE FROM {api_file} WHERE did = %d", $doc->did);

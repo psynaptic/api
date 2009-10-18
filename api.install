@@ -37,8 +37,12 @@ function api_schema() {
   $schema['api_documentation'] = array(
     'fields' => array(
       'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'branch_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
       'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
-      'branch_name' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'file_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
@@ -48,11 +52,9 @@ function api_schema() {
       'start_line' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
     ),
     'primary key' => array('did'),
-    'unique keys' => array(
-      'object_name' => array('object_name', 'branch_name', 'object_type'),
-    ),
     'indexes' => array(
-      'branch_name' => array('branch_name'),
+      'object_name' => array('object_name', 'branch_id', 'object_type'),
+      'branch_id' => array('branch_id'),
       'title' => array('title'),
     ),
   );
@@ -77,13 +79,17 @@ function api_schema() {
   $schema['api_reference_storage'] = array(
     'fields' => array(
       'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
-      'branch_name' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
+      'branch_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
       'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'from_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'to_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
     ),
     'indexes' => array(
-      'object_ref' => array('object_name', 'branch_name', 'object_type'),
+      'object_ref' => array('object_name', 'branch_id', 'object_type'),
       'to_did' => array('to_did'),
     ),
   );
@@ -394,6 +400,38 @@ function api_update_20() {
   ));
   $return = update_sql("UPDATE {api_branch} SET project = 'drupal'");
   variable_set('api_default_branch', db_result(db_query("SELECT branch_id FROM {api_branch} WHERE branch_name = '%s'", variable_get('api_default_branch', NULL))));
+
+  return $return;
+}
+
+function api_update_21() {
+  $return = array();
+
+  db_add_field($return, 'api_reference_storage', 'branch_id', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ));
+  $return[] = update_sql("UPDATE {api_reference_storage} r INNER JOIN {api_branch} b ON b.branch_name = r.branch_name SET r.branch_id = b.branch_id");
+  db_drop_index($return, 'api_reference_storage', 'object_ref');
+  db_add_index($return, 'api_reference_storage', 'object_ref', array('object_name', 'branch_id', 'object_type'));
+
+  return $return;
+}
+
+function api_update_22() {
+  $return = array();
+
+  db_add_field($return, 'api_documentation', 'branch_id', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ));
+  $return[] = update_sql("UPDATE {api_documentation} r INNER JOIN {api_branch} b ON b.branch_name = r.branch_name SET r.branch_id = b.branch_id");
+  db_drop_index($return, 'api_documentation', 'object_name');
+  db_add_index($return, 'api_documentation', 'object_name', array('object_name', 'branch_id', 'object_type'));
+  db_drop_index($return, 'api_documentation', 'branch_name');
+  db_add_index($return, 'api_documentation', 'branch_id', array('branch_id'));
 
   return $return;
 }

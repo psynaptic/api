@@ -198,7 +198,7 @@ function api_branch_delete_form($form_state, $branch_id) {
 }
 
 function api_branch_delete_form_submit($form, &$form_state) {
-  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_name = '%s'", $form['#branch']->branch_name);
+  $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d", $form['#branch']->branch_id);
   $dids = array();
   while($did = db_fetch_object($result)) {
     $dids[] = $did->did;
@@ -207,9 +207,9 @@ function api_branch_delete_form_submit($form, &$form_state) {
     $placeholders = db_placeholders($dids);
     db_query("DELETE FROM {api_file} WHERE did IN (". $placeholders .")", $dids);
     db_query("DELETE FROM {api_function} WHERE did IN (". $placeholders .")", $dids);
-    db_query("DELETE FROM {api_reference_storage} WHERE from_did IN (". $placeholders .") OR to_did IN (". $placeholders .")", array_merge($dids, $dids));
-    db_query("DELETE FROM {api_documentation} WHERE did IN (". $placeholders .")", $dids);
   }
+  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d", $form['#branch']->branch_id);
+  db_query("DELETE FROM {api_documentation} WHERE branch_id = %d", $form['#branch']->branch_id);
   db_query("DELETE FROM {api_branch} WHERE branch_id = '%s'", $form['#branch']->branch_id);
 
   if (variable_get('api_default_branch', NULL) == $form['#branch']->branch_id) {
@@ -243,6 +243,7 @@ function api_php_manual_index_form_submit($form, &$form_state) {
   include_once(drupal_get_path('module', 'api') .'/parser.inc');
   variable_set('api_php_funcsummary', $form_state['values']['api_php_funcsummary']);
   variable_set('api_php_funcpath', $form_state['values']['api_php_funcpath']);
+  //todo
   db_query("DELETE FROM {api_documentation} WHERE branch_name = 'php'");
   api_parse_php_manual($form_state['values']['api_php_funcsummary']);
   drupal_set_message(t('Manual pages scanned.'));
