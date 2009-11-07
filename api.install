@@ -398,7 +398,7 @@ function api_update_20() {
       'project_name' => array('project', 'branch_name'),
     ),
   ));
-  $return = update_sql("UPDATE {api_branch} SET project = 'drupal'");
+  $return[] = update_sql("UPDATE {api_branch} SET project = 'drupal'");
   variable_set('api_default_branch', db_result(db_query("SELECT branch_id FROM {api_branch} WHERE branch_name = '%s'", variable_get('api_default_branch', NULL))));
 
   return $return;
