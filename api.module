@@ -775,28 +775,12 @@ function api_get_active_branch() {
   static $branch;
 
   if (!isset($branch)) {
-    if (arg(0) == 'api') {
-      if (in_array(arg(1), array('function_dump', 'functions', 'constants', 'globals', 'files', 'groups', 'search'))) {
-        $possible_branch = arg(2);
-      }
-      elseif (in_array(arg(1), array('function', 'file', 'constant', 'global', 'group'))) {
-        $possible_branch = arg(3);
-      }
-      else {
-        // Maybe we are on one of the branch home pages.
-        $possible_branch = arg(1);
-      }
+    $item = menu_get_item();
+    // todo handle all cases
+    if (isset($item['page_arguments'][0]->branch_name)) {
+      $branch = $item['page_arguments'][0];
     }
-
-    $branches = api_get_branches();
-    if (isset($possible_branch)) {
-      foreach ($branches as $b) {
-        if ($b->branch_name === $possible_branch) {
-          $branch = $b;
-        }
-      }
-    }
-    if (!isset($branch)) {
+    else {
       $branch = $branches[variable_get('api_default_branch', NULL)];
     }
   }
