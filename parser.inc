@@ -743,7 +743,7 @@ function api_update_branch($branch) {
         $parse = TRUE;
       }
       if ($parse) {
-        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
+        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch->branch_name, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
       }
     }
   }
