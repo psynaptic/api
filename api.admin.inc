@@ -24,9 +24,6 @@ function api_page_admin_form() {
       $form['branches'][$branch->branch_id]['branch_name'] = array(
         '#value' => $branch->branch_name,
       );
-      $form['branches'][$branch->branch_id]['directories'] = array(
-        '#value' => str_replace("\n", '<br />', check_plain($branch->directories)),
-      );
     }
   }
   else {
@@ -49,7 +46,6 @@ function theme_api_branch_table($element) {
     t('Project'),
     t('Page label'),
     t('URL label'),
-    t('Directories'),
   );
   $rows = array();
   foreach (element_children($element) as $key) {
@@ -107,23 +103,11 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#default_value' => $branch->title,
     '#required' => TRUE,
   );
-  $form['directories'] = array(
-    '#title' => t('Directories'),
-    '#type' => 'textarea',
-    '#default_value' => $branch->directories,
-    '#rows' => 3,
-    '#description' => t('Absolute paths to index, one per line.'),
-    '#required' => TRUE,
-    '#element_validate' => array('api_check_directories'),
-  );
-  $form['excluded_directories'] = array(
-    '#title' => t('Excluded directories'),
-    '#type' => 'textarea',
-    '#default_value' => $branch->excluded_directories,
-    '#rows' => 3,
-    '#description' => t('Absolute paths to exclude from the index, one per line.'),
-    '#element_validate' => array('api_check_directories'),
-  );
+
+  $form['data'] = array('#tree' => TRUE);
+  $function = 'api_branch_edit_form_' . $branch->type;
+  $function($form, $branch);
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save branch'),
@@ -135,6 +119,26 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
   }
 
   return $form;
+}
+
+function api_branch_edit_form_files(&$form, $branch) {
+  $form['data']['directories'] = array(
+    '#title' => t('Directories'),
+    '#type' => 'textarea',
+    '#default_value' => $branch->directories,
+    '#rows' => 3,
+    '#description' => t('Absolute paths to index, one per line.'),
+    '#required' => TRUE,
+    '#element_validate' => array('api_check_directories'),
+  );
+  $form['data']['excluded_directories'] = array(
+    '#title' => t('Excluded directories'),
+    '#type' => 'textarea',
+    '#default_value' => $branch->excluded_directories,
+    '#rows' => 3,
+    '#description' => t('Absolute paths to exclude from the index, one per line.'),
+    '#element_validate' => array('api_check_directories'),
+  );
 }
 
 function api_branch_edit_form_validate($form, &$form_state) {
@@ -151,7 +155,7 @@ function api_branch_edit_form_validate($form, &$form_state) {
 
 function api_check_directories($element, &$form_state) {
   // Check for valid directories.
-  foreach (explode("\n", $form_state['values'][$element['#name']]) as $directory) {
+  foreach (explode("\n", $element['#value']) as $directory) {
     $directory = trim($directory);
     if (!empty($directory)) {
       if (!is_dir($directory)) {
@@ -162,6 +166,7 @@ function api_check_directories($element, &$form_state) {
       }
     }
   }
+  form_set_value($element, api_clean_directory_list($element['#value']), $form_state);
 }
 
 function api_branch_edit_form_submit($form, &$form_state) {
@@ -169,8 +174,7 @@ function api_branch_edit_form_submit($form, &$form_state) {
   $branch->project = $form_state['values']['project'];
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
-  $branch->directories = api_clean_directory_list($form_state['values']['directories']);
-  $branch->excluded_directories = api_clean_directory_list($form_state['values']['excluded_directories']);
+  $branch->data = $form_state['values']['data'];
 
   api_save_branch($branch);
 
@@ -240,7 +244,7 @@ function api_php_manual_index_form() {
 }
 
 function api_php_manual_index_form_submit($form, &$form_state) {
-  include_once(drupal_get_path('module', 'api') .'/parser.inc');
+  include './' . drupal_get_path('module', 'api') .'/parser.inc';
   variable_set('api_php_funcsummary', $form_state['values']['api_php_funcsummary']);
   variable_set('api_php_funcpath', $form_state['values']['api_php_funcpath']);
   //todo

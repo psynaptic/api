@@ -21,9 +21,20 @@ function api_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'type' => array(
+        'description' => 'Controls how this branch will be fetched and parsed.',
+        'type' => 'varchar',
+        'length' => '31',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'data' => array(
+        'description' => 'Serialized type-specific data',
+        'type' => 'text',
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'directories' => array('type' => 'text', 'not null' => TRUE),
-      'excluded_directories' => array('type' => 'text', 'not null' => TRUE),
       'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
     ),
     'primary key' => array('branch_id'),
@@ -432,6 +443,43 @@ function api_update_22() {
   db_add_index($return, 'api_documentation', 'object_name', array('object_name', 'branch_id', 'object_type'));
   db_drop_index($return, 'api_documentation', 'branch_name');
   db_add_index($return, 'api_documentation', 'branch_id', array('branch_id'));
+
+  return $return;
+}
+
+/**
+ * Set up branches for multiple types and recombobulate.
+ */
+function api_update_23() {
+  $return = array();
+
+  // Add & populate type column
+  db_add_field($return, 'api_branch', 'type', array(
+    'description' => 'Controls how this branch will be fetched and parsed.',
+    'type' => 'varchar',
+    'length' => '31',
+    'not null' => TRUE,
+    'default' => '',
+  ));
+  $return[] = update_sql("UPDATE {api_branch} SET type = 'files'");
+
+  // Add & populate data column
+  db_add_field($return, 'api_branch', 'data', array(
+    'description' => 'Serialized type-specific data',
+    'type' => 'text',
+    'not null' => TRUE,
+    'default' => '',
+  ));
+  $result = db_query("SELECT branch_id, directories, excluded_directories FROM {api_branch}");
+  while ($branch = db_fetch_object($result)) {
+    $branch->data = serialize(array(
+      'directories' => $branch->directories,
+      'excluded_directories' => $branch->excluded_directories,
+    ));
+    drupal_write_record('api_branch', $branch, 'branch_id');
+  }
+  db_drop_field($return, 'api_branch', 'directories');
+  db_drop_field($return, 'api_branch', 'excluded_directories');
 
   return $return;
 }

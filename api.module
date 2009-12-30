@@ -73,9 +73,10 @@ function api_get_branches($_reset = FALSE) {
   static $branches;
 
   if (!isset($branches) || $_reset) {
-    $result = db_query('SELECT branch_id, project, branch_name, title, directories, excluded_directories FROM {api_branch} ORDER BY weight');
+    $result = db_query("SELECT branch_id, project, branch_name, title, type, data FROM {api_branch} ORDER BY weight");
     $branches = array();
     while ($branch = db_fetch_object($result)) {
+      drupal_unpack($branch);
       $branches[$branch->branch_id] = $branch;
     }
   }
@@ -744,6 +745,7 @@ function api_hide_l($text) {
  *   To replace a branch, provide the old branch name.
  */
 function api_save_branch($branch) {
+  $branch->data = serialize($branch->data);
   if (empty($branch->branch_id)) {
     drupal_write_record('api_branch', $branch);
     if (is_null(variable_get('api_default_branch', NULL))) {
@@ -810,7 +812,7 @@ function api_search_form($form_state, $branch) {
 }
 
 function api_search_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'api/search/'. $form['#branch']->branch .'/'. $form_state['values']['search'];
+  $form_state['redirect'] = 'api/search/'. $form['#branch']->branch_name .'/'. $form_state['values']['search'];
 }
 
 function api_search_redirect() {
@@ -941,7 +943,7 @@ function api_suggest($branch) {
  * Menu callback; displays the main documentation page.
  */
 function api_page_branch($branch) {
-  $result = db_query("SELECT documentation FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = 'mainpage'", $branch->branch_id, $branch->branch_id);
+  $result = db_query("SELECT documentation FROM {api_documentation} WHERE branch_id = %d AND object_type = 'mainpage'", $branch->branch_id);
   if ($docs = db_fetch_object($result)) {
     return api_link_documentation($docs->documentation, $branch);
   }
