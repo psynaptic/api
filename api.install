@@ -110,7 +110,19 @@ function api_schema() {
 
 function api_install() {
   drupal_install_schema('api');
+
   variable_set('comment_preview_api', COMMENT_PREVIEW_OPTIONAL);
+
+  // Save PHP branch
+  $branch->type = 'php';
+  $branch->project = 'php';
+  $branch->branch_name = 'php';
+  $branch->title = 'PHP functions';
+  $branch->data = array(
+    'summary' => 'http://cvs.php.net/viewvc.cgi/phpdoc/funcsummary.txt?view=co',
+    'path' => 'http://php.net/!function',
+  );
+  api_save_branch($branch);
 }
 
 function api_requirements($phase) {
@@ -484,11 +496,31 @@ function api_update_23() {
   return $return;
 }
 
+/**
+ * Move any existing PHP reference config to a branch.
+ */
+function api_update_24() {
+  $return = array();
+
+  $branch->type = 'php';
+  $branch->project = 'php';
+  $branch->branch_name = 'php';
+  $branch->title = 'PHP functions';
+  $branch->data = array(
+    'summary' => variable_get('api_php_funcsummary', ''),
+    'path' => variable_get('api_php_funcpath', ''),
+  );
+  api_save_branch($branch);
+
+  variable_del('api_php_funcsummary');
+  variable_del('api_php_funcpath');
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');
-  variable_del('api_php_funcsummary');
-  variable_del('api_php_funcpath');
   variable_del('api_reference');
   db_query("DELETE FROM {node} WHERE type = 'api'");
 }

@@ -245,8 +245,6 @@ function api_php_manual_index_form() {
 
 function api_php_manual_index_form_submit($form, &$form_state) {
   include './' . drupal_get_path('module', 'api') .'/parser.inc';
-  variable_set('api_php_funcsummary', $form_state['values']['api_php_funcsummary']);
-  variable_set('api_php_funcpath', $form_state['values']['api_php_funcpath']);
   //todo
   db_query("DELETE FROM {api_documentation} WHERE branch_name = 'php'");
   api_parse_php_manual($form_state['values']['api_php_funcsummary']);
