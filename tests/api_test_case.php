@@ -9,7 +9,7 @@ class ApiTestCase extends DrupalWebTestCase {
     include drupal_get_path('module', 'api') .'/parser.inc';
 
     // Make a branch for sample code.
-    $branch->type = 'files',
+    $branch->type = 'files';
     $branch->branch_name = '6';
     $branch->title = 'Testing 6';
     $branch->data = array(
