@@ -34,6 +34,13 @@ function api_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'status' => array(
+        'description' => 'Should this branch be shown in the UI',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
     ),
@@ -514,6 +521,24 @@ function api_update_24() {
 
   variable_del('api_php_funcsummary');
   variable_del('api_php_funcpath');
+
+  return $return;
+}
+
+/**
+ * Add disabled branch capability.
+ */
+function api_update_25() {
+  $return = array();
+
+  db_add_field($return, 'api_branch', 'status', array(
+    'description' => 'Should this branch be shown in the UI',
+    'type' => 'int',
+    'size' => 'tiny',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ));
+  $return[] = update_sql("UPDATE {api_branch} SET status = (type = 'files')");
 
   return $return;
 }

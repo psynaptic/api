@@ -77,6 +77,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     $branch->title = '';
     $branch->directories = '';
     $branch->excluded_directories = '';
+    $branch->status = TRUE;
   }
   else {
     $branch = $branches[$branch_id];
@@ -102,6 +103,11 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#type' => 'textfield',
     '#default_value' => $branch->title,
     '#required' => TRUE,
+  );
+  $form['status'] = array(
+    '#title' => t('Show this branch in tabs'),
+    '#type' => 'checkbox',
+    '#default_value' => $branch->status,
   );
 
   $form['data'] = array('#tree' => TRUE);
@@ -174,6 +180,7 @@ function api_branch_edit_form_submit($form, &$form_state) {
   $branch->project = $form_state['values']['project'];
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
+  $branch->status = $form_state['values']['status'];
   $branch->data = $form_state['values']['data'];
 
   api_save_branch($branch);
