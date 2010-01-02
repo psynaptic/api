@@ -206,15 +206,6 @@ function api_menu() {
     'file' => 'api.admin.inc',
     'type' => MENU_CALLBACK,
   );
-  $items['admin/settings/api/php'] = array(
-    'title' => 'PHP manual',
-    'access callback' => 'user_access',
-    'access arguments' => array('administer API reference'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('api_php_manual_index_form'),
-    'file' => 'api.admin.inc',
-    'type' => MENU_LOCAL_TASK,
-  );
   if (module_exists('comment')) {
     $items['admin/settings/api/comments'] = array(
       'title' => 'Comments',

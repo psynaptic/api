@@ -147,6 +147,27 @@ function api_branch_edit_form_files(&$form, $branch) {
   );
 }
 
+function api_branch_edit_form_php(&$form, $branch) {
+  $form[] = array('#value' => '<p>' . t('Links to external documentation, such as the PHP manual.') . '</p>');
+
+  $form['data']['summary'] = array(
+    '#type' => 'textfield',
+    '#default_value' => $branch->summary,
+    '#description' => t('The URL of the PHP function summary document.'),
+  );
+  $form['data']['path'] = array(
+    '#type' => 'textfield',
+    '#default_value' => $branch->path,
+    '#description' => t('The URL format used to build the link to php functions.  Use the variable <em>!function</em> in place of the function name.'),
+  );
+
+  // PHP manual reference will never be visible in the UI.
+  $form['project']['#type'] = 'value';
+  $form['branch_name']['#type'] = 'value';
+  $form['title']['#type'] = 'value';
+  $form['status']['#type'] = 'value';
+}
+
 function api_branch_edit_form_validate($form, &$form_state) {
   // Check for bad characters in branch names.
   if (preg_match('/[^A-Za-z0-9-_.]/', $form_state['values']['branch_name'])) {
@@ -229,33 +250,6 @@ function api_branch_delete_form_submit($form, &$form_state) {
 
   menu_rebuild();
   $form_state['redirect'] = 'admin/settings/api';
-}
-
-function api_php_manual_index_form() {
-  $form = array();
-  $form['api_php_funcsummary'] = array(
-    '#type' => 'textfield',
-    '#default_value' => variable_get('api_php_funcsummary', 'http://cvs.php.net/viewvc.cgi/phpdoc/funcsummary.txt?view=co'),
-    '#description' => t('The URL of the PHP function summary document.'),
-  );
-  $form['api_php_funcpath'] = array(
-    '#type' => 'textfield',
-    '#default_value' => variable_get('api_php_funcpath', 'http://php.net/!function'),
-    '#description' => t('The URL format used to build the link to php functions.  Use the variable <em>!function</em> in place of the function name.'),
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Index PHP manual pages'),
-  );
-  return $form;
-}
-
-function api_php_manual_index_form_submit($form, &$form_state) {
-  include './' . drupal_get_path('module', 'api') .'/parser.inc';
-  //todo
-  db_query("DELETE FROM {api_documentation} WHERE branch_name = 'php'");
-  api_parse_php_manual($form_state['values']['api_php_funcsummary']);
-  drupal_set_message(t('Manual pages scanned.'));
 }
 
 function api_comments_settings_form(&$form_state) {
