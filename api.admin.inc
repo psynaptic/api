@@ -69,18 +69,32 @@ function api_page_admin_form_submit($form, &$form_state) {
   drupal_set_message(t('Changes saved.'));
 }
 
+function api_admin_new_branch_page() {
+  return '<h3>' . t('Select branch type') . '</h3>' . theme('links', array(
+    'files' => array(
+      'title' => t('Files'),
+      'href' => 'admin/settings/api/branches/new/files',
+    ),
+    'php' => array(
+      'title' => t('PHP functions'),
+      'href' => 'admin/settings/api/branches/new/php',
+    ),
+  ));
+}
+
 function api_branch_edit_form($form_state, $branch_id = NULL) {
   $branches = api_get_branches();
-  if (is_null($branch_id)) {
+  if (is_numeric($branch_id)) {
+    $branch = $branches[$branch_id];
+  }
+  else {
+    $branch->type = $branch_id;
     $branch->project = '';
     $branch->branch_name = '';
     $branch->title = '';
     $branch->directories = '';
     $branch->excluded_directories = '';
     $branch->status = TRUE;
-  }
-  else {
-    $branch = $branches[$branch_id];
   }
   $form = array(
     '#branch' => $branch,
@@ -152,20 +166,26 @@ function api_branch_edit_form_php(&$form, $branch) {
 
   $form['data']['summary'] = array(
     '#type' => 'textfield',
+    '#title' => t('Function list'),
     '#default_value' => $branch->summary,
+    '#required' => TRUE,
     '#description' => t('The URL of the PHP function summary document.'),
   );
   $form['data']['path'] = array(
     '#type' => 'textfield',
+    '#title' => t('Function URL'),
     '#default_value' => $branch->path,
+    '#required' => TRUE,
     '#description' => t('The URL format used to build the link to php functions.  Use the variable <em>!function</em> in place of the function name.'),
   );
 
   // PHP manual reference will never be visible in the UI.
   $form['project']['#type'] = 'value';
-  $form['branch_name']['#type'] = 'value';
+  $form['project']['#value'] = 'php';
   $form['title']['#type'] = 'value';
+  $form['title']['#value'] = 'php';
   $form['status']['#type'] = 'value';
+  $form['status']['#value'] = FALSE;
 }
 
 function api_branch_edit_form_validate($form, &$form_state) {

@@ -159,6 +159,8 @@ function api_menu() {
     'access arguments' => $access_arguments,
     'type' => MENU_CALLBACK,
   );
+
+  // Admin
   $items['admin/settings/api'] = array(
     'title' => 'API reference',
     'description' => 'Configure branches for documentation.',
@@ -184,10 +186,18 @@ function api_menu() {
     'title' => 'New branch',
     'access callback' => 'user_access',
     'access arguments' => array('administer API reference'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('api_branch_edit_form'),
+    'page callback' => 'api_admin_new_branch_page',
     'file' => 'api.admin.inc',
     'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/settings/api/branches/new/%'] = array(
+    'title' => 'New branch',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer API reference'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('api_branch_edit_form', 5),
+    'file' => 'api.admin.inc',
+    'type' => MENU_CALLBACK,
   );
   $items['admin/settings/api/branches/%'] = array(
     'title' => 'Edit branch',
