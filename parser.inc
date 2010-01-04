@@ -6,29 +6,6 @@
  * The PHP documentation parser that generates content for api.module.
  */
 
-/**
- * Parse out function definitions from the PHP manual.
- */
-function api_parse_php_manual($location) {
-  $response = drupal_http_request($location);
-  if ($response->code == 200) {
-    $function_matches = array();
-    preg_match_all('!^[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)\(.*\n.*$!m', $response->data, $function_matches, PREG_SET_ORDER);
-    foreach ($function_matches as $function_match) {
-      $docblock = array(
-        'object_name' => $function_match[1],
-        'branch_name' => 'php',
-        'object_type' => 'function',
-        'file_name' => $location,
-        'title' => $function_match[1],
-        'summary' => api_documentation_summary($function_match[0]),
-        'documentation' => $function_match[0],
-      );
-      api_save_documentation(array($docblock));
-    }
-  }
-}
-
 function api_parse_file($callback, $file_path, $branch, $file_name) {
   $docblock = array(
     'object_name' => $file_name,
@@ -705,11 +682,33 @@ function api_shutdown() {
 
 function api_update_all_branches() {
   foreach (api_get_branches() as $branch) {
-    api_update_branch($branch);
+    $function = 'api_update_branch_' . $branch->type;
+    $function($branch);
+    watchdog('api', 'Updated %project branch %branch_name.', array('%branch_name' => $branch->branch_name, '%project' => $branch->project));
   }
 }
 
-function api_update_branch($branch) {
+function api_update_branch_php($branch) {
+  $response = drupal_http_request($branch->summary);
+  if ($response->code === '200') {
+    $function_matches = array();
+    preg_match_all('!^[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)\(.*\n.*$!m', $response->data, $function_matches, PREG_SET_ORDER);
+    foreach ($function_matches as $function_match) {
+      $docblock = array(
+        'branch' => $branch,
+        'file_name' => $branch->summary,
+        'object_type' => 'function',
+        'object_name' => $function_match[1],
+        'title' => $function_match[1],
+        'summary' => api_documentation_summary($function_match[0]),
+        'documentation' => $function_match[0],
+      );
+      api_save_documentation(array($docblock));
+    }
+  }
+}
+
+function api_update_branch_files($branch) {
   static $parse_functions = array(
     'php' => 'api_parse_php_file',
     'module' => 'api_parse_php_file',
