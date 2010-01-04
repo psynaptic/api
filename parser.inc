@@ -297,7 +297,7 @@ function api_save_documentation($docblocks) {
         $docblock['code'] = '';
       }
     }
-    $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
+    $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type']));
     if ($did > 0) {
       db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $did);
     }
@@ -379,9 +379,6 @@ function api_format_documentation($documentation) {
   // Process the @code @endcode tags.
   $documentation = preg_replace_callback('/' . API_RE_TAG_START . 'code(.+?)' . API_RE_TAG_START . 'endcode/s', 'api_format_embedded_php', $documentation);
 
-  // Format lists
-  $documentation = api_format_documentation_lists($documentation);
-
   // Convert newlines into paragraphs.
   $documentation = api_autop($documentation);
 
@@ -423,6 +420,7 @@ function api_autop($text) {
       }
     }
     elseif (!$ignore) {
+      $chunk = api_format_documentation_lists($chunk);
       $chunk = preg_replace('|\n*$|', '', $chunk) ."\n\n"; // just to make things a little easier, pad the end
       $chunk = preg_replace('|<br />\s*<br />|', "\n\n", $chunk);
       $chunk = preg_replace('!(<'. $block .'[^>]*>)!', "\n$1", $chunk); // Space things out a little
@@ -742,7 +740,7 @@ function api_update_branch_files($branch) {
         $parse = TRUE;
       }
       if ($parse) {
-        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, '%branch' => $branch->branch_name, '%file' => $file_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
+        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, $branch, '%file' => $file_name, '%branch' => $branch->branch_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
       }
     }
   }
