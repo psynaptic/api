@@ -1025,12 +1025,12 @@ function api_page_function($branch, $function) {
   $last_signature = '';
   $signatures = array();
   $n = 0;
-  $result = db_query("SELECT d.branch_name, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
+  $result = db_query("SELECT b.branch_name, d.branch_id, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
   while ($signature = db_fetch_object($result)) {
     if ($signature->signature == $last_signature) {
       // Collapse unchanged signatures to one line.
       $signature_info[$n - 1]['max branch name'] = $signature->branch_name;
-      $signature_info[$n - 1]['active'] = $signature_info[$n - 1]['active'] || $signature->branch_name == $function->branch_name;
+      $signature_info[$n - 1]['active'] = $signature_info[$n - 1]['active'] || $signature->branch_id == $function->branch_id;
     }
     else {
       $tokens = token_get_all('<?php '. $signature->signature);
@@ -1043,7 +1043,7 @@ function api_page_function($branch, $function) {
       $signature_info[$n] = array(
         'branch name' => $signature->branch_name,
         'max branch name' => $signature->branch_name,
-        'active' => $signature->branch_name == $function->branch_name,
+        'active' => $signature->branch_id == $function->branch_id,
         'arguments' => array(),
         'other' => array(),
       );

@@ -554,6 +554,17 @@ function api_update_26() {
   return $return;
 }
 
+/**
+ * Drop redundant column.
+ */
+function api_update_27() {
+  $return = array();
+
+  db_drop_field($return, 'api_documentation', 'branch_name');
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');
