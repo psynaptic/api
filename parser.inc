@@ -628,8 +628,7 @@ function api_reference($branch, $to_type, $to_name, $from_did) {
   static $is_php_function = array();
 
   if ($to_type == 'function' && !isset($is_php_function[$to_name])) {
-    //todo
-    $is_php_function[$to_name] = (db_result(db_query("SELECT COUNT(*) FROM {api_documentation} WHERE object_name = '%s' AND branch_name = 'php'", $to_name)) == 1);
+    $is_php_function[$to_name] = (db_result(db_query_range("SELECT 1 FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_name = '%s'", $to_name, 1, 1)));
   }
 
   if ($to_type != 'function' || !$is_php_function[$to_name]) {
@@ -691,10 +690,11 @@ function api_update_all_branches() {
 function api_update_branch_php($branch) {
   $response = drupal_http_request($branch->summary);
   if ($response->code === '200') {
+    $docblocks = array();
     $function_matches = array();
     preg_match_all('!^[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)\(.*\n.*$!m', $response->data, $function_matches, PREG_SET_ORDER);
     foreach ($function_matches as $function_match) {
-      $docblock = array(
+      $docblocks[] = array(
         'branch' => $branch,
         'file_name' => $branch->summary,
         'object_type' => 'function',
@@ -703,8 +703,8 @@ function api_update_branch_php($branch) {
         'summary' => api_documentation_summary($function_match[0]),
         'documentation' => $function_match[0],
       );
-      api_save_documentation(array($docblock));
     }
+    api_save_documentation($docblocks);
   }
 }
 

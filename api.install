@@ -543,6 +543,17 @@ function api_update_25() {
   return $return;
 }
 
+/**
+ * Delete old PHP branch links.
+ */
+function api_update_26() {
+  $return = array();
+
+  $return[] = update_sql("DELETE FROM {api_documentation} WHERE branch_name = 'php'");
+
+  return $return;
+}
+
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');

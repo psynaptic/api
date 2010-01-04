@@ -1457,8 +1457,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   }
 
   if (is_null($php_functions)) {
-    //todo
-    $result = db_query("SELECT object_name, summary FROM {api_documentation} WHERE branch_name = 'php' AND object_type = 'function'");
+    $result = db_query("SELECT d.object_name, d.summary FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function'");
     $php_functions = array();
     while ($function = db_fetch_object($result)) {
       $php_functions[$function->object_name] = $function->summary;
