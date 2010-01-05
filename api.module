@@ -255,16 +255,6 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['api/' . $default_branch->project . '/%api_filename'] = array(
-    'title' => 'File',
-    'load arguments' => array($default_branch),
-    'page callback' => 'api_page_file',
-    'page arguments' => array($default_branch, 2),
-    'access callback' => $access_callback,
-    'access arguments' => $access_arguments,
-    'type' => MENU_CALLBACK,
-  );
-
   $items['api/group/%api_object'] = array(
     'title' => 'Topic',
     'load arguments' => array('group', $default_branch),
@@ -380,6 +370,16 @@ function api_menu() {
         'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
+      // Files
+      $items['api/' . $branch->project . '/%api_filename'] = array(
+        'title' => 'File',
+        'load arguments' => array($branch),
+        'page callback' => 'api_page_file',
+        'page arguments' => array($branch, 2),
+        'access callback' => $access_callback,
+        'access arguments' => $access_arguments,
+        'type' => MENU_CALLBACK,
+      );
       $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch),
