@@ -91,6 +91,31 @@ function api_menu() {
   $items = array();
   $branches = api_get_branches();
   $default_branch = $branches[variable_get('api_default_branch', NULL)];
+  $projects = array();
+  // We need a default branch for each project. If a project has a branch_name
+  // matching $default_branch, use that. Otherwise, use the max. This assumes
+  // branch names like '5' and '6'.
+  foreach ($branches as $branch) {
+    if ($branch->status) {
+      if (!isset($projects[$branch->project])) {
+        $projects[$branch->project] = array(
+          'max branch' => $branch->branch_name,
+          'use branch' => NULL,
+        );
+      }
+      else {
+        $projects[$branch->project]['max branch'] = max($projects[$branch->project]['max branch'], $branch->branch_name);
+      }
+      if ($branch->branch_name === $default_branch->branch_name) {
+        $projects[$branch->project]['use branch'] = $branch->branch_name;
+      }
+    }
+  }
+  foreach (array_keys($projects) as $project) {
+    if (is_null($projects[$project]['use branch'])) {
+      $projects[$project]['use branch'] = $projects[$project]['max branch'];
+    }
+  }
 
   // Part 1: No object, Default branch
   $items['api'] = array(
@@ -224,6 +249,7 @@ function api_menu() {
 
   foreach ($branches as $branch) {
     if ($branch->status) {
+      $is_default = ($branch->branch_name === $projects[$branch->project]['use branch']);
       $items['api/suggest/' . $branch->branch_name . '/%'] = array(
         'page callback' => 'api_suggest',
         'page arguments' => array($branch, 3),
@@ -243,114 +269,122 @@ function api_menu() {
         'page callback' => 'api_page_branch',
         'page arguments' => array($branch),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/functions/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'function'),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/constants/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'constant'),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/globals/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'global'),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/files/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'file'),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/groups/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'group'),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
       // Functions
-      $items['api/' . $branch->project . '/%api_filename/function/%api_object'] = array(
-        'title' => 'Function',
-        'load arguments' => array($branch, 'function'),
-        'page callback' => 'api_page_function',
-        'page arguments' => array($branch, 4),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/function/%api_object'] = array(
+          'title' => 'Function',
+          'load arguments' => array($branch, 'function'),
+          'page callback' => 'api_page_function',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
       $items['api/' . $branch->project . '/%api_filename/function/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch, 'function'),
         'page callback' => 'api_page_function',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
       // Constants
-      $items['api/' . $branch->project . '/%api_filename/constant/%api_object'] = array(
-        'title' => 'Constant',
-        'load arguments' => array($branch, 'constant'),
-        'page callback' => 'api_page_constant',
-        'page arguments' => array($branch, 4),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/constant/%api_object'] = array(
+          'title' => 'Constant',
+          'load arguments' => array($branch, 'constant'),
+          'page callback' => 'api_page_constant',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
       $items['api/' . $branch->project . '/%api_filename/constant/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch, 'constant'),
         'page callback' => 'api_page_constant',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
       // Globals
-      $items['api/' . $branch->project . '/%api_filename/global/%api_object'] = array(
-        'title' => 'Global',
-        'load arguments' => array($branch, 'global'),
-        'page callback' => 'api_page_global',
-        'page arguments' => array($branch, 4),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/global/%api_object'] = array(
+          'title' => 'Global',
+          'load arguments' => array($branch, 'global'),
+          'page callback' => 'api_page_global',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
       $items['api/' . $branch->project . '/%api_filename/global/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch, 'global'),
         'page callback' => 'api_page_global',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
       // Files
-      $items['api/' . $branch->project . '/%api_filename'] = array(
-        'title' => 'File',
-        'load arguments' => array($branch),
-        'page callback' => 'api_page_file',
-        'page arguments' => array($branch, 2),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename'] = array(
+          'title' => 'File',
+          'load arguments' => array($branch),
+          'page callback' => 'api_page_file',
+          'page arguments' => array($branch, 2),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
       $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch),
         'page callback' => 'api_page_file',
         'page arguments' => array($branch, 2),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
       $items['api/' . $branch->project . '/%api_filename/'. $branch->branch_name .'/documentation'] = array(
         'title' => 'View documentation',
@@ -368,21 +402,23 @@ function api_menu() {
       );
 
       // Groups
-      $items['api/' . $branch->project . '/%api_filename/group/%api_object'] = array(
-        'title' => 'Topic',
-        'load arguments' => array($branch, 'group'),
-        'page callback' => 'api_page_group',
-        'page arguments' => array($branch, 4),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/group/%api_object'] = array(
+          'title' => 'Topic',
+          'load arguments' => array($branch, 'group'),
+          'page callback' => 'api_page_group',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
       $items['api/' . $branch->project . '/%api_filename/group/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'load arguments' => array($branch, 'group'),
         'page callback' => 'api_page_group',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
-        'type' => ($branch->branch_id == $default_branch->branch_id) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
       $items['api/search/'. $branch->branch_name .'/%menu_tail'] = array(
