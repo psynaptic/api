@@ -3,14 +3,14 @@
 
 function api_drush_help($section) {
   switch ($section) {
-    case 'drush:api reparse':
+    case 'drush:api-reparse':
       return dt('Mark a file, branch, or everything for reparsing.');
   }
 }
 
 function api_drush_command() {
   return array(
-    'api reparse' => array(
+    'api-reparse' => array(
       'callback' => 'api_drush_reparse',
       'description' => 'Mark files to reparse.',
       'arguments' => array(
