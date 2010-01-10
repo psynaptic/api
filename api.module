@@ -311,7 +311,7 @@ function api_menu() {
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename/function/%api_object'] = array(
           'title' => 'Function',
-          'load arguments' => array($branch, 'function'),
+          'load arguments' => array($branch, 'function', 2),
           'page callback' => 'api_page_function',
           'page arguments' => array($branch, 4),
           'access arguments' => array('access API reference'),
@@ -320,7 +320,7 @@ function api_menu() {
       }
       $items['api/' . $branch->project . '/%api_filename/function/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
-        'load arguments' => array($branch, 'function'),
+        'load arguments' => array($branch, 'function', 2),
         'page callback' => 'api_page_function',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
@@ -331,7 +331,7 @@ function api_menu() {
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename/constant/%api_object'] = array(
           'title' => 'Constant',
-          'load arguments' => array($branch, 'constant'),
+          'load arguments' => array($branch, 'constant', 2),
           'page callback' => 'api_page_constant',
           'page arguments' => array($branch, 4),
           'access arguments' => array('access API reference'),
@@ -340,7 +340,7 @@ function api_menu() {
       }
       $items['api/' . $branch->project . '/%api_filename/constant/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
-        'load arguments' => array($branch, 'constant'),
+        'load arguments' => array($branch, 'constant', 2),
         'page callback' => 'api_page_constant',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
@@ -351,7 +351,7 @@ function api_menu() {
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename/global/%api_object'] = array(
           'title' => 'Global',
-          'load arguments' => array($branch, 'global'),
+          'load arguments' => array($branch, 'global', 2),
           'page callback' => 'api_page_global',
           'page arguments' => array($branch, 4),
           'access arguments' => array('access API reference'),
@@ -360,7 +360,7 @@ function api_menu() {
       }
       $items['api/' . $branch->project . '/%api_filename/global/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
-        'load arguments' => array($branch, 'global'),
+        'load arguments' => array($branch, 'global', 2),
         'page callback' => 'api_page_global',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
@@ -405,7 +405,7 @@ function api_menu() {
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename/group/%api_object'] = array(
           'title' => 'Topic',
-          'load arguments' => array($branch, 'group'),
+          'load arguments' => array($branch, 'group', 2),
           'page callback' => 'api_page_group',
           'page arguments' => array($branch, 4),
           'access arguments' => array('access API reference'),
@@ -414,7 +414,7 @@ function api_menu() {
       }
       $items['api/' . $branch->project . '/%api_filename/group/%api_object/'. $branch->branch_name] = array(
         'title' => $branch->title,
-        'load arguments' => array($branch, 'group'),
+        'load arguments' => array($branch, 'group', 2),
         'page callback' => 'api_page_group',
         'page arguments' => array($branch, 4),
         'access arguments' => array('access API reference'),
@@ -457,7 +457,7 @@ function api_filename_load($file_name, $branch) {
 /**
  * Load an object from its name, type and branch.
  */
-function api_object_load($object_name, $branch, $object_type) {
+function api_object_load($object_name, $branch, $object_type, $file_name = NULL) {
   static $cache;
 
   $key = $object_name .':'. $object_type .':'. $branch->branch_id;
@@ -467,6 +467,12 @@ function api_object_load($object_name, $branch, $object_type) {
     $fields = array('ad.*');
     $where = "WHERE ad.object_name = '%s' AND ad.object_type = '%s' AND ad.branch_id = %d";
     $arguments = array($object_name, $object_type, $branch->branch_id);
+
+    if ($object_type !== 'file') {
+      $file = api_filename_load($file_name, $branch);
+      $where .= " AND ad.file_name = '%s'";
+      $arguments[] = $file->file_name;
+    }
 
     if ($object_type == 'function') {
       $tables[] = 'LEFT JOIN {api_function} af ON (af.did = ad.did)';
