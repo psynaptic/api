@@ -65,6 +65,8 @@ dl.api-related-topics dd {
   font-size: 0.6944em;
   width: 7.2em;
 }
+dl#api-function-signature dt,
+#api-function-signature dd,
 #api-function-signature dt a,
 #api-function-signature dd a,
 #api-function-signature dt a:visited,

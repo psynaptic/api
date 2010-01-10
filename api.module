@@ -1111,6 +1111,7 @@ function api_page_function($branch, $function) {
       'signature' => $signature,
       'url' => api_url($branches[$info['max branch']], $function),
       'active' => $info['active'],
+      'status' => $branches[$info['max branch']]->status,
     );
   }
 

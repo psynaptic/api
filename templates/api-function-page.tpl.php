@@ -4,9 +4,12 @@
   <?php if ($signature['active']) { ?>
     <dt><strong><?php print $branch ?></strong></dt>
     <dd><strong><code><?php print $signature['signature'] ?></code></strong></dd>
-  <?php } else { ?>
+  <?php } else if ($signature['status']) { ?>
     <dt><?php print l($branch, $signature['url']) ?></dt>
     <dd><code><?php print l($signature['signature'], $signature['url'], array('html' => TRUE)) ?></code></dd>
+  <?php } else { ?>
+    <dt><?php print $branch ?></dt>
+    <dd><code><?php print $signature['signature'] ?></code></dd>
   <?php } ?>
 <?php } ?>
 </dl>
