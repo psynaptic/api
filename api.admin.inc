@@ -10,11 +10,16 @@ function api_page_admin_form() {
       '#theme' => 'api_branch_table',
     );
     foreach ($branches as $branch) {
-      $form['branches'][$branch->branch_id]['default_branch'] = array(
-        '#type' => 'radio',
-        '#default_value' => variable_get('api_default_branch', NULL),
-        '#return_value' => $branch->branch_id,
-      );
+      if ($branch->status) {
+        $form['branches'][$branch->branch_id]['default_branch'] = array(
+          '#type' => 'radio',
+          '#default_value' => variable_get('api_default_branch', NULL),
+          '#return_value' => $branch->branch_id,
+        );
+      }
+      else {
+        $form['branches'][$branch->branch_id]['default_branch'] = array();
+      }
       $form['branches'][$branch->branch_id]['project'] = array(
         '#value' => $branch->project,
       );
