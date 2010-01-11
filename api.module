@@ -792,7 +792,6 @@ function api_get_active_branch() {
 
   if (!isset($branch)) {
     $item = menu_get_item();
-    // todo handle all cases
     if (isset($item['page_arguments'][0]->branch_name)) {
       $branch = $item['page_arguments'][0];
     }
