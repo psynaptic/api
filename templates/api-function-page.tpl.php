@@ -26,6 +26,11 @@
 <?php print $return ?>
 <?php } ?>
 
+<?php if (!empty($see)) { ?>
+<h3><?php print t('See also') ?></h3>
+<?php print $see ?>
+<?php } ?>
+
 <?php if (!empty($related_topics)) { ?>
 <h3><?php print t('Related topics') ?></h3>
 <?php print $related_topics ?>

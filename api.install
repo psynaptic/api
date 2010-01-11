@@ -68,6 +68,11 @@ function api_schema() {
       'documentation' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
       'code' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
       'start_line' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'see' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('did'),
     'indexes' => array(
@@ -561,6 +566,21 @@ function api_update_27() {
   $return = array();
 
   db_drop_field($return, 'api_documentation', 'branch_name');
+
+  return $return;
+}
+
+/**
+ * Add separate column for @see
+ */
+function api_update_28() {
+  $return = array();
+
+  db_add_field($return, 'api_documentation', 'see', array(
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => TRUE,
+  ));
 
   return $return;
 }

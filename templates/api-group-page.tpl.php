@@ -1,5 +1,10 @@
 <?php print $documentation ?>
 
+<?php if (!empty($see)) { ?>
+<h3><?php print t('See also') ?></h3>
+<?php print $see ?>
+<?php } ?>
+
 <?php if (!empty($constants)) { ?>
 <h3><?php print t('Constants') ?></h3>
 <?php print $constants ?>

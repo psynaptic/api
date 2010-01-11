@@ -253,6 +253,17 @@ function api_save_documentation($docblocks) {
       }
       $docblock['return_value'] = api_format_documentation($docblock['return_value']);
 
+      // Find @see lines.
+      $param_match = array();
+      $offset = 0;
+      $docblock['see'] = '';
+      while (preg_match('/' . API_RE_TAG_START . 'see(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
+        $docblock['content'] = str_replace($match[0][0], '', $docblock['content']);
+        $docblock['see'] .= "\n\n". $match[1][0];
+        $offset = $match[0][1];
+      }
+      $docblock['see'] = api_format_documentation($docblock['see']);
+
       // Determine group membership.
       $group_matches = array();
       preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
@@ -299,7 +310,7 @@ function api_save_documentation($docblocks) {
     }
     $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($did > 0) {
-      db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $did);
+      db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d, see = '%s' WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see'], $did);
     }
     else {
       $node = new stdClass();
@@ -310,7 +321,7 @@ function api_save_documentation($docblocks) {
       }
       node_save($node);
       $did = $node->nid;
-      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $did, $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line']);
+      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line, see) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s')", $did, $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see']);
     }
 
     switch ($docblock['object_type']) {
@@ -369,9 +380,6 @@ function api_format_documentation($documentation) {
   $documentation = preg_replace('/' . API_RE_TAG_START . 'link ((http:\/\/|https:\/\/|ftp:\/\/|mailto:|smb:\/\/|afp:\/\/|file:\/\/|gopher:\/\/|news:\/\/|ssl:\/\/|sslv2:\/\/|sslv3:\/\/|tls:\/\/|tcp:\/\/|udp:\/\/)([a-zA-Z0-9@:%_+*~#?&=.,\/;-]*[a-zA-Z0-9@:%_+*~#&=\/;-])) (.*?) ' . API_RE_TAG_START . 'endlink/', '<a href="$1">$4</a>', $documentation);
   // Site URLs.
   $documentation = preg_replace('/' . API_RE_TAG_START . 'link \/([a-zA-Z0-9_\/-]+) (.*?) ' . API_RE_TAG_START . 'endlink/', str_replace('%24', '$', l('$2', '$1')), $documentation);
-
-  // Process the @see tag
-  $documentation = preg_replace('/\n' . API_RE_TAG_START . 'see (.*[^.])\.?/', '<h3>See also</h3><p>$1</p>', $documentation);
 
   // Replace left over curly braces
   $documentation = preg_replace('/' . API_RE_TAG_START . '[{}]/', '', $documentation);
