@@ -118,13 +118,6 @@ function api_menu() {
   }
 
   // Part 1: No object, Default branch
-  $items['api'] = array(
-    'title' => 'API reference',
-    'access arguments' => array('access API reference'),
-    'page callback' => 'api_page_branch',
-    'page arguments' => array($default_branch),
-  );
-
   $items['api/search'] = array(
     'title' => 'API Search',
     'page callback' => 'drupal_get_form',
@@ -228,8 +221,17 @@ function api_menu() {
         'type' => MENU_CALLBACK,
       );
 
-      // Part 3: No object, specific branch
-      $items['api/'. $branch->branch_name] = array(
+      // Main branch page
+      if ($is_default) {
+        $items['api/' . $branch->project] = array(
+          'title' => 'API reference',
+          'page callback' => 'api_page_branch',
+          'page arguments' => array($branch),
+          'access arguments' => array('access API reference'),
+          'type' => $branch->branch_id === $default_branch->branch_id ? MENU_NORMAL_ITEM : MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/' . $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_branch',
         'page arguments' => array($branch),
@@ -971,18 +973,18 @@ function api_page_branch($branch) {
 /**
  * Menu callback; displays an object listing.
  */
-function api_page_listing($branch, $object_type) {
+function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing($result, $branch) . theme('pager', NULL, 50, 0) . api_switch_project($branch, $object_type . 's');
+  return api_render_listing($result, $branch) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
-function api_switch_project($current_branch, $url) {
+function api_switch_project($current_branch, $url = '') {
   $links = array();
   foreach (api_get_branches() as $branch) {
     if ($branch->status && $branch->project !== $current_branch->project && !isset($links[$branch->project])) {
       $links[$branch->project] = array(
         'title' => $branch->project,
-        'href' => 'api/' . $branch->project . '/' . $url,
+        'href' => 'api/' . $branch->project . $url,
       );
     }
   }
