@@ -124,41 +124,6 @@ function api_menu() {
     'page callback' => 'api_page_branch',
     'page arguments' => array($default_branch),
   );
-  $items['api/functions'] = array(
-    'title' => 'Functions',
-    'page callback' => 'api_page_listing',
-    'access arguments' => array('access API reference'),
-    'page arguments' => array($default_branch, 'function'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['api/constants'] = array(
-    'title' => 'Constants',
-    'page callback' => 'api_page_listing',
-    'access arguments' => array('access API reference'),
-    'page arguments' => array($default_branch, 'constant'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['api/globals'] = array(
-    'title' => 'Globals',
-    'page callback' => 'api_page_listing',
-    'access arguments' => array('access API reference'),
-    'page arguments' => array($default_branch, 'global'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['api/files'] = array(
-    'title' => 'Files',
-    'page callback' => 'api_page_listing',
-    'access arguments' => array('access API reference'),
-    'page arguments' => array($default_branch, 'file'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['api/groups'] = array(
-    'title' => 'Topics',
-    'page callback' => 'api_page_listing',
-    'access arguments' => array('access API reference'),
-    'page arguments' => array($default_branch, 'group'),
-    'type' => MENU_CALLBACK,
-  );
 
   $items['api/search'] = array(
     'title' => 'API Search',
@@ -271,35 +236,82 @@ function api_menu() {
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-      $items['api/functions/'. $branch->branch_name] = array(
+
+      // Listings
+      if ($is_default) {
+        $items['api/' . $branch->project . '/functions'] = array(
+          'title' => 'Functions',
+          'page callback' => 'api_page_listing',
+          'access arguments' => array('access API reference'),
+          'page arguments' => array($branch, 'function'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/functions/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'function'),
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-      $items['api/constants/'. $branch->branch_name] = array(
+      if ($is_default) {
+        $items['api/' . $branch->project . '/constants'] = array(
+          'title' => 'Constants',
+          'page callback' => 'api_page_listing',
+          'access arguments' => array('access API reference'),
+          'page arguments' => array($branch, 'constant'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/constants/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'constant'),
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-      $items['api/globals/'. $branch->branch_name] = array(
+      if ($is_default) {
+        $items['api/' . $branch->project . '/globals'] = array(
+          'title' => 'Globals',
+          'page callback' => 'api_page_listing',
+          'access arguments' => array('access API reference'),
+          'page arguments' => array($branch, 'global'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/globals/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'global'),
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-      $items['api/files/'. $branch->branch_name] = array(
+      if ($is_default) {
+        $items['api/' . $branch->project . '/files'] = array(
+          'title' => 'Files',
+          'page callback' => 'api_page_listing',
+          'access arguments' => array('access API reference'),
+          'page arguments' => array($branch, 'file'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/files/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'file'),
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-      $items['api/groups/'. $branch->branch_name] = array(
+      if ($is_default) {
+        $items['api/' . $branch->project . '/groups'] = array(
+          'title' => 'Topics',
+          'page callback' => 'api_page_listing',
+          'access arguments' => array('access API reference'),
+          'page arguments' => array($branch, 'group'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/groups/'. $branch->branch_name] = array(
         'title' => $branch->title,
         'page callback' => 'api_page_listing',
         'page arguments' => array($branch, 'group'),
@@ -668,22 +680,13 @@ function api_block($op, $delta = NULL, $edit = array()) {
 
         case 'navigation':
           if (user_access('access API reference') && !empty($branch)) {
-            // We forgo the menu system because we want to link to non-default
-            // local tasks; as of Drupal 5.x, this seems impossible.
-            if ($branch->branch_id == variable_get('api_default_branch', NULL)) {
-              $suffix = '';
-            }
-            else {
-              $suffix = '/'. $branch->branch_name;
-            }
-
             $links = array();
-            $links[] = l($branch->title, 'api'. $suffix);
-            $links[] = l(t('Constants'), 'api/constants'. $suffix);
-            $links[] = l(t('Files'), 'api/files'. $suffix);
-            $links[] = l(t('Functions'), 'api/functions'. $suffix);
-            $links[] = l(t('Globals'), 'api/globals'. $suffix);
-            $links[] = l(t('Topics'), 'api/groups'. $suffix);
+            $links[] = l($branch->title, 'api/' . $branch->branch_name);
+            $links[] = l(t('Constants'), 'api/' . $branch->project . '/constants/' . $branch->branch_name);
+            $links[] = l(t('Files'), 'api/' . $branch->project . '/files/' . $branch->branch_name);
+            $links[] = l(t('Functions'), 'api/' . $branch->project . '/functions/' . $branch->branch_name);
+            $links[] = l(t('Globals'), 'api/' . $branch->project . '/globals/' . $branch->branch_name);
+            $links[] = l(t('Topics'), 'api/' . $branch->project . '/groups/' . $branch->branch_name);
 
             return array(
               'content' => theme('item_list', $links),
@@ -970,7 +973,22 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing($result, $branch) . theme('pager', NULL, 50, 0);
+  return api_render_listing($result, $branch) . theme('pager', NULL, 50, 0) . api_switch_project($branch, $object_type . 's');
+}
+
+function api_switch_project($current_branch, $url) {
+  $links = array();
+  foreach (api_get_branches() as $branch) {
+    if ($branch->status && $branch->project !== $current_branch->project && !isset($links[$branch->project])) {
+      $links[$branch->project] = array(
+        'title' => $branch->project,
+        'href' => 'api/' . $branch->project . '/' . $url,
+      );
+    }
+  }
+  if (count($links) > 0) {
+    return '<p class="api-switch"><strong>' . t('Other projects:') . '</strong> ' . theme('links', $links) . '</p>';
+  }
 }
 
 /**
