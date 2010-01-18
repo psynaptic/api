@@ -1041,16 +1041,23 @@ function api_page_function_dump($branch) {
   }
 }
 
+function api_object_title_and_breadcrumb($branch, $object) {
+  drupal_set_title($object->title);
+  $breadcrumb = array(
+    l(t('Home'), ''),
+    l(t('API reference'), 'api/' . $branch->project),
+  );
+  if ($object->object_type !== 'file') {
+    $breadcrumb[] = l(basename($object->file_name), api_url($branch, $object, TRUE));
+  }
+  drupal_set_breadcrumb($breadcrumb);
+}
+
 /**
  * Menu callback; displays documentation for a function.
  */
 function api_page_function($branch, $function) {
-  drupal_set_title($function->title);
-  drupal_set_breadcrumb(array(
-    l(t('Home'), ''),
-    l(t('API reference'), 'api'),
-    l(basename($function->file_name), api_url($branch, $function, TRUE)),
-  ));
+  api_object_title_and_breadcrumb($branch, $function);
 
   $branches = api_get_branches();
   $last_signature = '';
@@ -1171,7 +1178,7 @@ function api_page_function($branch, $function) {
  * Menu callback; displays documentation for a constant.
  */
 function api_page_constant($branch, $constant) {
-  drupal_set_title($constant->title);
+  api_object_title_and_breadcrumb($branch, $constant);
 
   $documentation = api_link_documentation($constant->documentation, $branch);
   $code = api_link_code($constant->code, $branch);
@@ -1187,7 +1194,7 @@ function api_page_constant($branch, $constant) {
  * Menu callback; displays documentation for a global.
  */
 function api_page_global($branch, $global) {
-  drupal_set_title($global->title);
+  api_object_title_and_breadcrumb($branch, $global);
 
   $documentation = api_link_documentation($global->documentation, $branch);
   $related_topics = api_related_topics($global->did, $branch);
@@ -1203,7 +1210,7 @@ function api_page_global($branch, $global) {
  * Menu callback; displays documentation for a file.
  */
 function api_page_file($branch, $file) {
-  drupal_set_title($file->title);
+  api_object_title_and_breadcrumb($branch, $file);
 
   $documentation = api_link_documentation($file->documentation, $branch);
   $see = api_link_documentation($file->see, $branch);
@@ -1272,7 +1279,7 @@ function _api_add_comments($documentation_object) {
  * Menu callback; displays source code for a file.
  */
 function api_page_file_source($branch, $file) {
-  drupal_set_title($file->title);
+  api_object_title_and_breadcrumb($branch, $file);
 
   return api_link_code($file->code, $branch);
 }
@@ -1281,7 +1288,7 @@ function api_page_file_source($branch, $file) {
  * Menu callback; displays documentation for a group.
  */
 function api_page_group($branch, $group) {
-  drupal_set_title($group->title);
+  api_object_title_and_breadcrumb($branch, $group);
 
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch);
