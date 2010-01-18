@@ -683,7 +683,7 @@ function api_block($op, $delta = NULL, $edit = array()) {
         case 'navigation':
           if (user_access('access API reference') && !empty($branch)) {
             $links = array();
-            $links[] = l($branch->title, 'api/' . $branch->branch_name);
+            $links[] = l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name);
             $links[] = l(t('Constants'), 'api/' . $branch->project . '/constants/' . $branch->branch_name);
             $links[] = l(t('Files'), 'api/' . $branch->project . '/files/' . $branch->branch_name);
             $links[] = l(t('Functions'), 'api/' . $branch->project . '/functions/' . $branch->branch_name);
