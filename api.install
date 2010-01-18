@@ -121,6 +121,9 @@ function api_schema() {
 }
 
 function api_install() {
+  // Get access to api_save_branch().
+  drupal_load('module', 'api');
+
   drupal_install_schema('api');
 
   variable_set('comment_preview_api', COMMENT_PREVIEW_OPTIONAL);
