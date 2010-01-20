@@ -984,7 +984,7 @@ function api_switch_project($current_branch, $url = '') {
   foreach (api_get_branches() as $branch) {
     if ($branch->status && $branch->project !== $current_branch->project && !isset($links[$branch->project])) {
       $links[$branch->project] = array(
-        'title' => $branch->project,
+        'title' => $branch->title,
         'href' => 'api/' . $branch->project . $url,
       );
     }
