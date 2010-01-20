@@ -248,6 +248,15 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  foreach (api_get_branch_names() as $branch) {
+    $items['api/search/'. $branch .'/%menu_tail'] = array(
+      'title' => $branch,
+      'page callback' => 'api_search_listing',
+      'page arguments' => array($branch, 3),
+      'access arguments' => array('access API reference'),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
 
   foreach ($branches as $branch) {
     if ($branch->status) {
@@ -466,15 +475,6 @@ function api_menu() {
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
-
-      $items['api/search/'. $branch->branch_name .'/%menu_tail'] = array(
-        'title' => $branch->title,
-        'page callback' => 'api_search_listing',
-        'page arguments' => array($branch, 3),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_LOCAL_TASK,
-      );
-
     }
   }
 
@@ -876,22 +876,23 @@ function api_search_redirect() {
 /**
  * Menu callback; perform a global search for documentation.
  */
-function api_search_listing($branch) {
+function api_search_listing($branch_name) {
   $search_text = func_get_args();
   array_shift($search_text);
   $search_text = implode('/', $search_text);
   drupal_set_title(t('Search for %search', array('%search' => $search_text)));
 
-  $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d AND title = '%s'", $branch->branch_id, $search_text));
+  $count = db_result(db_query("SELECT COUNT(d.title) FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.title = '%s'", $branch_name, $search_text));
   if ($count == 1) {
     // Exact match.
-    $item = db_fetch_object(db_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND title = '%s'", $branch->branch_id, $search_text));
-    drupal_goto(api_url($branch, $item));
+    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, d.* FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.title = '%s'", $branch_name, $search_text));
+    $branches = api_get_branches();
+    drupal_goto(api_url($branches[$item->branch_id], $item));
   }
   else {
     // Wildcard search.
-    $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_name LIKE '%%%s%%' ORDER BY title", 50, 0, NULL, $branch->branch_id, $search_text);
-    return api_render_listing($result, $branch, t('No search results found.')) . theme('pager', NULL, 50, 0);
+    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, d.* FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.object_name LIKE '%%%s%%' ORDER BY d.title", 50, 0, NULL, $branch_name, $search_text);
+    return api_render_listing($result, t('No search results found.')) . theme('pager', NULL, 50, 0);
   }
 }
 
@@ -1027,7 +1028,8 @@ function api_switch_project($current_branch, $url = '') {
  * @param $empty_message
  *   An optional string to display instead of an empty table.
  */
-function api_render_listing($result, $branch, $empty_message = NULL) {
+function api_render_listing($result, $empty_message = NULL) {
+  $branches = api_get_branches();
   $headers = array(
     t('Name'),
     t('Location'),
@@ -1036,6 +1038,7 @@ function api_render_listing($result, $branch, $empty_message = NULL) {
 
   $rows = array();
   while ($object = db_fetch_object($result)) {
+    $branch = $branches[$object->branch_id];
     $rows[] = array(
       l($object->title, api_url($branch, $object)),
       '<small>'. api_file_link($branch, $object) .'</small>',
