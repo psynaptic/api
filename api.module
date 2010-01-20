@@ -85,6 +85,23 @@ function api_get_branches($_reset = FALSE) {
 }
 
 /**
+ * Get the list of currently-used branch names across all projects.
+ */
+function api_get_branch_names($_reset = FALSE) {
+  static $branch_names;
+
+  if (!isset($branch_names) || $_reset) {
+    $result = db_query("SELECT DISTINCT branch_name FROM {api_branch} WHERE status = 1");
+    $branch_names = array();
+    while ($branch = db_fetch_object($result)) {
+      $branch_names[$branch->branch_name] = $branch->branch_name;
+    }
+  }
+
+  return $branch_names;
+}
+
+/**
  * Implementation of hook_menu().
  */
 function api_menu() {
@@ -198,6 +215,7 @@ function api_menu() {
     );
   }
 
+  // OpenSearch metadata callback.
   $items['api/opensearch/%'] = array(
     'page callback' => 'api_opensearch',
     'page arguments' => array(2),
@@ -205,21 +223,35 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // OpenSearch suggestions callback.
+  $items['api/suggest/%/%menu_tail'] = array(
+    'page callback' => 'api_suggest',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Autocomplete callback.
+  // This returns ALL possibilities for a branch name.
+  $items['api/autocomplete/%'] = array(
+    'page callback' => 'api_autocomplete',
+    'page arguments' => array(2, TRUE),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Function dumps for IDEs and code editors.
+  $items['api/function_dump/%'] = array(
+    'page callback' => 'api_page_function_dump',
+    'page arguments' => array(2),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+  );
+
+
   foreach ($branches as $branch) {
     if ($branch->status) {
       $is_default = ($branch->branch_name === $projects[$branch->project]['use branch']);
-      $items['api/suggest/' . $branch->branch_name . '/%'] = array(
-        'page callback' => 'api_suggest',
-        'page arguments' => array($branch, 3),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
-      $items['api/autocomplete/' . $branch->branch_name] = array(
-        'page callback' => 'api_autocomplete',
-        'page arguments' => array($branch),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
 
       // Main branch page
       if ($is_default) {
@@ -443,13 +475,6 @@ function api_menu() {
         'type' => MENU_LOCAL_TASK,
       );
 
-      // Function dumps for IDEs and code editors.
-      $items['api/function_dump/'. $branch->branch_name] = array(
-        'page callback' => 'api_page_function_dump',
-        'page arguments' => array($branch),
-        'access arguments' => array('access API reference'),
-        'type' => MENU_CALLBACK,
-      );
     }
   }
 
@@ -634,9 +659,9 @@ function api_init() {
   drupal_add_js(drupal_get_path('module', 'api') . '/api.js');
 
   // Add OpenSearch autodiscovery links.
-  foreach (api_get_branches() as $branch) {
-    $title = t('Drupal API @branch', array('@branch' => $branch->branch_name));
-    $url = url('api/opensearch/'. $branch->branch_name, array('absolute' => TRUE));
+  foreach (api_get_branch_names() as $branch_name) {
+    $title = t('Drupal API @branch', array('@branch' => $branch_name));
+    $url = url('api/opensearch/'. $branch_name, array('absolute' => TRUE));
     drupal_set_html_head('<link rel="search" type="application/opensearchdescription+xml" href="'. $url .'" title="'. $title .'" />');
   }
 
@@ -768,7 +793,7 @@ function api_save_branch($branch) {
   if (empty($branch->branch_id)) {
     drupal_write_record('api_branch', $branch);
     if (is_null(variable_get('api_default_branch', NULL))) {
-      variable_set('api_default_branch', db_last_insert_id('api_branch', 'branch_id'));
+      variable_set('api_default_branch', $branch->branch_id);
     }
   }
   else {
@@ -876,8 +901,8 @@ function api_search_listing($branch) {
  * @param $branch
  *   A branch.
  */
-function api_autocomplete($branch, $page = TRUE) {
-  $result = db_query("SELECT title, object_type FROM {api_documentation} WHERE branch_id = %d AND object_type <> 'mainpage' ORDER BY LENGTH(title)", $branch->branch_id);
+function api_autocomplete($branch_name, $page = TRUE) {
+  $result = db_query("SELECT d.title, d.object_type FROM {api_documentation} d INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE b.branch_name = '%s' AND d.object_type <> 'mainpage' ORDER BY LENGTH(d.title)", $branch_name);
   while ($object = db_fetch_object($result)) {
     $objects[] = $object->title;
   }
@@ -951,7 +976,7 @@ function api_suggest($branch) {
   $matches = array();
   $search = func_get_args();
   array_shift($search);
-  $result = db_query_range("SELECT title FROM {api_documentation} WHERE title LIKE '%%%s%%' AND branch_id = %d ORDER BY LENGTH(title)", implode('/', str_replace('_', '\_', $search)), $branch->branch_id, 0, 10);
+  $result = db_query_range("SELECT d.title FROM {api_documentation} d INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.title LIKE '%%%s%%' AND b.branch_name = '%s' ORDER BY LENGTH(d.title)", implode('/', str_replace('_', '\_', $search)), $branch, 0, 10);
   while ($r = db_fetch_object($result)) {
     $matches[] = $r->title;
   }
@@ -1034,8 +1059,8 @@ function api_render_listing($result, $branch, $empty_message = NULL) {
 /**
  * Menu callback; produces a textual listing of all functions for use in IDEs.
  */
-function api_page_function_dump($branch) {
-  $result = db_query("SELECT d.title, d.summary, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON d.did = f.did WHERE d.branch_id = %d AND d.object_type = 'function'", $branch->branch_id);
+function api_page_function_dump($branch_name) {
+  $result = db_query("SELECT d.title, d.summary, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON d.did = f.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id  WHERE b.branch_name = '%s' AND d.object_type = 'function'", $branch_name);
   while ($object = db_fetch_object($result)) {
     print($object->signature);
     print(' ### '. $object->summary ."\n");

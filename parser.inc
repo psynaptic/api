@@ -664,10 +664,10 @@ function api_shutdown() {
     $path = file_create_path('api');
     file_check_directory($path, FILE_CREATE_DIRECTORY);
     $date = gmdate('U');
-    foreach (api_get_branches() as $branch) {
-      $new_json = api_autocomplete($branch, FALSE);
+    foreach (api_get_branch_names() as $branch_name) {
+      $new_json = api_autocomplete($branch_name, FALSE);
 
-      $old_file_path = variable_get('api_autocomplete_path_' . $branch->branch_name, FALSE);
+      $old_file_path = variable_get('api_autocomplete_path_' . $branch_name, FALSE);
       if ($old_file_path !== FALSE) {
         if (md5($new_json) === md5(file_get_contents($old_file_path))) {
           continue; // No changes, no file write.
@@ -676,9 +676,9 @@ function api_shutdown() {
         job_queue_add('file_delete', t('Remove expired API JSON, %path.'), array('%path' => $old_file_path));
       }
 
-      $file_name = $path . '/api-' . $branch->branch_id . '-' . $date . '.json';
+      $file_name = $path . '/api-' . $branch_name . '-' . $date . '.json';
       file_save_data($new_json, $file_name, FILE_EXISTS_REPLACE);
-      variable_set('api_autocomplete_path_' . $branch->branch_name, $file_name);
+      variable_set('api_autocomplete_path_' . $branch_name, $file_name);
     }
   }
 
