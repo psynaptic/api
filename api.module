@@ -801,6 +801,7 @@ function api_get_active_branch() {
       $branch = $item['page_arguments'][0];
     }
     else {
+      $branches = api_get_branches();
       $branch = $branches[variable_get('api_default_branch', NULL)];
     }
   }
