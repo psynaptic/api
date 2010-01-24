@@ -254,7 +254,6 @@ function api_save_documentation($docblocks) {
       $docblock['return_value'] = api_format_documentation($docblock['return_value']);
 
       // Find @see lines.
-      $param_match = array();
       $offset = 0;
       $docblock['see'] = '';
       while (preg_match('/' . API_RE_TAG_START . 'see(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
