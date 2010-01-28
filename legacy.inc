@@ -20,7 +20,7 @@ function api_file_redirect() {
       $branch = $b;
       $file->branch_name = $args[$end];
       $end -= 1;
-      break
+      break;
     }
   }
   $file->object_name = implode('/', array_slice($args, 0, $end + 1));
