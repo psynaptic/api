@@ -1002,7 +1002,7 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing($result, $branch) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing($result) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 function api_switch_project($current_branch, $url = '') {
@@ -1406,7 +1406,7 @@ function api_filter_documentation($text, $branch) {
 function _api_link_documentation($documentation, $branch, $stages = array()) {
   $patterns = array(
     // Find HTML tags, which will not be filtered.
-    'tags' => '/(<[^>]+?>)/',
+    'tags' => '/(<[^>]+?'.'>)/',
 
     // Find @link
     'link' => '/' . API_RE_TAG_START . 'link\s+(.*)\s+' . API_RE_TAG_START . 'endlink/',
