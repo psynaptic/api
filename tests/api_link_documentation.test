@@ -18,17 +18,17 @@ class ApiLinkDocumentationTest extends ApiTestCase {
       array(
         'message' => 'Function name linking',
         'data' => 'sample_function(',
-        'expected' => '<a href="'. url('api/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>(',
+        'expected' => '<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>(',
       ),
       array(
         'message' => 'Function name linking with preceding space',
         'data' => ' sample_function(',
-        'expected' => ' <a href="'. url('api/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>(',
+        'expected' => ' <a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>(',
       ),
       array(
         'message' => 'Function @link',
         'data' => '@link sample_function A sample function. @endlink',
-        'expected' => '<a href="'. url('api/function/sample_function/6') .'" title="A sample function." class="local">A sample function.</a>',
+        'expected' => '<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">A sample function.</a>',
       ),
 
       // Should not be linked
@@ -62,27 +62,27 @@ class ApiLinkDocumentationTest extends ApiTestCase {
       array(
         'message' => 'File name linking',
         'data' => 'sample.php',
-        'expected' => '<a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">sample.php</a>',
+        'expected' => '<a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">sample.php</a>',
       ),
       array(
         'message' => 'File name linking with preceding space',
         'data' => ' sample.php',
-        'expected' => ' <a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">sample.php</a>',
+        'expected' => ' <a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">sample.php</a>',
       ),
       array(
         'message' => 'File name linking with following space',
         'data' => 'sample.php ',
-        'expected' => '<a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">sample.php</a> ',
+        'expected' => '<a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">sample.php</a> ',
       ),
       array(
         'message' => 'File name linking with following punctuation',
         'data' => 'sample.php.',
-        'expected' => '<a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">sample.php</a>.',
+        'expected' => '<a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">sample.php</a>.',
       ),
       array(
         'message' => 'File @link',
         'data' => '@link sample.php A sample file. @endlink',
-        'expected' => '<a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">A sample file.</a>',
+        'expected' => '<a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">A sample file.</a>',
       ),
 
       // Should not be linked
@@ -104,7 +104,7 @@ class ApiLinkDocumentationTest extends ApiTestCase {
       array(
         'message' => 'File \\@link, does fill in file link',
         'data' => '\\@link sample.php A sample file. @endlink',
-        'expected' => '@link <a href="'. url('api/drupal/sample.php/6') .'" title="A sample file." class="local">sample.php</a> A sample file. @endlink',
+        'expected' => '@link <a href="'. url('api/test/sample.php/6') .'" title="A sample file." class="local">sample.php</a> A sample file. @endlink',
       ),
 
       array(
@@ -120,7 +120,7 @@ class ApiLinkDocumentationTest extends ApiTestCase {
     );
 
     foreach ($tests as $test) {
-      $result = api_link_documentation($test['data'], 6);
+      $result = api_link_documentation($test['data'], $this->getBranch());
       $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }

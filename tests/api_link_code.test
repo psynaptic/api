@@ -18,7 +18,7 @@ class ApiLinkCodeTest extends ApiTestCase {
       array(
         'message' => 'Marked-up function name linking',
         'data' => '<span class="php-function-or-constant">sample_function</span>',
-        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a></span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a></span>',
       ),
 
       // Should not be linked
@@ -35,7 +35,7 @@ class ApiLinkCodeTest extends ApiTestCase {
     );
 
     foreach ($tests as $test) {
-      $result = api_link_code($test['data'], '6');
+      $result = api_link_code($test['data'], $this->getBranch());
       $this->assertEqual($result, $test['expected'], $test['message']);
     }
   }
