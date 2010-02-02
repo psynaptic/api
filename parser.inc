@@ -205,6 +205,7 @@ function api_save_documentation($docblocks) {
   foreach ($docblocks as $docblock) {
     if (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
       $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
+      break;
     }
   }
   foreach ($docblocks as $docblock) {
