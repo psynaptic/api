@@ -36,7 +36,7 @@ class ApiLinkCodeTest extends ApiTestCase {
 
     foreach ($tests as $test) {
       $result = api_link_code($test['data'], $this->getBranch());
-      $this->assertEqual($result, $test['expected'], $test['message']);
+      $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }
 }
