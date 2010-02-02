@@ -201,6 +201,12 @@ function api_save_documentation($docblocks) {
   }
 
   $dids = array();
+  // Look for @file block first so $docblocks[0] gets filled in before it is processed.
+  foreach ($docblocks as $docblock) {
+    if (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
+      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
+    }
+  }
   foreach ($docblocks as $docblock) {
     if (preg_match('/' . API_RE_TAG_START . 'mainpage/', $docblock['content'])) {
       $mainpage_matches = array();
@@ -209,10 +215,6 @@ function api_save_documentation($docblocks) {
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
       $docblock['object_type'] = 'mainpage';
       $docblock['object_name'] = $docblocks[0]['branch']->branch_name;
-    }
-    elseif (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
-      $docblocks[0]['content'] = str_replace('@file', '', $docblock['content']);
-      $docblocks[0]['documentation'] = api_format_documentation($docblocks[0]['content']);
     }
     elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
       $group_matches = array();
@@ -301,12 +303,13 @@ function api_save_documentation($docblocks) {
     $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $docblock['code_start']), "\n");
     if (!isset($docblock['code'])) {
       if (isset($docblock['code_end'])) {
-        $docblock['code'] = api_format_php("<?php\n". substr($docblocks[0]['source'], $docblock['code_start'], $docblock['code_end'] - $docblock['code_start']) ."\n?>");
+        $docblock['code'] = api_format_php("<?php\n". substr($docblocks[0]['source'], $docblock['code_start'], $docblock['code_end'] - $docblock['code_start']) ."\n?".">");
       }
       else {
         $docblock['code'] = '';
       }
     }
+
     $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($did > 0) {
       db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d, see = '%s' WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see'], $did);
