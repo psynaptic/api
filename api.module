@@ -1371,9 +1371,9 @@ function api_related_topics($did, $branch) {
     t('Description'),
   );
   $topics = array();
-  $result = db_query("SELECT d.object_name, d.title, d.summary FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.to_did = d.did AND d.object_type = 'group' WHERE r.from_did = %d", $did);
+  $result = db_query("SELECT d.object_name, d.file_name, d.object_type, d.title, d.summary FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.to_did = d.did AND d.object_type = 'group' WHERE r.from_did = %d", $did);
   while ($group = db_fetch_object($result)) {
-    $topics[l($group->title, 'api/group/'. $group->object_name .'/'. $branch->branch_name)] = api_link_documentation($group->summary, $branch);
+    $topics[l($group->title, api_url($branch, $group))] = api_link_documentation($group->summary, $branch);
   }
   if (count($topics) > 0) {
     return theme('api_related_topics', $topics);
