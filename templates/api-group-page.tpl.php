@@ -17,5 +17,9 @@
 <h3><?php print t('Functions') ?></h3>
 <?php print $functions ?>
 <?php } ?>
+<?php if (!empty($files)) { ?>
+<h3><?php print t('Files') ?></h3>
+<?php print $files ?>
+<?php } ?>
 
 <?php print $defined; ?>

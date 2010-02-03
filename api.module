@@ -612,6 +612,7 @@ function api_theme() {
         'globals' => NULL,
         'functions' => NULL,
         'see' => NULL,
+        'related_topics' => NULL,
       ),
       'template' => 'templates/api-file-page'
     ),
@@ -623,6 +624,7 @@ function api_theme() {
         'constants' => NULL,
         'globals' => NULL,
         'functions' => NULL,
+        'files' => NULL,
         'see' => NULL,
       ),
       'template' => 'templates/api-group-page'
@@ -1271,8 +1273,9 @@ function api_page_file($branch, $file) {
   if (count($rows['function']) > 0) {
     $functions = theme('table', $header, $rows['function']);
   }
+  $related_topics = api_related_topics($file->did, $branch);
 
-  $output = theme('api_file_page', $file, $documentation, $constants, $globals, $functions, $see);
+  $output = theme('api_file_page', $file, $documentation, $constants, $globals, $functions, $see, $related_topics);
   $output .= _api_add_comments($file);
   return $output;
 }
@@ -1327,7 +1330,7 @@ function api_page_group($branch, $group) {
     'global' => array(),
     'function' => array(),
   );
-  $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
+  $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
       l($object->title, api_url($branch, $object)),
@@ -1352,8 +1355,12 @@ function api_page_group($branch, $group) {
   if (count($rows['function']) > 0) {
     $functions = theme('table', $header, $rows['function']);
   }
+  $files = '';
+  if (count($rows['file']) > 0) {
+    $files = theme('table', $header, $rows['file']);
+  }
 
-  $output = theme('api_group_page', $branch, $group, $documentation, $constants, $globals, $functions, $see);
+  $output = theme('api_group_page', $branch, $group, $documentation, $constants, $globals, $functions, $files, $see);
   $output .= _api_add_comments($group);
   return $output;
 }

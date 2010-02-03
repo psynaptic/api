@@ -21,3 +21,7 @@
 <h3><?php print t('Functions') ?></h3>
 <?php print $functions ?>
 <?php } ?>
+<?php if (!empty($related_topics)) { ?>
+<h3><?php print t('Related topics') ?></h3>
+<?php print $related_topics ?>
+<?php } ?>
