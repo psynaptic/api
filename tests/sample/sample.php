@@ -6,6 +6,21 @@
  */
 
 /**
+ * @defgroup samples Samples
+ * @{
+ */
+
+/**
+ * A sample global.
+ */
+global $global;
+
+/**
+ * A sample constant.
+ */
+define('SAMPLE_CONSTANT');
+
+/**
  * A sample function.
  *
  * Use for sample-related purposes.
@@ -15,3 +30,7 @@
  */
 function sample_function($parameter) {
 }
+
+/**
+ * @} end samples
+ */
