@@ -7,6 +7,9 @@
 
 /**
  * @defgroup samples Samples
+ *
+ * A sample group.
+ *
  * @{
  */
 
