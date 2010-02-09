@@ -20,22 +20,22 @@ class apiUpdateBranchPhp extends ApiTestCase {
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch);
-    $this->assertEqual($object->summary, 'A sample file.', 'sample.php has summary <em>' . $object->summary . '</em>');
+    $this->assertEqual($object->summary, 'A sample file.', t('sample.php has summary %summary.', array('%summary' => $object->summary)));
 
     // Check sample_function()
     $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
-    $this->assertEqual($object->summary, 'A sample function.', 'sample_function() has summary <em>' . $object->summary . '</em>');
+    $this->assertEqual($object->summary, 'A sample function.', t('sample_function() has summary %summary.', array('%summary' => $object->summary)));
 
     // Check $sample_global
     $object = api_object_load('sample_global', $branch, 'global', 'sample.php');
-    $this->assertEqual($object->summary, 'A sample global.', '$sample_global has summary <em>' . $object->summary . '</em>');
+    $this->assertEqual($object->summary, 'A sample global.', t('$sample_global has summary %summary.', array('%summary' => $object->summary)));
 
     // Check SAMPLE_CONSTANT
     $object = api_object_load('SAMPLE_CONSTANT', $branch, 'constant', 'sample.php');
-    $this->assertEqual($object->summary, 'A sample constant.', 'SAMPLE_CONSTANT has summary <em>' . $object->summary . '</em>');
+    $this->assertEqual($object->summary, 'A sample constant.', t('SAMPLE_CONSTANT has summary %summary.', array('%summary' => $object->summary)));
 
     // Check group samples
     $object = api_object_load('samples', $branch, 'group', 'sample.php');
-    $this->assertEqual($object->summary, 'A sample group.', 'Group samples has summary <em>' . $object->summary . '</em>');
+    $this->assertEqual($object->summary, 'A sample group.', t('Group samples has summary %summary.', array('%summary' => $object->summary)));
   }
 }
