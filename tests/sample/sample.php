@@ -16,7 +16,7 @@
 /**
  * A sample global.
  */
-global $global;
+global $sample_global;
 
 /**
  * A sample constant.

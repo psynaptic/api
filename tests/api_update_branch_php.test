@@ -1,0 +1,41 @@
+<?php
+// $Id$
+
+include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
+
+class apiUpdateBranchPhp extends ApiTestCase {
+  function getInfo() {
+    return array(
+      'name' => t('api_update_branch_php()'),
+      'description' => t('Test the api_update_branch_php() function.'),
+      'group' => 'API Module',
+    );
+  }
+  
+  function testApiUpdateBranchPhp() {
+    // Make sure we have the right number of doc objects.
+    $branch = $this->getBranch();
+    $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
+    $this->assertEqual($count, 5, 'Found ' . $count . ' documentation objects.');
+
+    // Check sample.php
+    $object = api_filename_load('sample.php', $branch);
+    $this->assertEqual($object->summary, 'A sample file.', 'sample.php has summary <em>' . $object->summary . '</em>');
+
+    // Check sample_function()
+    $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
+    $this->assertEqual($object->summary, 'A sample function.', 'sample_function() has summary <em>' . $object->summary . '</em>');
+
+    // Check $sample_global
+    $object = api_object_load('sample_global', $branch, 'global', 'sample.php');
+    $this->assertEqual($object->summary, 'A sample global.', '$sample_global has summary <em>' . $object->summary . '</em>');
+
+    // Check SAMPLE_CONSTANT
+    $object = api_object_load('SAMPLE_CONSTANT', $branch, 'constant', 'sample.php');
+    $this->assertEqual($object->summary, 'A sample constant.', 'SAMPLE_CONSTANT has summary <em>' . $object->summary . '</em>');
+
+    // Check group samples
+    $object = api_object_load('samples', $branch, 'group', 'sample.php');
+    $this->assertEqual($object->summary, 'A sample group.', 'Group samples has summary <em>' . $object->summary . '</em>');
+  }
+}
