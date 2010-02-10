@@ -6,6 +6,13 @@
  * The PHP documentation parser that generates content for api.module.
  */
 
+module_load_include('inc', 'pgp', 'engine/pgp.parser');
+module_load_include('inc', 'pgp', 'engine/pgp.reader');
+module_load_include('inc', 'pgp', 'engine/pgp.writer');
+module_load_include('inc', 'pgp', 'engine/pgp.editor');
+module_load_include('inc', 'pgp', 'engine/pgp.list');
+module_load_include('inc', 'pgp', 'engine/pgp.object');
+
 function api_parse_file($callback, $file_path, $branch, $file_name) {
   $docblock = array(
     'object_name' => $file_name,
@@ -59,114 +66,126 @@ function api_parse_html_file($docblock) {
  * Read in the file at the given path and parse its documentation.
  */
 function api_parse_php_file($docblock) {
+  // Build grammar statements.
+  $editor = api_get_editor();
+  $reader = $editor->getReader();
+  $reader->setSnippet($docblock['source']);
+  $reader->addTokenNames();
+  $reader->buildGrammar();
+
+  // Retrieve items of interest.
+  $statements = $reader->getStatements();
+  if (!$statements) {
+    // This is a text file or template file with no functions, constants, etc.
+    $docblock['code'] = api_format_php($docblock['source']);
+    api_save_documentation(array($docblock));
+    // Free up memory.
+    $reader->reset();
+    return;
+  }
+
+  // Reserve the first array slot for the file documentation block.
+  $docblocks = array();
   $docblock['code'] = api_format_php($docblock['source']);
-  $docblocks = array($docblock);
+  $docblocks[] = $docblock;
 
-  $docblock_matches = array();
-  preg_match_all('!/\*\*(.*?)\*/!s', $docblocks[0]['source'], $docblock_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
-  foreach ($docblock_matches as $docblock_match) {
-    $docblock = array(
-      'object_name' => '',
-      'object_type' => '',
-      'file_name' => $docblocks[0]['file_name'],
-      'title' => '',
-      'documentation' => '',
-      'content' => str_replace(array("\n *", "\n "), array("\n", "\n"), $docblock_match[1][0]),
-      'start' => $docblock_match[0][1],
-      'length' => strlen($docblock_match[0][0]),
-    );
-    $docblock['code_start'] = $docblock['start'] + $docblock['length'] + 1;
+  // Set default documenation block array for items other than the file.
+  $default_block = array(
+    'branch' => $docblock['branch'],
+    'file_name' => $docblock['file_name'],
+    'modified' => $docblock['modified'], // Only needed for 'file' item, but it simplifies parameters in other functions.
+  );
 
-    // Determine what kind of documentation block this is.
-    if (substr($docblocks[0]['source'], $docblock['code_start'], 8) === 'function') {
-      $docblock['object_type'] = 'function';
-      $function_matches = array();
-      preg_match('!^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{!', substr($docblocks[0]['source'], $docblock['code_start']), $function_matches);
-      $docblock['object_name'] = $function_matches[2];
-      $docblock['title'] = $function_matches[2];
-      $docblock['signature'] = $function_matches[1];
+  api_documentation_loop($statements, $default_block, $docblocks);
 
-      // We rely on the Drupal coding convention that functions are closed in column 1.
-      $docblock['code_end'] = strpos($docblocks[0]['source'], "\n}", $docblock['code_start']) + 2;
-    }
-    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) === 'define') {
-      $docblock['object_type'] = 'constant';
-      $constant_matches = array();
-      preg_match('!^define\([\'"]([a-zA-Z0-9_]+)[\'"]!', substr($docblocks[0]['source'], $docblock['code_start']), $constant_matches);
-      $docblock['object_name'] = $constant_matches[1];
-      $docblock['title'] = $constant_matches[1];
-
-      $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
-    }
-    elseif (substr($docblocks[0]['source'], $docblock['code_start'], 6) === 'global') {
-      $docblock['object_type'] = 'global';
-      $global_matches = array();
-      preg_match('!^global (\$[a-zA-Z0-9_]+)!', substr($docblocks[0]['source'], $docblock['code_start']), $global_matches);
-
-      $docblock['object_name'] = substr($global_matches[1], 1);
-      $docblock['title'] = $global_matches[1];
-
-      $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
-    }
-
-    $docblocks[] = $docblock;
-  }
-
-  // Find undocumented functions.
-  $function_matches = array();
-  preg_match_all('%(?<!\*/\n)^function (&?([a-zA-Z0-9_]+)\(.*?)\s*\{%sm', $docblocks[0]['source'], $function_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
-  foreach ($function_matches as $function_match) {
-    $docblock = array(
-      'object_name' => $function_match[2][0],
-      'object_type' => 'function',
-      'file_name' => $docblocks[0]['file_name'],
-      'title' => $function_match[2][0],
-      'documentation' => '',
-      'signature' => $function_match[1][0],
-      'parameters' => '',
-      'return_value' => '',
-      'code_start' => $function_match[0][1],
-    );
-    $docblock['code_end'] = strpos($docblocks[0]['source'], "\n}", $docblock['code_start']) + 2;
-
-    $docblocks[] = $docblock;
-  }
-
-  // Find undocumented constants.
-  $constant_matches = array();
-  preg_match_all('%(?<!\*/\n)^define\([\'"]([a-zA-Z0-9_]+)[\'"]%sm', $docblocks[0]['source'], $constant_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
-  foreach ($constant_matches as $constant_match) {
-    $docblock = array(
-      'object_name' => $constant_match[1][0],
-      'object_type' => 'constant',
-      'file_name' => $docblocks[0]['file_name'],
-      'title' => $constant_match[1][0],
-      'documentation' => '',
-      'code_start' => $constant_match[0][1],
-    );
-    $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
-
-    $docblocks[] = $docblock;
-  }
-
-  // Find undocumented globals.
-  $global_matches = array();
-  preg_match_all('%(?<!\*/\n)^global (\$[a-zA-Z0-9_]+)%sm', $docblocks[0]['source'], $global_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
-  foreach ($global_matches as $global_match) {
-    $docblock = array(
-      'object_name' => $global_match[1][0],
-      'object_type' => 'global',
-      'file_name' => $docblocks[0]['file_name'],
-      'title' => $global_match[1][0],
-      'documentation' => '',
-      'code_start' => $global_match[0][1],
-    );
-    $docblock['code_end'] = strpos($docblocks[0]['source'], ';', $docblock['code_start']) + 1;
-
-    $docblocks[] = $docblock;
-  }
+  // Free up memory.
+  $reader->reset();
 
   api_save_documentation($docblocks);
+}
+
+/**
+ * Returns a PGPEditor object. (Singleton)
+ *
+ * @return PGPEditor
+ */
+function api_get_editor() {
+  static $editor;
+  if (!$editor) {
+    $editor = new PGPEditor();
+  }
+  return $editor;
+}
+
+/**
+ * Build a list of documentation items.
+ *
+ * @param array $statements
+ *   A PGPBody object of body statements.
+ * @param array $default_block
+ *   The default documentation block item for the file.
+ * @param array $docblocks
+ *   The array of documentation block items for the file.
+ */
+function api_documentation_loop($statements, $default_block, &$docblocks) {
+  $editor = api_get_editor();
+
+  // Traverse statement list to gather documentation items.
+  $current = $statements->first();
+  while ($current->next != NULL) {
+    $statement = $current->data;
+    $type = is_object($statement) ? $statement->type : $statement['type'];
+    // Common processing.
+    switch ($type) {
+//      case T_INTERFACE:
+//      case T_CLASS:
+      case T_FUNCTION:
+      case T_DEFINE:
+      case T_GLOBAL:
+        $docblock = $default_block;
+        $docblock['object_type'] = $editor->statementTypeToString($statement);
+        if ($type == T_GLOBAL) {
+          $docblock['object_name'] = $default_block['class'] . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
+        }
+        else {
+          $docblock['object_name'] = $default_block['class'] . $editor->statementOperandToText($statement);
+        }
+        $docblock['title'] = $editor->statementOperandToText($statement);
+        $docblock['start_line'] = $current->line;
+
+        $docblock['content'] = $editor->commentToString($statement->comment);
+        unset($statement->comment);
+        $docblock['code'] = api_format_php("<?php\n". $statement->toString() ."\n?".">");
+
+        if (in_array($statement->type, array(T_CLASS, T_FUNCTION))) {
+          $docblock['signature'] = $editor->functionGetSignature($statement);
+        }
+        break;
+
+      case T_DOC_COMMENT:
+        $docblock = $default_block;
+        $docblock['content'] = $editor->commentToString($statement);
+        $docblock['start_line'] = $current->line;
+        break;
+
+      default:
+        $docblock = array();
+        continue;
+    }
+    if (!empty($docblock)) {
+      $docblocks[] = $docblock;
+    }
+
+    // Additional recursive processing on statements with bodies.
+    switch ($type) {
+//      case T_INTERFACE:
+      case T_CLASS:
+        $default_block['class'] = $docblock['object_name'] . '::';
+        api_documentation_loop($statement->body, $default_block, $docblocks);
+        break;
+    }
+    $current = $current->next;
+  }
 }
 
 /**
@@ -230,7 +249,7 @@ function api_save_documentation($docblocks) {
       }
     }
 
-    if ($docblock['object_type'] === '') {
+    if (empty($docblock['object_type'])) {
       continue;
     }
 
@@ -298,18 +317,7 @@ function api_save_documentation($docblocks) {
 
       $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
-    if (!isset($docblock['summary'])) {
-      $docblock['summary'] = api_documentation_summary($docblock['documentation']);
-    }
-    $docblock['start_line'] = substr_count(substr($docblocks[0]['source'], 0, $docblock['code_start']), "\n");
-    if (!isset($docblock['code'])) {
-      if (isset($docblock['code_end'])) {
-        $docblock['code'] = api_format_php("<?php\n". substr($docblocks[0]['source'], $docblock['code_start'], $docblock['code_end'] - $docblock['code_start']) ."\n?".">");
-      }
-      else {
-        $docblock['code'] = '';
-      }
-    }
+    $docblock['summary'] = api_documentation_summary($docblock['documentation']);
 
     $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($did > 0) {
@@ -455,7 +463,7 @@ function api_autop($text) {
  * Regexp replace callback for code tags.
  */
 function api_format_embedded_php($matches) {
-  return "\n\n". api_format_php("<?php\n". decode_entities($matches[1]) ."\n?>") ."\n\n";
+  return "\n\n". api_format_php("<?php\n". decode_entities($matches[1]) ."\n?".">") ."\n\n";
 }
 
 /**
@@ -709,7 +717,6 @@ function api_update_branch_php($branch) {
         'object_type' => 'function',
         'object_name' => $function_match[1],
         'title' => $function_match[1],
-        'summary' => api_documentation_summary($function_match[0]),
         'documentation' => $function_match[0],
       );
     }
