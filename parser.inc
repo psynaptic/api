@@ -249,6 +249,34 @@ function api_save_documentation($docblocks) {
       }
     }
 
+    // Determine group membership.
+    $match = array();
+    if (preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $match)) {
+      $docblock['groups'] = $match[2];
+      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . '(ingroup|addtogroup).*?\n/', '', $docblock['content']);
+    }
+
+    // Handle nested function groups.
+    foreach ($nested_groups as $group_id) {
+      if (!empty($group_id)) {
+        $docblock['groups'][] = $group_id;
+      }
+    }
+    if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
+      if ($docblock['object_type'] === 'group') {
+        array_push($nested_groups, $docblock['object_name']);
+      }
+      elseif (isset($docblock['groups'])) {
+        array_push($nested_groups, reset($docblock['groups']));
+      }
+      else {
+        array_push($nested_groups, '');
+      }
+    }
+    if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
+      array_pop($nested_groups);
+    }
+
     if (empty($docblock['object_type'])) {
       continue;
     }
@@ -284,36 +312,6 @@ function api_save_documentation($docblocks) {
         $offset = $match[0][1];
       }
       $docblock['see'] = api_format_documentation($docblock['see']);
-
-      // Determine group membership.
-      $group_matches = array();
-      preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches);
-      $docblock['groups'] = $group_matches[2];
-      $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'ingroup.*?\n/', '', $docblock['content']);
-
-      // Handle nested function groups.
-      foreach ($nested_groups as $group_id) {
-        if (!empty($group_id)) {
-          $docblock['groups'][] = $group_id;
-        }
-      }
-      if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
-        if ($docblock['object_type'] === 'group') {
-          array_push($nested_groups, $docblock['object_name']);
-        }
-        else {
-          $group_matches = array();
-          if (preg_match('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $group_matches)) {
-            array_push($nested_groups, $group_matches[2]);
-          }
-          else {
-            array_push($nested_groups, '');
-          }
-        }
-      }
-      if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
-        array_pop($nested_groups);
-      }
 
       $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
