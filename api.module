@@ -513,16 +513,16 @@ function api_object_load($object_name, $branch, $object_type, $file_name = NULL)
       $arguments[] = $file->file_name;
     }
 
-    if ($object_type == 'function') {
-      $tables[] = 'LEFT JOIN {api_function} af ON (af.did = ad.did)';
+    if ($object_type === 'function') {
+      $tables[] = 'LEFT JOIN {api_function} af ON af.did = ad.did';
       $fields[] = 'af.*';
     }
-    else if ($object_type == 'file') {
-      $tables[] = 'LEFT JOIN {api_file} af ON (af.did = ad.did)';
+    elseif ($object_type === 'file') {
+      $tables[] = 'LEFT JOIN {api_file} af ON af.did = ad.did';
       $fields[] = 'af.*';
     }
     // Now build it
-    $cache[$key] = db_fetch_object(db_query('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments));
+    $cache[$key] = db_fetch_object(db_query_range('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments, 0, 1));
   }
 
   return $cache[$key];
