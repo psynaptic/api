@@ -24,6 +24,7 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
     'version' => '',
     'modified' => filemtime($file_path),
     'source' => str_replace(array("\r\n", "\r"), array("\n", "\n"), file_get_contents($file_path)),
+    'content' => '',
   );
 
   $match = array();
@@ -85,15 +86,17 @@ function api_parse_php_file($docblock) {
   }
 
   // Reserve the first array slot for the file documentation block.
-  $docblocks = array();
   $docblock['code'] = api_format_php($docblock['source']);
-  $docblocks[] = $docblock;
+  $docblocks = array($docblock);
 
   // Set default documenation block array for items other than the file.
   $default_block = array(
     'branch' => $docblock['branch'],
     'file_name' => $docblock['file_name'],
-    'modified' => $docblock['modified'], // Only needed for 'file' item, but it simplifies parameters in other functions.
+    'class' => '',
+    'object_type' => '',
+    'documentation' => '',
+    'see' => '',
   );
 
   api_documentation_loop($statements, $default_block, $docblocks);
@@ -132,7 +135,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
 
   // Traverse statement list to gather documentation items.
   $current = $statements->first();
-  while ($current->next != NULL) {
+  while ($current != NULL) {
     $statement = $current->data;
     $type = is_object($statement) ? $statement->type : $statement['type'];
     // Common processing.
@@ -152,36 +155,28 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         }
         $docblock['title'] = $editor->statementOperandToText($statement);
         $docblock['start_line'] = $current->line;
-
         $docblock['content'] = $editor->commentToString($statement->comment);
         unset($statement->comment);
         $docblock['code'] = api_format_php("<?php\n". $statement->toString() ."\n?".">");
-
-        if (in_array($statement->type, array(T_CLASS, T_FUNCTION))) {
+        if ($statement->type == T_FUNCTION) {
           $docblock['signature'] = $editor->functionGetSignature($statement);
         }
+        $docblocks[] = $docblock;
         break;
 
       case T_DOC_COMMENT:
         $docblock = $default_block;
         $docblock['content'] = $editor->commentToString($statement);
         $docblock['start_line'] = $current->line;
+        $docblocks[] = $docblock;
         break;
-
-      default:
-        $docblock = array();
-        continue;
-    }
-    if (!empty($docblock)) {
-      $docblocks[] = $docblock;
     }
 
     // Additional recursive processing on statements with bodies.
     switch ($type) {
-//      case T_INTERFACE:
+      case T_INTERFACE:
       case T_CLASS:
-        $default_block['class'] = $docblock['object_name'] . '::';
-        api_documentation_loop($statement->body, $default_block, $docblocks);
+        api_documentation_loop($statement->body, array_merge($default_block, array('class' => $docblock['object_name'] . '::')), $docblocks);
         break;
     }
     $current = $current->next;
@@ -192,7 +187,6 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
  * Find functions called in a formatted block of code.
  */
 function api_parse_function_calls($code) {
-  $function_call_matches = array();
   $function_calls = array();
   preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', $code, $function_call_matches, PREG_SET_ORDER);
   array_shift($function_call_matches); // Remove the first match, the function declaration itself.
@@ -229,7 +223,6 @@ function api_save_documentation($docblocks) {
   }
   foreach ($docblocks as $docblock) {
     if (preg_match('/' . API_RE_TAG_START . 'mainpage/', $docblock['content'])) {
-      $mainpage_matches = array();
       preg_match('/' . API_RE_TAG_START . 'mainpage (.*?)\n/', $docblock['content'], $mainpage_matches);
       $docblock['title'] = $mainpage_matches[1];
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . 'mainpage.*?\n/', '', $docblock['content']);
@@ -237,7 +230,6 @@ function api_save_documentation($docblocks) {
       $docblock['object_name'] = $docblocks[0]['branch']->branch_name;
     }
     elseif (preg_match('/' . API_RE_TAG_START . 'defgroup/', $docblock['content'])) {
-      $group_matches = array();
       if (preg_match('/' . API_RE_TAG_START . 'defgroup ([a-zA-Z0-9_.-]+) +(.*?)\n/', $docblock['content'], $group_matches)) {
         $docblock['object_name'] = $group_matches[1];
         $docblock['title'] = $group_matches[2];
@@ -283,7 +275,6 @@ function api_save_documentation($docblocks) {
 
     if (!empty($docblock['content'])) {
       // Find parameter definitions.
-      $param_match = array();
       $offset = 0;
       $docblock['parameters'] = '';
       while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
@@ -294,7 +285,6 @@ function api_save_documentation($docblocks) {
       $docblock['parameters'] = api_format_documentation($docblock['parameters']);
 
       // Find return value definitions.
-      $return_matches = array();
       $docblock['return_value'] = '';
       preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|\n\n|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
       foreach ($return_matches as $return_match) {
@@ -317,9 +307,9 @@ function api_save_documentation($docblocks) {
     }
     $docblock['summary'] = api_documentation_summary($docblock['documentation']);
 
-    $did = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
-    if ($did > 0) {
-      db_query("UPDATE {api_documentation} SET title = '%s', file_name = '%s', summary = '%s', documentation = '%s', code = '%s', start_line = %d, see = '%s' WHERE did = %d", $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see'], $did);
+    $docblock['did'] = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
+    if ($docblock['did'] > 0) {
+      drupal_write_record('api_documentation', $docblock, 'did');
     }
     else {
       $node = new stdClass();
@@ -329,37 +319,37 @@ function api_save_documentation($docblocks) {
         $node->comment = COMMENT_NODE_READ_WRITE;
       }
       node_save($node);
-      $did = $node->nid;
-      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line, see) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s')", $did, $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see']);
+      $docblock['did'] = $node->nid;
+      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line, see) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s')", $docblock['did'], $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see']);
     }
 
     switch ($docblock['object_type']) {
       case 'function':
-        db_query('DELETE FROM {api_function} WHERE did = %d', $did);
-        db_query("INSERT INTO {api_function} (did, signature, parameters, return_value) VALUES (%d, '%s', '%s', '%s')", $did, $docblock['signature'], $docblock['parameters'], $docblock['return_value']);
+        db_query('DELETE FROM {api_function} WHERE did = %d', $docblock['did']);
+        drupal_write_record('api_function', $docblock);
 
         if (!empty($docblock['code'])) {
-          db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch']->branch_id, $did);
+          db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch']->branch_id, $docblock['did']);
           foreach (api_parse_function_calls($docblock['code']) as $function_name) {
-            api_reference($docblocks[0]['branch'], 'function', $function_name, $did);
+            api_reference($docblocks[0]['branch'], 'function', $function_name, $docblock['did']);
           }
         }
         break;
 
       case 'file':
-        db_query('DELETE FROM {api_file} WHERE did = %d', $did);
-        db_query("INSERT INTO {api_file} (did, modified, version) VALUES (%d, %d, '%s')", $did, $docblock['modified'], $docblock['version']);
+        db_query('DELETE FROM {api_file} WHERE did = %d', $docblock['did']);
+        drupal_write_record('api_file', $docblock);
         break;
     }
 
     if (isset($docblock['groups'])) {
-      db_query("DELETE FROM {api_reference_storage} WHERE branch_id = '%s' AND object_type = 'group' AND from_did = %d", $docblocks[0]['branch']->branch_id, $did);
+      db_query("DELETE FROM {api_reference_storage} WHERE branch_id = '%s' AND object_type = 'group' AND from_did = %d", $docblocks[0]['branch']->branch_id, $docblock['did']);
       foreach ($docblock['groups'] as $group_name) {
-        api_reference($docblocks[0]['branch'], 'group', $group_name, $did);
+        api_reference($docblocks[0]['branch'], 'group', $group_name, $docblock['did']);
       }
     }
 
-    $dids[] = $did;
+    $dids[] = $docblock['did'];
   }
 
   $old_dids = array_diff($old_dids, $dids);
@@ -474,7 +464,6 @@ function api_format_documentation_lists($documentation) {
   $bullet_indents = array(-1);
 
   foreach ($lines as $line) {
-    $matches = array();
     preg_match('!^( *)([*-] )?(.*)$!', $line, $matches);
     $indent = strlen($matches[1]);
     $bullet_exists = $matches[2];
@@ -706,7 +695,6 @@ function api_update_branch_php($branch) {
   $response = drupal_http_request($branch->summary);
   if ($response->code === '200') {
     $docblocks = array();
-    $function_matches = array();
     preg_match_all('!^[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)\(.*\n.*$!m', $response->data, $function_matches, PREG_SET_ORDER);
     foreach ($function_matches as $function_match) {
       $docblocks[] = array(
