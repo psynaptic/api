@@ -827,9 +827,9 @@ function api_get_active_branch() {
     if (isset($item['page_arguments'][0]->branch_name)) {
       $branch = $item['page_arguments'][0];
     }
-    else {
+    elseif ($default_branch = variable_get('api_default_branch', NULL)) {
       $branches = api_get_branches();
-      $branch = $branches[variable_get('api_default_branch', NULL)];
+      $branch = $branches[$default_branch];
     }
   }
 

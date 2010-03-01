@@ -137,7 +137,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#type' => 'submit',
     '#value' => t('Save branch'),
   );
-  if (!is_null($branch_id)) {
+  if (is_numeric($branch_id)) {
     $form[] = array(
       '#value' => l(t('Delete'), 'admin/settings/api/branches/'. $branch->branch_id .'/delete'),
     );
