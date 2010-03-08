@@ -3,7 +3,7 @@
 
 class ApiTestCase extends DrupalWebTestCase {
   function setUp() {
-    parent::setUp('job_queue', 'pgp', 'api');
+    parent::setUp('job_queue', 'grammar_parser', 'api');
 
     include drupal_get_path('module', 'api') .'/api.admin.inc';
     include drupal_get_path('module', 'api') .'/parser.inc';
@@ -16,6 +16,7 @@ class ApiTestCase extends DrupalWebTestCase {
     $branch->status = 1;
     $branch->data = array(
       'directories' => drupal_get_path('module', 'api') .'/tests/sample',
+      'excluded_directories' => '',
     );
     api_save_branch($branch);
 
