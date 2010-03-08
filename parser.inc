@@ -6,12 +6,12 @@
  * The PHP documentation parser that generates content for api.module.
  */
 
-module_load_include('inc', 'pgp', 'engine/pgp.parser');
-module_load_include('inc', 'pgp', 'engine/pgp.reader');
-module_load_include('inc', 'pgp', 'engine/pgp.writer');
-module_load_include('inc', 'pgp', 'engine/pgp.editor');
-module_load_include('inc', 'pgp', 'engine/pgp.list');
-module_load_include('inc', 'pgp', 'engine/pgp.object');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.parser');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.reader');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.writer');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.editor');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.list');
+module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.object');
 
 function api_parse_file($callback, $file_path, $branch, $file_name) {
   $docblock = array(
