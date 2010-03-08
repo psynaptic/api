@@ -107,47 +107,49 @@ function api_get_branch_names($_reset = FALSE) {
 function api_menu() {
   $items = array();
   $branches = api_get_branches();
-  $default_branch = $branches[variable_get('api_default_branch', NULL)];
-  $projects = array();
-  // We need a default branch for each project. If a project has a branch_name
-  // matching $default_branch, use that. Otherwise, use the max. This assumes
-  // branch names like '5' and '6'.
-  foreach ($branches as $branch) {
-    if ($branch->status) {
-      if (!isset($projects[$branch->project])) {
-        $projects[$branch->project] = array(
-          'max branch' => $branch->branch_name,
-          'use branch' => NULL,
-        );
-      }
-      else {
-        $projects[$branch->project]['max branch'] = max($projects[$branch->project]['max branch'], $branch->branch_name);
-      }
-      if ($branch->branch_name === $default_branch->branch_name) {
-        $projects[$branch->project]['use branch'] = $branch->branch_name;
+  if (count($branches)) {
+    $default_branch = $branches[variable_get('api_default_branch', NULL)];
+    $projects = array();
+    // We need a default branch for each project. If a project has a branch_name
+    // matching $default_branch, use that. Otherwise, use the max. This assumes
+    // branch names like '5' and '6'.
+    foreach ($branches as $branch) {
+      if ($branch->status) {
+        if (!isset($projects[$branch->project])) {
+          $projects[$branch->project] = array(
+            'max branch' => $branch->branch_name,
+            'use branch' => NULL,
+          );
+        }
+        else {
+          $projects[$branch->project]['max branch'] = max($projects[$branch->project]['max branch'], $branch->branch_name);
+        }
+        if ($branch->branch_name === $default_branch->branch_name) {
+          $projects[$branch->project]['use branch'] = $branch->branch_name;
+        }
       }
     }
-  }
-  foreach (array_keys($projects) as $project) {
-    if (is_null($projects[$project]['use branch'])) {
-      $projects[$project]['use branch'] = $projects[$project]['max branch'];
+    foreach (array_keys($projects) as $project) {
+      if (is_null($projects[$project]['use branch'])) {
+        $projects[$project]['use branch'] = $projects[$project]['max branch'];
+      }
     }
-  }
 
-  // Part 1: No object, Default branch
-  $items['api/search'] = array(
-    'title' => 'API Search',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('api_search_form', $default_branch),
-    'access arguments' => array('access API reference'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['apis'] = array(
-    'title' => 'API search',
-    'page callback' => 'api_search_redirect',
-    'access arguments' => array('access API reference'),
-    'type' => MENU_CALLBACK,
-  );
+    // Part 1: No object, Default branch
+    $items['api/search'] = array(
+      'title' => 'API Search',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('api_search_form', $default_branch),
+      'access arguments' => array('access API reference'),
+      'type' => MENU_CALLBACK,
+    );
+    $items['apis'] = array(
+      'title' => 'API search',
+      'page callback' => 'api_search_redirect',
+      'access arguments' => array('access API reference'),
+      'type' => MENU_CALLBACK,
+    );
+  }
 
   // Admin
   $items['admin/settings/api'] = array(
