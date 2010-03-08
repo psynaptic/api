@@ -704,6 +704,7 @@ function api_update_branch_php($branch) {
         'object_name' => $function_match[1],
         'title' => $function_match[1],
         'documentation' => $function_match[0],
+        'content' => '',
       );
     }
     api_save_documentation($docblocks);
