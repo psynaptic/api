@@ -56,7 +56,7 @@ function api_schema() {
     'fields' => array(
       'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'branch_id' => array(
-        'type' => 'serial',
+        'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),

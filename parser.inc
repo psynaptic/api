@@ -320,7 +320,8 @@ function api_save_documentation($docblocks) {
       }
       node_save($node);
       $docblock['did'] = $node->nid;
-      db_query("INSERT INTO {api_documentation} (did, object_name, branch_id, object_type, title, file_name, summary, documentation, code, start_line, see) VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s')", $docblock['did'], $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['title'], $docblock['file_name'], $docblock['summary'], $docblock['documentation'], $docblock['code'], $docblock['start_line'], $docblock['see']);
+      $docblock['branch_id'] = $docblocks[0]['branch']->branch_id;
+      drupal_write_record('api_documentation', $docblock);
     }
 
     switch ($docblock['object_type']) {
