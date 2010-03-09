@@ -140,8 +140,8 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
     $type = is_object($statement) ? $statement->type : $statement['type'];
     // Common processing.
     switch ($type) {
-//      case T_INTERFACE:
-//      case T_CLASS:
+      case T_INTERFACE:
+      case T_CLASS:
       case T_FUNCTION:
       case T_DEFINE:
       case T_GLOBAL:

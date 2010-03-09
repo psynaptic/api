@@ -16,7 +16,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 5, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 8, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch);
@@ -37,5 +37,17 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Check group samples
     $object = api_object_load('samples', $branch, 'group', 'sample.php');
     $this->assertEqual($object->summary, 'A sample group.', t('Group samples has summary %summary.', array('%summary' => $object->summary)));
+
+    // Check classes.php
+    $object = api_filename_load('classes.php', $branch);
+    $this->assertEqual($object->summary, 'Object-oriented tests.', t('classes.php has summary %summary.', array('%summary' => $object->summary)));
+
+    // Check Sample class
+    $object = api_object_load('Sample', $branch, 'class', 'classes.php');
+    $this->assertEqual($object->summary, 'Sample class.', t('Sample has summary %summary.', array('%summary' => $object->summary)));
+
+    // Check Sample::foo() method
+    $object = api_object_load('Sample::foo', $branch, 'function', 'classes.php');
+    $this->assertEqual($object->summary, 'Metasyntatic member function.', t('Sample::foo() has summary %summary.', array('%summary' => $object->summary)));
   }
 }
