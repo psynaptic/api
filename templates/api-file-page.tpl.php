@@ -9,6 +9,10 @@
 <?php print $see ?>
 <?php } ?>
 
+<?php if (!empty($classes)) { ?>
+<h3><?php print t('Classes') ?></h3>
+<?php print $classes ?>
+<?php } ?>
 <?php if (!empty($constants)) { ?>
 <h3><?php print t('Constants') ?></h3>
 <?php print $constants ?>

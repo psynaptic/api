@@ -610,6 +610,7 @@ function api_theme() {
       'arguments' => array(
         'file' => NULL,
         'documentation' => NULL,
+        'classes' => NULL,
         'constants' => NULL,
         'globals' => NULL,
         'functions' => NULL,
@@ -1249,11 +1250,12 @@ function api_page_file($branch, $file) {
 
   $documentation = api_link_documentation($file->documentation, $branch);
   $see = api_link_documentation($file->see, $branch);
-  $result = db_query("SELECT title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function') ORDER BY title", $file->object_name, $file->branch_id);
+  $result = db_query("SELECT title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'class') ORDER BY title", $file->object_name, $file->branch_id);
   $rows = array(
     'constant' => array(),
     'global' => array(),
     'function' => array(),
+    'class' => array(),
   );
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
@@ -1265,6 +1267,10 @@ function api_page_file($branch, $file) {
     t('Name'),
     t('Description'),
   );
+  $classes = '';
+  if (count($rows['class']) > 0) {
+    $classes = theme('table', $header, $rows['class']);
+  }
   $constants = '';
   if (count($rows['constant']) > 0) {
     $constants = theme('table', $header, $rows['constant']);
@@ -1279,7 +1285,7 @@ function api_page_file($branch, $file) {
   }
   $related_topics = api_related_topics($file->did, $branch);
 
-  $output = theme('api_file_page', $file, $documentation, $constants, $globals, $functions, $see, $related_topics);
+  $output = theme('api_file_page', $file, $documentation, $classes, $constants, $globals, $functions, $see, $related_topics);
   $output .= _api_add_comments($file);
   return $output;
 }
