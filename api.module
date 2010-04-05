@@ -805,6 +805,7 @@ function api_save_branch($branch) {
   }
 
   // Reweight all branches.
+  api_get_branch_names(TRUE);
   $branches = api_get_branches(TRUE);
   usort($branches, 'api_branch_sort');
   $weight = 0;
