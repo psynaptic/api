@@ -908,6 +908,7 @@ function api_search_listing($branch_name) {
  */
 function api_autocomplete($branch_name, $page = TRUE) {
   $result = db_query("SELECT d.title, d.object_type FROM {api_documentation} d INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE b.branch_name = '%s' AND d.object_type <> 'mainpage' ORDER BY LENGTH(d.title)", $branch_name);
+  $objects = array();
   while ($object = db_fetch_object($result)) {
     $objects[] = $object->title;
   }
