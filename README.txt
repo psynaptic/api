@@ -1,3 +1,4 @@
+<<<<<<< README.txt
 $Id$
 
 API Module
@@ -5,6 +6,15 @@ Generates and displays API documentation pages.
 
 GENERAL INFORMATION
 
+=======
+$Id$
+
+API Module
+Generates and displays API documentation pages.
+
+GENERAL INFORMATION
+
+>>>>>>> 1.5.6.1
 This is an implementation of a subset of the Doxygen documentation generator
 specification, tuned to produce output that best benefits the Drupal code base.
 It is designed to assume the code it documents follows Drupal coding
@@ -47,6 +57,7 @@ inside a function may have a right curly bracket in the first column.
 Besides the Doxygen features that are supported, this module also provides the
 following features:
 
+<<<<<<< README.txt
 CVS version numbers and dates are parsed from
 $Id$
 tags and reported.
@@ -54,6 +65,15 @@ tags and reported.
 Functions may be in multiple groups (Doxygen ignores all but the first
 group). This allows, for example, theme_menu_tree() to be marked as both
 "themeable" and part of the "menu system".
+=======
+CVS version numbers and dates are parsed from
+$Id$
+tags and reported.
+
+Functions may be in multiple groups (Doxygen ignores all but the first
+group). This allows, for example, theme_menu_tree() to be marked as both
+"themeable" and part of the "menu system".
+>>>>>>> 1.5.6.1
 
 Function calls to PHP library functions are linked to the PHP manual.
 

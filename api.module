@@ -687,6 +687,9 @@ function api_db_rewrite_sql($query, $primary_table, $primary_field) {
   }
 }
 
+/**
+ * Implementation of hook_block().
+ */
 function api_block($op, $delta = NULL, $edit = array()) {
   switch ($op) {
     case 'list':
@@ -725,6 +728,7 @@ function api_block($op, $delta = NULL, $edit = array()) {
             $links[] = l(t('Topics'), 'api/' . $branch->project . '/groups/' . $branch->branch_name);
 
             return array(
+              'subject' => t('API Navigation'),
               'content' => theme('item_list', $links),
             );
           }
