@@ -26,6 +26,9 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
     $this->assertEqual($object->summary, 'A sample function.', t('sample_function() has summary %summary.', array('%summary' => $object->summary)));
 
+    // Check multi-paragraph @param
+    $this->assertTrue(strpos($object->parameters, 'A second paragraph about') !== FALSE, t('sample_function() parameters contains second paragraph.'));
+
     // Check $sample_global
     $object = api_object_load('sample_global', $branch, 'global', 'sample.php');
     $this->assertEqual($object->summary, 'A sample global.', t('$sample_global has summary %summary.', array('%summary' => $object->summary)));

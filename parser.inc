@@ -277,7 +277,7 @@ function api_save_documentation($docblocks) {
       // Find parameter definitions.
       $offset = 0;
       $docblock['parameters'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
         $docblock['parameters'] .= "\n\n". $param_match[1][0];
         $offset = $param_match[0][1];
@@ -286,7 +286,7 @@ function api_save_documentation($docblocks) {
 
       // Find return value definitions.
       $docblock['return_value'] = '';
-      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|\n\n|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
+      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
       foreach ($return_matches as $return_match) {
         $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
         $docblock['return_value'] .= "\n\n". $return_match[1];
@@ -296,7 +296,7 @@ function api_save_documentation($docblocks) {
       // Find @see lines.
       $offset = 0;
       $docblock['see'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'see(.*?)(?=\n' . API_RE_TAG_START . '|\n\n|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'see(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($match[0][0], '', $docblock['content']);
         $docblock['see'] .= "\n\n". $match[1][0];
         $offset = $match[0][1];
