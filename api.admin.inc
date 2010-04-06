@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+/**
+ * Generates the main admin page for the API module.
+ *
+ * Menu callback for path admin/settings/api.
+ *
+ * @see theme_api_branch_table()
+ * @see api_page_admin_form_submit()
+ */
 function api_page_admin_form() {
   $branches = api_get_branches();
   $form = array();
@@ -45,12 +53,15 @@ function api_page_admin_form() {
   return $form;
 }
 
+/**
+ * Themes the table of defined branches for api_admin_form().
+ */
 function theme_api_branch_table($element) {
   $header = array(
     t('Default'),
     t('Project'),
-    t('Page label'),
-    t('URL label'),
+    t('Branch title'),
+    t('Branch name'),
   );
   $rows = array();
   foreach (element_children($element) as $key) {
@@ -63,6 +74,9 @@ function theme_api_branch_table($element) {
   return theme('table', $header, $rows);
 }
 
+/**
+ * Submit callback for api_page_admin_form().
+ */
 function api_page_admin_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['default_branch'])) {
     variable_set('api_default_branch', $form_state['values']['default_branch']);
@@ -74,6 +88,9 @@ function api_page_admin_form_submit($form, &$form_state) {
   drupal_set_message(t('Changes saved.'));
 }
 
+/**
+ * Page callback for admin/settings/api/branches/new.
+ */
 function api_admin_new_branch_page() {
   return '<h3>' . t('Select branch type') . '</h3>' . theme('links', array(
     'files' => array(
@@ -87,6 +104,14 @@ function api_admin_new_branch_page() {
   ));
 }
 
+/**
+ * Generates the edit form for a branch.
+ *
+ * @see api_branch_edit_form_files()
+ * @see api_branch_edit_form_php()
+ * @see api_branch_edit_form_validate()
+ * @see api_branch_edit_form_submit()
+ */
 function api_branch_edit_form($form_state, $branch_id = NULL) {
   $branches = api_get_branches();
   if (is_numeric($branch_id)) {
@@ -109,18 +134,21 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#title' => t('Project'),
     '#type' => 'textfield',
     '#default_value' => $branch->project,
+    '#description' => t('Used as both a unique identifier for the project, and as the URL prefix for documentation for this project (path: api/[project]). You can add a branch to an existing project by entering the existing project name here. You can make this branch be part of a new project by entering a new project name here, and then add additional branches if desired.'),
     '#required' => TRUE,
   );
   $form['branch_name'] = array(
-    '#title' => t('URL label'),
+    '#title' => t('Branch'),
     '#type' => 'textfield',
     '#default_value' => $branch->branch_name,
+    '#description' => t('Identifier for this branch within this project. Used as the URL suffix for documentation pages for this branch. Also displayed as the version name, in the Versions section at the top of function pages and similar pages (variables, constants, etc.).'),
     '#required' => TRUE,
   );
   $form['title'] = array(
-    '#title' => t('Page label'),
+    '#title' => t('Branch title'),
     '#type' => 'textfield',
     '#default_value' => $branch->title,
+    '#description' => t('Used as the tab title for branch tabs, if you have more than one branch within your project. The title of the first branch within the project is also used as the link text in the Other Projects link sections (these links appear at the bottom of API pages such as the functions list and the home page for each project, if you have more than one project).'),
     '#required' => TRUE,
   );
   $form['status'] = array(
@@ -146,6 +174,12 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
   return $form;
 }
 
+/**
+ * Generates the form for editing file data for branches.
+ *
+ * This is called from api_branch_edit_form_files() if the branch type is
+ * "files".
+ */
 function api_branch_edit_form_files(&$form, $branch) {
   $form['data']['directories'] = array(
     '#title' => t('Directories'),
@@ -166,6 +200,12 @@ function api_branch_edit_form_files(&$form, $branch) {
   );
 }
 
+/**
+ * Generates the form for editing PHP function data for branches.
+ *
+ * This is called from api_branch_edit_form_files() if the branch type is
+ * "php".
+ */
 function api_branch_edit_form_php(&$form, $branch) {
   $form[] = array('#value' => '<p>' . t('Links to external documentation, such as the PHP manual.') . '</p>');
 
@@ -193,10 +233,13 @@ function api_branch_edit_form_php(&$form, $branch) {
   $form['status']['#value'] = FALSE;
 }
 
+/**
+ * Validation callback for api_branch_edit_form().
+ */
 function api_branch_edit_form_validate($form, &$form_state) {
   // Check for bad characters in branch names.
   if (preg_match('/[^A-Za-z0-9-_.]/', $form_state['values']['branch_name'])) {
-    form_set_error('branch_name', t("Only letters, numbers, '.', '-' and '_' are allowed in the URL label."));
+    form_set_error('branch_name', t("Only letters, numbers, '.', '-' and '_' are allowed in the branch name, as it is used as an URL suffix."));
   }
 
   // Check for duplicate branch names.
@@ -205,6 +248,12 @@ function api_branch_edit_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Verifies that all directories exist and are actually directories.
+ *
+ * Element validation callback for 'data'/'directories' element of
+ * api_branch_edit_form_files().
+ */
 function api_check_directories($element, &$form_state) {
   // Check for valid directories.
   foreach (explode("\n", $element['#value']) as $directory) {
@@ -221,6 +270,9 @@ function api_check_directories($element, &$form_state) {
   form_set_value($element, api_clean_directory_list($element['#value']), $form_state);
 }
 
+/**
+ * Submit callback for api_branch_edit_form().
+ */
 function api_branch_edit_form_submit($form, &$form_state) {
   $branch = $form['#branch'];
   $branch->project = $form_state['values']['project'];
@@ -236,7 +288,7 @@ function api_branch_edit_form_submit($form, &$form_state) {
 }
 
 /**
- * Trim whitespace, trailing directory separators, and remove blank lines.
+ * Trims whitespace, and removes trailing directory separators and blank lines.
  */
 function api_clean_directory_list($list) {
   $array = explode("\n", $list);
@@ -249,11 +301,19 @@ function api_clean_directory_list($list) {
   return implode("\n", $array);
 }
 
+/**
+ * Generates the confirmation form for deleting a branch.
+ *
+ * @see api_branch_delete_form_submit()
+ */
 function api_branch_delete_form($form_state, $branch_id) {
   $branches = api_get_branches();
   return confirm_form(array('#branch' => $branches[$branch_id]), t('Are you sure you want to delete %branch_name?', array('%branch_name' => $branches[$branch_id]->branch_name)), 'admin/settings/api', NULL, t('Delete'));
 }
 
+/**
+ * Submit callback for api_branch_delete_form().
+ */
 function api_branch_delete_form_submit($form, &$form_state) {
   $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d", $form['#branch']->branch_id);
   $dids = array();
@@ -277,6 +337,13 @@ function api_branch_delete_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/settings/api';
 }
 
+/**
+ * Generates the settings form for API comments.
+ *
+ * Page callback for path admin/settings/api/comments.
+ *
+ * @see api_comments_settings_form_submit().
+ */
 function api_comments_settings_form(&$form_state) {
   $type = new stdClass();
   $type->type = 'api';
@@ -299,6 +366,9 @@ function api_comments_settings_form(&$form_state) {
   return $form;
 }
 
+/**
+ * Submit callback for api_comments_settings_form().
+ */
 function api_comments_settings_form_submit($form, &$form_state) {
   foreach ($form_state['values'] as $key => $value) {
     if (strpos($key, 'comment') === 0) {
