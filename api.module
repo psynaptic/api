@@ -5,10 +5,11 @@
  * @file
  * Generates and displays API documentation pages.
  *
- * This is an implementation of a subset of the Doxygen documentation generator
- * specification, tuned to produce output that best benefits the Drupal code base.
- * It is designed to assume the code it documents follows Drupal coding conventions,
- * and supports the following Doxygen constructs:
+ * This is an implementation of a subset of the Doxygen documentation
+ * generator specification, tuned to produce output that best benefits
+ * the Drupal code base.  It is designed to assume the code it
+ * documents follows Drupal coding conventions, and supports the
+ * following Doxygen constructs:
  *   \@mainpage
  *   \@file
  *   \@defgroup
@@ -17,6 +18,9 @@
  *   \@param
  *   \@return
  *   \@link
+ *
+ * See http://drupal.org/node/1354 for more information on how to document code
+ * so that the API module can read it.
  */
 
 /**
