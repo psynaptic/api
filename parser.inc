@@ -330,7 +330,7 @@ function api_save_documentation($docblocks) {
     }
 
     // Keep track of class membership
-    if ($docblock['object_type'] === 'class') {
+    if ($docblock['object_type'] === 'class' || $docblock['object_type'] === 'interface') {
       $class_dids[$docblock['object_name']] = $docblock['did'];
     }
 

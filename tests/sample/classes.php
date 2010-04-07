@@ -15,3 +15,13 @@ class Sample {
   public function foo() {
   }
 }
+
+/**
+ * Sample interface.
+ */
+interface SampleInterface {
+  /**
+   * Implement this API.
+   */
+  public function foo();
+}
