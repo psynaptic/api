@@ -8,6 +8,10 @@
  * Sample class.
  */
 class Sample {
+  /**
+   * A class constant.
+   */
+  const constant = 'constant value';
 
   /**
    * Metasyntatic member function.

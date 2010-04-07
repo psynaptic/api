@@ -144,6 +144,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
       case T_CLASS:
       case T_FUNCTION:
       case T_DEFINE:
+      case T_CONST:
       case T_GLOBAL:
         $docblock = $default_block;
         $docblock['object_type'] = $editor->statementTypeToString($statement);
