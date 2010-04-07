@@ -14,6 +14,11 @@ class Sample {
   const constant = 'constant value';
 
   /**
+   * A property.
+   */
+  private $property = 'variable value';
+
+  /**
    * Metasyntatic member function.
    */
   public function foo() {

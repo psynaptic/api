@@ -16,7 +16,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 11, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 12, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch);
@@ -53,6 +53,11 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $object = api_object_load('Sample::constant', $branch, 'const', 'classes.php');
     $this->assertEqual($object->summary, 'A class constant.', t('Sample::constant has summary %summary.', array('%summary' => $object->summary)));
     $this->assertEqual($object->class_did, $class->did, t('constant belongs to parent class.'));
+
+    // Check Sample::property property
+    $object = api_object_load('Sample::property', $branch, 'property', 'classes.php');
+    $this->assertEqual($object->summary, 'A property.', t('Sample::property has summary %summary.', array('%summary' => $object->summary)));
+    $this->assertEqual($object->class_did, $class->did, t('property belongs to parent class.'));
 
     // Check Sample::foo() method
     $object = api_object_load('Sample::foo', $branch, 'function', 'classes.php');

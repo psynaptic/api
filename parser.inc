@@ -146,9 +146,10 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
       case T_DEFINE:
       case T_CONST:
       case T_GLOBAL:
+      case T_ASSIGNMENT: // Class property
         $docblock = $default_block;
         $docblock['object_type'] = $editor->statementTypeToString($statement);
-        if ($type == T_GLOBAL) {
+        if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
           $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }
         else {
