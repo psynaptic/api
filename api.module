@@ -509,7 +509,7 @@ function api_object_load($object_name, $branch, $object_type, $file_name = NULL)
   if (!isset($cache[$key])) {
     // Prepare the query
     $tables = array('{api_documentation} ad');
-    $fields = array('ad.*');
+    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did');
     $where = "WHERE ad.object_name = '%s' AND ad.object_type = '%s' AND ad.branch_id = %d";
     $arguments = array($object_name, $object_type, $branch->branch_id);
 

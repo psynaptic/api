@@ -46,11 +46,12 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($object->summary, 'Object-oriented tests.', t('classes.php has summary %summary.', array('%summary' => $object->summary)));
 
     // Check Sample class
-    $object = api_object_load('Sample', $branch, 'class', 'classes.php');
-    $this->assertEqual($object->summary, 'Sample class.', t('Sample has summary %summary.', array('%summary' => $object->summary)));
+    $class = api_object_load('Sample', $branch, 'class', 'classes.php');
+    $this->assertEqual($class->summary, 'Sample class.', t('Sample has summary %summary.', array('%summary' => $class->summary)));
 
     // Check Sample::foo() method
     $object = api_object_load('Sample::foo', $branch, 'function', 'classes.php');
     $this->assertEqual($object->summary, 'Metasyntatic member function.', t('Sample::foo() has summary %summary.', array('%summary' => $object->summary)));
+    $this->assertEqual($object->class_did, $class->did, t('Method belongs to parent class.'));
   }
 }

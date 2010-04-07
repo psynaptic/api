@@ -148,10 +148,10 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         $docblock = $default_block;
         $docblock['object_type'] = $editor->statementTypeToString($statement);
         if ($type == T_GLOBAL) {
-          $docblock['object_name'] = $default_block['class'] . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
+          $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }
         else {
-          $docblock['object_name'] = $default_block['class'] . $editor->statementOperandToText($statement);
+          $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . $editor->statementOperandToText($statement);
         }
         $docblock['title'] = $editor->statementOperandToText($statement);
         $docblock['start_line'] = $current->line;
@@ -176,7 +176,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
     switch ($type) {
       case T_INTERFACE:
       case T_CLASS:
-        api_documentation_loop($statement->body, array_merge($default_block, array('class' => $docblock['object_name'] . '::')), $docblocks);
+        api_documentation_loop($statement->body, array_merge($default_block, array('class' => $docblock['object_name'])), $docblocks);
         break;
     }
     $current = $current->next;
@@ -214,6 +214,7 @@ function api_save_documentation($docblocks) {
   }
 
   $dids = array();
+  $class_dids = array();
   // Look for @file block first so $docblocks[0] gets filled in before it is processed.
   foreach ($docblocks as $docblock) {
     if (preg_match('/' . API_RE_TAG_START . 'file/', $docblock['content'])) {
@@ -307,6 +308,10 @@ function api_save_documentation($docblocks) {
     }
     $docblock['summary'] = api_documentation_summary($docblock['documentation']);
 
+    if (!empty($docblock['class'])) {
+      $docblock['class_did'] = $class_dids[$docblock['class']];
+    }
+
     $docblock['did'] = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($docblock['did'] > 0) {
       drupal_write_record('api_documentation', $docblock, 'did');
@@ -322,6 +327,11 @@ function api_save_documentation($docblocks) {
       $docblock['did'] = $node->nid;
       $docblock['branch_id'] = $docblocks[0]['branch']->branch_id;
       drupal_write_record('api_documentation', $docblock);
+    }
+
+    // Keep track of class membership
+    if ($docblock['object_type'] === 'class') {
+      $class_dids[$docblock['object_name']] = $docblock['did'];
     }
 
     switch ($docblock['object_type']) {

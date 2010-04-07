@@ -73,12 +73,19 @@ function api_schema() {
         'size' => 'medium',
         'not null' => TRUE,
       ),
+      'class_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('did'),
     'indexes' => array(
       'object_name' => array('object_name', 'branch_id', 'object_type'),
       'branch_id' => array('branch_id'),
       'title' => array('title'),
+      'class_did' => array('class_did'),
     ),
   );
   $schema['api_file'] = array(
@@ -418,6 +425,20 @@ function api_update_28() {
     'size' => 'medium',
     'not null' => TRUE,
   ));
+
+  return $return;
+}
+
+function api_update_29() {
+  $return = array();
+
+  db_add_field($return, 'api_documentation', 'class_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_add_index($return, 'api_documentation', 'class_did', array('class_did'));
 
   return $return;
 }
