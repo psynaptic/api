@@ -29,6 +29,12 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Check multi-paragraph @param
     $this->assertTrue(strpos($object->parameters, 'A second paragraph about') !== FALSE, t('sample_function() parameters contains second paragraph.'));
 
+    // Check multi-paragraph @param with @link
+    $this->assertTrue(strpos($object->parameters, 'this is a link') !== FALSE, t('sample_function() parameters contains link.'));
+
+    // Check multi-paragraph @return
+    $this->assertTrue(strpos($object->return_value, 'second paragraph about the return') !== FALSE, t('sample_function() return contains second paragraph.'));
+
     // Check $sample_global
     $object = api_object_load('sample_global', $branch, 'global', 'sample.php');
     $this->assertEqual($object->summary, 'A sample global.', t('$sample_global has summary %summary.', array('%summary' => $object->summary)));

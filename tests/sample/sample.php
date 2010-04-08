@@ -37,6 +37,13 @@ define('SAMPLE_CONSTANT');
  *   @endcode
  *
  *   A second paragraph about the $complex_parameter parameter.
+ *
+ *   @link http://php.net this is a link for the parameter @endlink
+ *
+ * @return
+ *   Something about the return value.
+ *
+ *   A second paragraph about the return value.
  */
 function sample_function($parameter, $complex_parameter) {
 }
