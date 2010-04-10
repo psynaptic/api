@@ -49,51 +49,44 @@ dl.api-related-topics dd {
 }
 
 /* Function signature */
+#api-function-signature td,
+#api-function-signature td a,
+#api-function-signature td a:visited {
+  color: #9d9d93;
+}
+#api-function-signature tr.active td.branch {
+  font-weight: bold;
+}
+#api-function-signature tr.active td,
+#api-function-signature tr.active td a,
+#api-function-signature tr.active td a:visited {
+  color: #000000;
+}
+#api-function-signature th,
+#api-function-signature td {
+  padding: 0.2em;
+}
 #api-function-signature {
   font-size: 1.2em;
 }
-#api-function-signature dt {
-  float: left;
+#api-function-signature .branch {
+  padding-left: 2em;
   text-align: right;
-  width: 5em;
 }
-#api-function-signature dd {
-  margin-left: 5.5em;
-}
-#api-function-signature dt.header {
-  float: none;
+#api-function-signature th {
   font-size: 0.6944em;
-  width: 7.2em;
-}
-dl#api-function-signature dt,
-#api-function-signature dd,
-#api-function-signature dt a,
-#api-function-signature dd a,
-#api-function-signature dt a:visited,
-#api-function-signature dd a:visited {
   font-weight: normal;
-  color: #9d9d93;
 }
-#api-function-signature strong {
+#api-function-signature td.branch {
   color: #000;
-  font-weight: normal;
-}
-#api-function-signature dt strong {
-  font-weight: bold;
 }
 #api-function-signature del {
   text-decoration: none;
   color: #9e8353;
 }
-#api-function-signature strong del {
-  color: #9e6500;
-}
 #api-function-signature ins {
   text-decoration: none;
   color: #96bc44;
-}
-#api-function-signature strong ins {
-  color: #517700;
 }
 
 /* Search block- make the text field the correct width */

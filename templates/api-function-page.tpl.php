@@ -1,18 +1,28 @@
-<dl id="api-function-signature">
-<dt class="header"><?php print t('Versions') ?></dt>
-<?php foreach ($signatures as $branch => $signature) { ?>
-  <?php if ($signature['active']) { ?>
-    <dt><strong><?php print $branch ?></strong></dt>
-    <dd><strong><code><?php print $signature['signature'] ?></code></strong></dd>
-  <?php } else if ($signature['status']) { ?>
-    <dt><?php print l($branch, $signature['url']) ?></dt>
-    <dd><code><?php print l($signature['signature'], $signature['url'], array('html' => TRUE)) ?></code></dd>
-  <?php } else { ?>
-    <dt><?php print $branch ?></dt>
-    <dd><code><?php print $signature['signature'] ?></code></dd>
-  <?php } ?>
-<?php } ?>
-</dl>
+<table id="api-function-signature">
+  <thead>
+    <tr><th class="branch"><?php print t('Versions') ?></th><th></th></tr>
+  </thead>
+  <tbody>
+    <?php foreach ($signatures as $branch => $signature) { ?>
+      <?php if ($signature['active']) { ?>
+        <tr class="active">
+          <td class="branch"><?php print $branch ?></td>
+          <td class="signature"><code><?php print $signature['signature'] ?></code></td>
+        </tr>
+      <?php } else if ($signature['status']) { ?>
+        <tr>
+          <td class="branch"><?php print l($branch, $signature['url']) ?></td>
+          <td class="signature"><code><?php print l($signature['signature'], $signature['url'], array('html' => TRUE)) ?></code></td>
+        </tr>
+      <?php } else { ?>
+        <tr>
+          <td class="branch"><?php print $branch ?></td>
+          <td class="signature"><code><?php print $signature['signature'] ?></code></td>
+        </tr>
+      <?php } ?>
+    <?php } ?>
+  </tbody>
+</table>
 
 <?php print $documentation ?>
 
