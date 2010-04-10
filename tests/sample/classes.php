@@ -7,7 +7,7 @@
 /**
  * Sample class.
  */
-class Sample {
+class Sample implements SampleInterface {
   /**
    * A class constant.
    */
@@ -33,4 +33,10 @@ interface SampleInterface {
    * Implement this API.
    */
   public function foo();
+}
+
+/**
+ * Subclass.
+ */
+class SubSample extends Sample {
 }

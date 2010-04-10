@@ -16,7 +16,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 12, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 13, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch);
@@ -78,5 +78,10 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $object = api_object_load('SampleInterface::foo', $branch, 'function', 'classes.php');
     $this->assertEqual($object->summary, 'Implement this API.', t('SampleInterface::foo() has summary %summary.', array('%summary' => $object->summary)));
     $this->assertEqual($object->class_did, $interface->did, t('Method belongs to parent interface.'));
+
+    // Check inheritance
+    $subclass = api_object_load('SubSample', $branch, 'class', 'classes.php');
+    $this->assertEqual(db_result(db_query("SELECT count(*) FROM {api_reference_storage} WHERE branch_id = %d AND from_did = %d AND to_did = %d AND object_type = 'interface'", $branch->branch_id, $class->did, $interface->did)), 1, t('Sample implements SampleInterface.'));
+    $this->assertEqual(db_result(db_query("SELECT count(*) FROM {api_reference_storage} WHERE branch_id = %d AND from_did = %d AND to_did = %d AND object_type = 'class'", $branch->branch_id, $subclass->did, $class->did)), 1, t('SubSample extends Sample.'));
   }
 }

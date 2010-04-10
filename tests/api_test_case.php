@@ -24,6 +24,7 @@ class ApiTestCase extends DrupalWebTestCase {
     // Parse the code.
     api_update_all_branches();
     while (job_queue_dequeue()) { }
+    api_shutdown();
 
     api_get_branches(TRUE);
   }

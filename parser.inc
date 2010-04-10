@@ -404,6 +404,7 @@ function api_save_documentation($docblocks) {
         drupal_write_record('api_file', $docblock);
         break;
 
+      case 'interface':
       case 'class':
         foreach ($docblock['extends'] as $extend) {
           api_reference($docblocks[0]['branch'], 'class', $extend, $docblock['did']);
