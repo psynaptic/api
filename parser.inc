@@ -202,6 +202,10 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         if ($statement->type == T_FUNCTION) {
           $docblock['signature'] = $editor->functionGetSignature($statement);
         }
+        elseif ($statement->type == T_CLASS || $statement->type == T_INTERFACE) {
+          $docblock['extends'] = $statement->extends;
+          $docblock['implements'] = $statement->implements;
+        }
         $docblocks[] = $docblock;
         break;
 
@@ -398,6 +402,15 @@ function api_save_documentation($docblocks) {
       case 'file':
         db_query('DELETE FROM {api_file} WHERE did = %d', $docblock['did']);
         drupal_write_record('api_file', $docblock);
+        break;
+
+      case 'class':
+        foreach ($docblock['extends'] as $extend) {
+          api_reference($docblocks[0]['branch'], 'class', $extend, $docblock['did']);
+        }
+        foreach ($docblock['implements'] as $implement) {
+          api_reference($docblocks[0]['branch'], 'interface', $implement, $docblock['did']);
+        }
         break;
     }
 
