@@ -34,7 +34,7 @@ define('API_RE_FILENAME', '([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)');
 define('API_RE_TAG_START', '(?<!\\\)@');
 
 /**
- * Implementation of hook_help()
+ * Implementation of hook_help().
  */
 function api_help($path, $arg) {
   switch ($path) {
@@ -73,6 +73,15 @@ function api_help($path, $arg) {
   }
 }
 
+/**
+ * Returns a list of all defined branches.
+ *
+ * @param $_reset
+ *   If set to TRUE, the cached return value is reset.
+ *
+ * @return
+ *   Array of branch objects, in order by branch weight.
+ */
 function api_get_branches($_reset = FALSE) {
   static $branches;
 
@@ -89,7 +98,13 @@ function api_get_branches($_reset = FALSE) {
 }
 
 /**
- * Get the list of currently-used branch names across all projects.
+ * Returns the list of currently-used branch names across all projects.
+ *
+ * @param $_reset
+ *   If set to TRUE, the cached return value is reset.
+ *
+ * @return
+ *   Array of branch names in use.
  */
 function api_get_branch_names($_reset = FALSE) {
   static $branch_names;
@@ -495,12 +510,19 @@ function api_menu() {
   return $items;
 }
 
+/**
+ * Menu object load callback for %api_filename in menu paths.
+ *
+ * Loads information about an API file.
+ */
 function api_filename_load($file_name, $branch) {
   return api_object_load(str_replace('--', '/', $file_name), $branch, 'file');
 }
 
 /**
- * Load an object from its name, type and branch.
+ * Menu object load callback for %api_object in menu paths.
+ *
+ * Loads an object from its name, type, and branch.
  */
 function api_object_load($object_name, $branch, $object_type, $file_name = NULL) {
   static $cache;
@@ -541,6 +563,9 @@ function api_perm() {
   return array('access API reference', 'administer API reference');
 }
 
+/**
+ * Implementation of hook_theme().
+ */
 function api_theme() {
   return array(
     'api_branch_table' => array(
@@ -645,22 +670,40 @@ function api_theme() {
   );
 }
 
+/**
+ * Theme preprocess function for api-function-page.tpl.php.
+ */
 function api_preprocess_api_function_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['function']);
 }
 
+/**
+ * Theme preprocess function for api-constant-page.tpl.php.
+ */
 function api_preprocess_api_constant_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['constant']);
 }
 
+/**
+ * Theme preprocess function for api-global-page.tpl.php.
+ */
 function api_preprocess_api_global_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['global']);
 }
 
+/**
+ * Theme preprocess function for api-group-page.tpl.php.
+ */
 function api_preprocess_api_group_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['group']);
 }
 
+/**
+ * Implementation of hook_init().
+ *
+ * Adds CSS and JavaScript for the search auto-complete. Adds OpenSearch
+ * autodiscovery links. Redirects nodes of type 'api' to the correct URL.
+ */
 function api_init() {
   drupal_add_css(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.css');
   drupal_add_js(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js');
@@ -681,6 +724,11 @@ function api_init() {
   }
 }
 
+/**
+ * Implementation of hook_db_rewrite_sql().
+ *
+ * Excludes nodes of type 'api' from node queries.
+ */
 function api_db_rewrite_sql($query, $primary_table, $primary_field) {
   if ($primary_field == 'nid' && $primary_table == 'n') {
     return array('where' => "n.type <> 'api'");
@@ -737,6 +785,9 @@ function api_block($op, $delta = NULL, $edit = array()) {
   }
 }
 
+/**
+ * Implementation of hook_filter().
+ */
 function api_filter($op, $delta = 0, $format = -1, $text = '') {
   switch ($op) {
     case 'list':
@@ -754,8 +805,10 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
 }
 
 /**
- * Construct a link to an API object page.
+ * Constructs a link to an API object page.
  *
+ * @param $branch
+ *   Branch object representing the branch this documentation is in.
  * @param $object
  *   An API object with object_type, object_name, and file_name properties.
  * @param $file
@@ -780,21 +833,21 @@ function api_url($branch, $object, $file = FALSE) {
 }
 
 /**
- * Show link for theme('api_expandable').
+ * Shows a link for theme('api_expandable').
  */
 function api_show_l($text) {
   return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'show-content')));
 }
 
 /**
- * Hide link for theme('api_expandable').
+ * Hides a link for theme('api_expandable').
  */
 function api_hide_l($text) {
   return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'hide-content')));
 }
 
 /**
- * Save an API branch.
+ * Saves an API branch.
  *
  * @param $branch
  *   A branch object, with branch_name, title, and directories variables.
@@ -827,10 +880,16 @@ function api_save_branch($branch) {
   menu_rebuild();
 }
 
+/**
+ * Sort callback for sorting branches.
+ */
 function api_branch_sort($a, $b) {
   return version_compare($a->branch_name, $b->branch_name);
 }
 
+/**
+ * Returns the currently active branch.
+ */
 function api_get_active_branch() {
   static $branch;
 
@@ -848,6 +907,14 @@ function api_get_active_branch() {
   return $branch;
 }
 
+/**
+ * Form builder for API search form.
+ *
+ * @param $branch
+ *   Branch to build the search form for.
+ *
+ * @see api_search_form_submit()
+ */
 function api_search_form($form_state, $branch) {
   drupal_add_js(array('apiAutoCompletePath' => base_path() . variable_get('api_autocomplete_path_' . $branch->branch_name, url('api/autocomplete/' . $branch->branch_name))), 'setting');
   $form = array(
@@ -869,10 +936,16 @@ function api_search_form($form_state, $branch) {
   return $form;
 }
 
+/**
+ * Form submission handler for api_search_form().
+ */
 function api_search_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'api/search/'. $form['#branch']->branch_name .'/'. $form_state['values']['search'];
 }
 
+/**
+ * Page callback for path 'apis'.
+ */
 function api_search_redirect() {
   $args = func_get_args();
   if (count($args) === 0 && strpos($_GET['q'], 'apis/') !== 0) {
@@ -888,7 +961,7 @@ function api_search_redirect() {
 }
 
 /**
- * Menu callback; perform a global search for documentation.
+ * Page callback for path api/search/[branch] -- performs a search.
  */
 function api_search_listing($branch_name) {
   $search_text = func_get_args();
@@ -911,10 +984,16 @@ function api_search_listing($branch_name) {
 }
 
 /**
- * Prepare a listing of documentation objects for a branch.
+ * Prepares a listing of documentation objects for a branch.
  *
- * @param $branch
- *   A branch.
+ * @param $branch_name
+ *   Name of the branch to list.
+ * @param $page
+ *   TRUE if this will be embedded in a page, and FALSE if it is an AHAH
+ *   callback.
+ *
+ * @return
+ *   JavaScript listing of all the objects in the branch.
  */
 function api_autocomplete($branch_name, $page = TRUE) {
   $result = db_query("SELECT d.title, d.object_type FROM {api_documentation} d INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE b.branch_name = '%s' AND d.object_type <> 'mainpage' ORDER BY LENGTH(d.title)", $branch_name);
@@ -932,10 +1011,10 @@ function api_autocomplete($branch_name, $page = TRUE) {
 }
 
 /**
- * Create an OpenSearch plugin for a branch.
+ * Page callback for path api/opensearch/[branch] - OpenSearch plugin.
  *
  * @param $branch_name
- *   A branch name.
+ *   Name of the branch to search.
  *
  * @see https://developer.mozilla.org/en/Creating_OpenSearch_plugins_for_Firefox
  */
@@ -978,11 +1057,12 @@ EOD;
 }
 
 /**
- * Prepare a listing of potential documentation matches for a branch for
- * OpenSearch.
+ * Prepares a list of potential documentation matches for OpenSearch.
+ *
+ * The list is printed out as JavaScript.
  *
  * @param $branch
- *   A branch.
+ *   Name of the branch to list.
  * @param ...
  *   The string to search for.
  *
@@ -1000,7 +1080,10 @@ function api_suggest($branch) {
 }
 
 /**
- * Menu callback; displays the main documentation page.
+ * Page callback for api/[branch]: displays the main documentation page.
+ *
+ * @param $branch
+ *   Branch object giving the branch to display documentation for.
  */
 function api_page_branch($branch) {
   $result = db_query("SELECT documentation FROM {api_documentation} WHERE branch_id = %d AND object_type = 'mainpage'", $branch->branch_id);
@@ -1013,13 +1096,16 @@ function api_page_branch($branch) {
 }
 
 /**
- * Menu callback; displays an object listing.
+ * Page callback for displaying documentation for an object.
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   return api_render_listing($result) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
+/**
+ * Returns links to switch projects.
+ */
 function api_switch_project($current_branch, $url = '') {
   $links = array();
   foreach (api_get_branches() as $branch) {
@@ -1036,12 +1122,15 @@ function api_switch_project($current_branch, $url = '') {
 }
 
 /**
- * Render a table with an overview of documentation objects.
+ * Renders an overview of documentation objects in a table.
  *
  * @param $result
  *   A database query result object.
  * @param $empty_message
  *   An optional string to display instead of an empty table.
+ *
+ * @return
+ *   Rendered HTML for the listing.
  */
 function api_render_listing($result, $empty_message = NULL) {
   $branches = api_get_branches();
@@ -1075,7 +1164,9 @@ function api_render_listing($result, $empty_message = NULL) {
 }
 
 /**
- * Menu callback; produces a textual listing of all functions for use in IDEs.
+ * Page callback for path api/function_dump/[branch].
+ *
+ * Lists all functions in the branch in text format, for use in IDEs.
  */
 function api_page_function_dump($branch_name) {
   $result = db_query("SELECT d.title, d.summary, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON d.did = f.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id  WHERE b.branch_name = '%s' AND d.object_type = 'function'", $branch_name);
@@ -1085,6 +1176,9 @@ function api_page_function_dump($branch_name) {
   }
 }
 
+/**
+ * Sets the page title and breadcrumb for an object display page.
+ */
 function api_object_title_and_breadcrumb($branch, $object) {
   drupal_set_title($object->title);
   $breadcrumb = array(
@@ -1098,7 +1192,7 @@ function api_object_title_and_breadcrumb($branch, $object) {
 }
 
 /**
- * Menu callback; displays documentation for a function.
+ * Page callback that displays documentation for a function.
  */
 function api_page_function($branch, $function) {
   api_object_title_and_breadcrumb($branch, $function);
@@ -1219,7 +1313,7 @@ function api_page_function($branch, $function) {
 }
 
 /**
- * Menu callback; displays documentation for a constant.
+ * Page callback that displays documentation for a constant.
  */
 function api_page_constant($branch, $constant) {
   api_object_title_and_breadcrumb($branch, $constant);
@@ -1235,7 +1329,7 @@ function api_page_constant($branch, $constant) {
 }
 
 /**
- * Menu callback; displays documentation for a global.
+ * Page callback that displays documentation for a global.
  */
 function api_page_global($branch, $global) {
   api_object_title_and_breadcrumb($branch, $global);
@@ -1251,7 +1345,7 @@ function api_page_global($branch, $global) {
 }
 
 /**
- * Menu callback; displays documentation for a file.
+ * Page callback that displays documentation for a file.
  */
 function api_page_file($branch, $file) {
   api_object_title_and_breadcrumb($branch, $file);
@@ -1298,6 +1392,15 @@ function api_page_file($branch, $file) {
   return $output;
 }
 
+/**
+ * Renders comments for a documentation object.
+ *
+ * @param $documentation_object
+ *   Object to render comments for.
+ *
+ * @return
+ *   Rendered comments to display with the object.
+ */
 function _api_add_comments($documentation_object) {
   $output = '';
 
@@ -1326,7 +1429,7 @@ function _api_add_comments($documentation_object) {
 }
 
 /**
- * Menu callback; displays source code for a file.
+ * Page callback that displays source code for a file.
  */
 function api_page_file_source($branch, $file) {
   api_object_title_and_breadcrumb($branch, $file);
@@ -1335,7 +1438,7 @@ function api_page_file_source($branch, $file) {
 }
 
 /**
- * Menu callback; displays documentation for a group.
+ * Page callback that displays documentation for a group.
  */
 function api_page_group($branch, $group) {
   api_object_title_and_breadcrumb($branch, $group);
@@ -1383,6 +1486,17 @@ function api_page_group($branch, $group) {
   return $output;
 }
 
+/**
+ * Lists the topics (groups) that contain the documentation object.
+ *
+ * @param $did
+ *   ID of the documentation object to find topics for.
+ * @param $branch
+ *   Branch object to find topics in.
+ *
+ * @return
+ *   List of related topics, rendered as HTML.
+ */
 function api_related_topics($did, $branch) {
   $header = array(
     t('Name'),
@@ -1399,35 +1513,94 @@ function api_related_topics($did, $branch) {
   return '';
 }
 
+/**
+ * Returns a link to the file a documentation object is in.
+ *
+ * @param $branch
+ *   Branch object.
+ * @praam $object
+ *   Documentation object.
+ *
+ * @return
+ *   Formatted link to the file the object is in.
+ */
 function api_file_link($branch, $object) {
   return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($branch, $object, TRUE));
 }
 
+/**
+ * Implementation of hook_cron().
+ */
 function api_cron() {
   include_once './'. drupal_get_path('module', 'api') .'/parser.inc';
   api_update_all_branches();
 }
 
 /**
- * Turn function names into links.
+ * Turns function names into links in code.
+ *
+ * @param $code
+ *   PHP code to scan for function names.
+ * @praam $branch
+ *   Branch to make the links in.
+ *
+ * @return
+ *   Code with function names formatted as links.
  */
 function api_link_code($code, $branch) {
   return _api_link_documentation($code, $branch, array('code function'));
 }
 
+/**
+ * Turns function names into links in documentation.
+ *
+ * @param $documentation
+ *   Documentation to scan for function names.
+ * @praam $branch
+ *   Branch to make the links in.
+ *
+ * @return
+ *   Documentation with function names formatted as links.
+ */
 function api_link_documentation($documentation, $branch) {
   return _filter_url(api_filter_documentation($documentation, $branch), NULL);
 }
 
 /**
- * Turn function and file names into links. This is done on output because the
- * identifiers which are linked frequently change.
+ * Turns function names into links for filter.
+ *
+ * This is the process callback for the API filter supplied by api_filter().
+ * It turns function names into links on output, using the currently active
+ * branch.
+ *
+ * @param $text
+ *   Text to filter.
+ * @param $branch
+ *   Branch object to use for links.
+ *
+ * @return
+ *   Text with function names turned into links.
  */
 function api_filter_documentation($text, $branch) {
   // Remove escaping from \@.
   return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, array('tags', 'link', 'function', 'file')));
 }
 
+/**
+ * Recursive internal callback for turning function names into links in code.
+ *
+ * @param $documentation
+ *   PHP code to scan for function names.
+ * @praam $branch
+ *   Branch to make the links in.
+ * @stages
+ *   Array of stages to process.
+ *
+ * @return
+ *   Code with function names formatted as links.
+ *
+ * @see api_link_code()
+ */
 function _api_link_documentation($documentation, $branch, $stages = array()) {
   $patterns = array(
     // Find HTML tags, which will not be filtered.
@@ -1483,7 +1656,7 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
 }
 
 /**
- * Split a string using a regular expression and process the text using
+ * Splits a string using a regular expression and processes the text using
  * callbacks.
  *
  * @param $pattern
@@ -1502,6 +1675,7 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
  *   text through unchanged.
  * @param $callback_arguments
  *   An array of additional parameters for $callback.
+ *
  * @return
  *   The original string, with both matched and unmatched portions filtered by
  *   the appropriate callbacks.
@@ -1532,7 +1706,21 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
 }
 
 /**
- * Link an object name to its documentation.
+ * Links an object name to its documentation.
+ *
+ * @param $name
+ *   Object name to link to.
+ * @param $branch
+ *   Branch object indicating which branch to make the link in.
+ * @param $prepend
+ *   Text to prepend on the link.
+ * @param $append
+ *   Text to append on the link.
+ * @param $text
+ *   Link text. If omitted, uses $name.
+ *
+ * @return
+ *   The text as a link to the object page.
  */
 function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL, $is_link = FALSE) {
   static $local_objects, $php_functions;
@@ -1590,6 +1778,21 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   }
 }
 
+/**
+ * Turns text into a link, using the first word as the object name.
+ *
+ * @param $name
+ *   Text to link.
+ * @param $branch
+ *   Branch object indicating which branch to make the link in.
+ * @param $prepend
+ *   Text to prepend on the link.
+ * @param $append
+ *   Text to append on the link.
+ *
+ * @return
+ *   The text as a link.
+ */
 function api_link_link($name, $branch, $prepend = '', $append = '') {
   $words = preg_split('/\s+/', $name);
   $name = array_shift($words);

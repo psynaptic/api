@@ -13,6 +13,20 @@ module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.editor');
 module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.list');
 module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.object');
 
+/**
+ * Reads in a file and calls a callback function to parse and save it.
+ *
+ * @param $callback
+ *   Name of the function to call to parse and save the file contents, such as
+ *   api_parse_php_file(), api_parse_text_file(), or api_parse_html_file()
+ *   (pass the function name as a string).
+ * @param $file_path
+ *   Full path to the file to read in.
+ * @param $branch
+ *   Branch to assign the file contents to.
+ * @param $file_name
+ *   File name to store in the database for this file.
+ */
 function api_parse_file($callback, $file_path, $branch, $file_name) {
   $docblock = array(
     'object_name' => $file_name,
@@ -36,10 +50,15 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
 }
 
 /**
- * Read in the file at the given path and parse it as if it consisted entirely of
- * documentation.
+ * Saves contents of a file as a single piece of text documentation.
+ *
+ * Callback for api_parse_file().
+ *
+ * @param $docblock
+ *   Array from api_parse_file() containing the file contents and information
+ *   about the file, branch, etc.
  */
-function api_parse_text_file($docblock) {
+Function api_parse_text_file($docblock) {
   $docblock['documentation'] = api_format_documentation($docblock['source']);
   $docblock['code'] = api_format_php($docblock['source']);
 
@@ -47,7 +66,16 @@ function api_parse_text_file($docblock) {
 }
 
 /**
- * Read in the file at the given path and parse it as an HTML file.
+ * Saves contents of a file as a single piece of HTML documentation.
+ *
+ * Escapes any HTML special characters in the text, so that it can be
+ * displayed to show the HTML tags.
+ *
+ * Callback for api_parse_file().
+ *
+ * @param $docblock
+ *   Array from api_parse_file() containing the file contents and information
+ *   about the file, branch, etc.
  */
 function api_parse_html_file($docblock) {
   $docblock['code'] = '<pre>' . htmlspecialchars($docblock['source']) . '</pre>';
@@ -64,7 +92,16 @@ function api_parse_html_file($docblock) {
 }
 
 /**
- * Read in the file at the given path and parse its documentation.
+ * Parses a PHP file and saves the file and its contents as documentation.
+ *
+ * PHP functions, classes, global variables, constants, etc. in the file
+ * are saved as documentation, if they have docblocks.
+ *
+ * Callback for api_parse_file().
+ *
+ * @param $docblock
+ *   Array from api_parse_file() containing the file contents and information
+ *   about the file, branch, etc.
  */
 function api_parse_php_file($docblock) {
   // Build grammar statements.
@@ -108,9 +145,10 @@ function api_parse_php_file($docblock) {
 }
 
 /**
- * Returns a PGPEditor object. (Singleton)
+ * Returns a new, singleton PGPEditor object.
  *
  * @return PGPEditor
+ *   A new PGPEditor object.
  */
 function api_get_editor() {
   static $editor;
@@ -121,14 +159,15 @@ function api_get_editor() {
 }
 
 /**
- * Build a list of documentation items.
+ * Builds a list of documentation items.
  *
- * @param array $statements
- *   A PGPBody object of body statements.
+ * @param PGPBody $statements
+ *   A PGPBody object containing body statements.
  * @param array $default_block
- *   The default documentation block item for the file.
+ *   The default documentation block to use to build documentation items.
  * @param array $docblocks
- *   The array of documentation block items for the file.
+ *   The array of documentation block items. Documentation items
+ *   are added to the end of this array.
  */
 function api_documentation_loop($statements, $default_block, &$docblocks) {
   $editor = api_get_editor();
@@ -186,7 +225,13 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
 }
 
 /**
- * Find functions called in a formatted block of code.
+ * Finds functions called in a formatted block of code.
+ *
+ * @param $code
+ *   Formatted block of code.
+ *
+ * @return
+ *   Array of functions that are called in the code.
  */
 function api_parse_function_calls($code) {
   $function_calls = array();
@@ -200,10 +245,11 @@ function api_parse_function_calls($code) {
 }
 
 /**
- * Save a documentation block into the database.
+ * Saves a documentation block to the database.
  *
  * @param $docblocks
  *   An array containing information about the documentation block.
+ *
  * @return
  *   The documentation ID of the inserted/updated construct.
  */
@@ -378,7 +424,10 @@ function api_save_documentation($docblocks) {
 }
 
 /**
- * Format a documentation block as HTML.
+ * Formats a documentation block as HTML.
+ *
+ * First escapes all HTML tags. Then processes links and code blocks, and
+ * converts newlines into paragraphs.
  */
 function api_format_documentation($documentation) {
   // Don't do processing on empty text (so we don't end up with empty paragraphs).
@@ -406,6 +455,8 @@ function api_format_documentation($documentation) {
 }
 
 /**
+ * Converts newlines into paragraphs.
+ *
  * Like _filter_autop(), but does not add <br /> tags.
  */
 function api_autop($text) {
@@ -461,15 +512,17 @@ function api_autop($text) {
 }
 
 /**
- * Regexp replace callback for code tags.
+ * Regular expression callback for @code in api_format_documentation().
  */
 function api_format_embedded_php($matches) {
   return "\n\n". api_format_php("<?php\n". decode_entities($matches[1]) ."\n?".">") ."\n\n";
 }
 
 /**
- * Parse a block of text for lists that use hyphens or asterisks as bullets, and
- * format them as proper HTML lists.
+ * Formats documentation lists as HTML lists.
+ *
+ * Parses a block of text for lists that uses hyphens or asterisks as bullets,
+ * and format the lists as proper HTML lists.
  */
 function api_format_documentation_lists($documentation) {
   $lines = explode("\n", $documentation);
@@ -521,7 +574,7 @@ function api_format_documentation_lists($documentation) {
 }
 
 /**
- * Retrieve a summary from a documentation block.
+ * Retrieves a summary from a documentation block.
  */
 function api_documentation_summary($documentation) {
   $pos = strpos($documentation, '</p>');
@@ -539,7 +592,13 @@ function api_documentation_summary($documentation) {
 }
 
 /**
- * Colorize and format a PHP script.
+ * Colorizes and formats PHP code.
+ *
+ * @param $code
+ *   PHP code to format.
+ *
+ * @return
+ *   HTML-formatted code, with spans enclosing various PHP elements.
  */
 function api_format_php($code) {
   $output = '';
@@ -636,10 +695,21 @@ function api_format_php($code) {
 }
 
 /**
+ * Keeps track of references while parsing API files.
+ *
  * Since we may parse a file containing a reference before we have parsed the
  * file containing the referenced object, we keep track of the references
  * using a scratch table and save the references to the database table after the
  * referenced object has been parsed.
+ *
+ * @param $branch
+ *   Branch the reference is in.
+ * @param $to_type
+ *   Type of object being referenced.
+ * @param $to_name
+ *   Name of object being referenced.
+ * @param $from_did
+ *   Documentation ID of the object that references this object.
  */
 function api_reference($branch, $to_type, $to_name, $from_did) {
   static $is_php_function = array();
@@ -653,6 +723,11 @@ function api_reference($branch, $to_type, $to_name, $from_did) {
   }
 }
 
+/**
+ * Registers a shutdown function for cron, making sure to do it just once.
+ *
+ * @see api_shutdown()
+ */
 function api_schedule_shutdown() {
   static $scheduled = FALSE;
 
@@ -663,8 +738,10 @@ function api_schedule_shutdown() {
 }
 
 /**
- * Update the references that were collected, update JSON object list, clear
- * cache.
+ * Cleans up at the end of the cron job.
+ *
+ * Updates the collected references, updates the JSON object list, and clears
+ * the cache.
  */
 function api_shutdown() {
   // Figure out all the dids of the object/branch/types.
@@ -696,6 +773,12 @@ function api_shutdown() {
   cache_clear_all();
 }
 
+/**
+ * Updates all branches, by calling their update functions.
+ *
+ * @see api_update_branch_php()
+ * @see api_update_branch_files()
+ */
 function api_update_all_branches() {
   foreach (api_get_branches() as $branch) {
     $function = 'api_update_branch_' . $branch->type;
@@ -704,6 +787,14 @@ function api_update_all_branches() {
   }
 }
 
+/**
+ * Updates a PHP branch.
+ *
+ * Queries the branch URL to get an updated list of functions, and saves each
+ * function in the database.
+ *
+ * @see api_update_all_branches()
+ */
 function api_update_branch_php($branch) {
   $response = drupal_http_request($branch->summary);
   if ($response->code === '200') {
@@ -724,6 +815,16 @@ function api_update_branch_php($branch) {
   }
 }
 
+/**
+ * Updates a files branch.
+ *
+ * Checks the current directories included in the branch to make an updated
+ * list of files. Removes documentation from files that no longer exist, adds
+ * documentation from new files, and updates documentation for any files that
+ * have changed.
+ *
+ * @see api_update_all_branches()
+ */
 function api_update_branch_files($branch) {
   static $parse_functions = array(
     'php' => 'api_parse_php_file',
@@ -778,7 +879,16 @@ function api_update_branch_files($branch) {
 }
 
 /**
- * Find all the files in the directories specified for a branch.
+ * Finds all the files in the directories specified for a branch.
+ *
+ * @param $directories
+ *   List of directories to scan, as text (separated by newlines).
+ * @param $excluded_directories
+ *   List of directories to exclude, as text (separated by newlines).
+ *
+ * @return
+ *   Associative array of files, where the keys are the full paths to the
+ *   files and the values are the file names.
  */
 function api_scan_directories($directories, $excluded_directories) {
   $directory_array = explode("\n", $directories);
