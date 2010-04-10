@@ -1210,11 +1210,18 @@ function api_page_function($branch, $function) {
     }
     else {
       $tokens = token_get_all('<?php '. $signature->signature);
-      if ($tokens[1] == '&') {
-        $name = '&'. $tokens[2][1];
-      }
-      else {
-        $name = $tokens[1][1];
+      // Remove <?php
+      array_shift($tokens);
+      // Get function name
+      $name = '';
+      while ($tokens[0] !== '(') {
+        if (is_array($tokens[0])) {
+          $name .= $tokens[0][1];
+        }
+        else {
+          $name .= $tokens[0];
+        }
+        array_shift($tokens);
       }
       $signature_info[$n] = array(
         'branch id' => $signature->branch_id,
