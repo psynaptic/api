@@ -148,7 +148,7 @@ function api_enable() {
     $branch->project = 'php';
     $branch->branch_name = 'php';
     $branch->title = 'PHP functions';
-    $branch->status = 1;
+    $branch->status = 0;
     $branch->data = array(
       'summary' => 'http://cvs.php.net/viewvc.cgi/phpdoc/funcsummary.txt?view=co',
       'path' => 'http://php.net/!function',
