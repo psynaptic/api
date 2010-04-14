@@ -807,8 +807,6 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
 /**
  * Constructs a link to an API object page.
  *
- * @param $branch
- *   Branch object representing the branch this documentation is in.
  * @param $object
  *   An API object with object_type, object_name, and file_name properties.
  * @param $file
@@ -818,17 +816,16 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
  * @return
  *   A URL string.
  */
-function api_url($branch, $object, $file = FALSE) {
-  // api_default_project is a placeholder for when we have real project
-  // support.
+function api_url($object, $file = FALSE) {
+  $branches = api_get_branches();
   if ($file) {
-    return 'api/' . $branch->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $branch->branch_name;
+    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $branches[$object->branch_id]->branch_name;
   }
   elseif ($object->object_type === 'file') {
-    return 'api/' . $branch->project . '/' . str_replace('/', '--', $object->object_name) . '/' . $branch->branch_name;
+    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->object_name) . '/' . $branches[$object->branch_id]->branch_name;
   }
   else {
-    return 'api/' . $branch->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->object_type . '/' . $object->object_name . '/' . $branch->branch_name;
+    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->object_type . '/' . $object->object_name . '/' . $branches[$object->branch_id]->branch_name;
   }
 }
 
@@ -974,7 +971,7 @@ function api_search_listing($branch_name) {
     // Exact match.
     $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, d.* FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.title = '%s'", $branch_name, $search_text));
     $branches = api_get_branches();
-    drupal_goto(api_url($branches[$item->branch_id], $item));
+    drupal_goto(api_url($item));
   }
   else {
     // Wildcard search.
@@ -1142,11 +1139,10 @@ function api_render_listing($result, $empty_message = NULL) {
 
   $rows = array();
   while ($object = db_fetch_object($result)) {
-    $branch = $branches[$object->branch_id];
     $rows[] = array(
-      l($object->title, api_url($branch, $object)),
-      '<small>'. api_file_link($branch, $object) .'</small>',
-      api_link_documentation($object->summary, $branch),
+      l($object->title, api_url($object)),
+      '<small>'. api_file_link($object) .'</small>',
+      api_link_documentation($object->summary, $branches[$object->branch_id]),
     );
   }
 
@@ -1186,7 +1182,7 @@ function api_object_title_and_breadcrumb($branch, $object) {
     l(t('API reference'), 'api/' . $branch->project),
   );
   if ($object->object_type !== 'file') {
-    $breadcrumb[] = l(basename($object->file_name), api_url($branch, $object, TRUE));
+    $breadcrumb[] = l(basename($object->file_name), api_url($object, TRUE));
   }
   drupal_set_breadcrumb($breadcrumb);
 }
@@ -1285,7 +1281,7 @@ function api_page_function($branch, $function) {
     $signature .= ')';
     $signatures[$branch_label] = array(
       'signature' => $signature,
-      'url' => api_url($branches[$info['max object']->branch_id], $info['max object']),
+      'url' => api_url($info['max object']),
       'active' => $info['active'],
       'status' => $branches[$info['max object']->branch_id]->status,
     );
@@ -1301,12 +1297,12 @@ function api_page_function($branch, $function) {
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.to_did = %d", $function->did));
   $call = '';
   if ($call_count > 0) {
-    $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.to_did = %d ORDER BY d.title", $function->did);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.to_did = %d ORDER BY d.title", $function->did);
     $call_functions = array();
     while ($object = db_fetch_object($result)) {
       $call_functions[] = array(
-        'function' => l($object->title, api_url($branch, $object)),
-        'file' => api_file_link($branch, $object),
+        'function' => l($object->title, api_url($object)),
+        'file' => api_file_link($object),
         'description' => api_link_documentation($object->summary, $branch),
       );
     }
@@ -1359,7 +1355,7 @@ function api_page_file($branch, $file) {
 
   $documentation = api_link_documentation($file->documentation, $branch);
   $see = api_link_documentation($file->see, $branch);
-  $result = db_query("SELECT title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'class') ORDER BY title", $file->object_name, $file->branch_id);
+  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'class') ORDER BY title", $file->object_name, $file->branch_id);
   $rows = array(
     'constant' => array(),
     'global' => array(),
@@ -1368,7 +1364,7 @@ function api_page_file($branch, $file) {
   );
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, api_url($branch, $object)),
+      l($object->title, api_url($object)),
       api_link_documentation($object->summary, $branch),
     );
   }
@@ -1458,11 +1454,11 @@ function api_page_group($branch, $group) {
     'global' => array(),
     'function' => array(),
   );
-  $result = db_query("SELECT d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
+  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
-      l($object->title, api_url($branch, $object)),
-      '<small>'. api_file_link($branch, $object) .'</small>',
+      l($object->title, api_url($object)),
+      '<small>'. api_file_link($object) .'</small>',
       api_link_documentation($object->summary, $branch),
     );
   }
@@ -1510,9 +1506,9 @@ function api_related_topics($did, $branch) {
     t('Description'),
   );
   $topics = array();
-  $result = db_query("SELECT d.object_name, d.file_name, d.object_type, d.title, d.summary FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.to_did = d.did AND d.object_type = 'group' WHERE r.from_did = %d", $did);
+  $result = db_query("SELECT d.branch_id, d.object_name, d.file_name, d.object_type, d.title, d.summary FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.to_did = d.did AND d.object_type = 'group' WHERE r.from_did = %d", $did);
   while ($group = db_fetch_object($result)) {
-    $topics[l($group->title, api_url($branch, $group))] = api_link_documentation($group->summary, $branch);
+    $topics[l($group->title, api_url($group))] = api_link_documentation($group->summary, $branch);
   }
   if (count($topics) > 0) {
     return theme('api_related_topics', $topics);
@@ -1523,16 +1519,14 @@ function api_related_topics($did, $branch) {
 /**
  * Returns a link to the file a documentation object is in.
  *
- * @param $branch
- *   Branch object.
  * @praam $object
  *   Documentation object.
  *
  * @return
  *   Formatted link to the file the object is in.
  */
-function api_file_link($branch, $object) {
-  return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($branch, $object, TRUE));
+function api_file_link($object) {
+  return dirname($object->file_name) .'/'. l(basename($object->file_name), api_url($object, TRUE));
 }
 
 /**
@@ -1733,7 +1727,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   static $local_objects, $php_functions;
 
   if (is_null($local_objects)) {
-    $result = db_query("SELECT object_name, title, object_type, summary, file_name FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id);
+    $result = db_query("SELECT branch_id, object_name, title, object_type, summary, file_name FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id);
     $local_objects = array(
       'function' => array(),
       'file' => array(),
@@ -1762,19 +1756,19 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   }
 
   if ($is_link && array_key_exists($name, $local_objects['group'])) {
-    return $prepend . l($text, api_url($branch, $local_objects['group'][$name])) . $append;
+    return $prepend . l($text, api_url($local_objects['group'][$name])) . $append;
   }
   elseif (array_key_exists($name, $local_objects['function'])) {
-    return $prepend . l($text, api_url($branch, $local_objects['function'][$name]), array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
+    return $prepend . l($text, api_url($local_objects['function'][$name]), array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['file'])) {
-    return $prepend . l($text, api_url($branch, $local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local'))) . $append;
+    return $prepend . l($text, api_url($local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['constant'])) {
-    return $prepend . l($text, api_url($branch, $local_objects['constant'][$name]), array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local'))) . $append;
+    return $prepend . l($text, api_url($local_objects['constant'][$name]), array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['global'])) {
-    return $prepend . l($text, api_url($branch, $local_objects['global'][$name]), array('attributes' => array('title' => $local_objects['global'][$name]->summary, 'class' => 'local'))) . $append;
+    return $prepend . l($text, api_url($local_objects['global'][$name]), array('attributes' => array('title' => $local_objects['global'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $php_functions)) {
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));

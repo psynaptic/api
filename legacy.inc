@@ -8,6 +8,7 @@ function api_file_redirect() {
   $suffix = '';
   $file = new StdClass();
   $file->object_type = 'file';
+  $file->branch = $branch;
   $file->branch_name = $branch->branch_name;
 
   $end = count($args) - 1;
@@ -25,5 +26,5 @@ function api_file_redirect() {
   }
   $file->object_name = implode('/', array_slice($args, 0, $end + 1));
 
-  drupal_goto(api_url($branch, $file) . $suffix);
+  drupal_goto(api_url($file) . $suffix);
 }
