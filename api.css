@@ -77,8 +77,8 @@ dl.api-related-topics dd {
   font-size: 0.6944em;
   font-weight: normal;
 }
-#api-function-signature td.branch {
-  color: #000;
+#api-function-signature td.signature {
+  width: 100%;
 }
 #api-function-signature del {
   text-decoration: none;

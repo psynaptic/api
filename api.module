@@ -1201,11 +1201,11 @@ function api_page_function($branch, $function) {
   $last_signature = '';
   $signatures = array();
   $n = 0;
-  $result = db_query("SELECT d.branch_id, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
+  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
   while ($signature = db_fetch_object($result)) {
     if ($signature->signature == $last_signature) {
       // Collapse unchanged signatures to one line.
-      $signature_info[$n - 1]['max branch'] = $signature->branch_id;
+      $signature_info[$n - 1]['max object'] = $signature;
       $signature_info[$n - 1]['active'] = $signature_info[$n - 1]['active'] || $signature->branch_id == $function->branch_id;
     }
     else {
@@ -1224,9 +1224,9 @@ function api_page_function($branch, $function) {
         array_shift($tokens);
       }
       $signature_info[$n] = array(
-        'branch id' => $signature->branch_id,
-        'max branch' => $signature->branch_id,
-        'active' => $signature->branch_id == $function->branch_id,
+        'object' => $signature,
+        'max object' => $signature, // Keep track of the most-recent branch
+        'active' => $signature->branch_id === $function->branch_id,
         'arguments' => array(),
         'other' => array(),
       );
@@ -1265,9 +1265,9 @@ function api_page_function($branch, $function) {
     if (isset($signature_info[$n + 1])) {
       $old = array_diff($info['arguments'], $signature_info[$n + 1]['arguments']);
     }
-    $branch_label = $branches[$info['branch id']]->branch_name;
-    if ($info['branch id'] !== $info['max branch']) {
-      $branch_label .= ' – '. $branches[$info['max branch']]->branch_name;
+    $branch_label = $branches[$info['object']->branch_id]->branch_name;
+    if ($info['object']->branch_id !== $info['max object']->branch_id) {
+      $branch_label .= ' – '. $branches[$info['max object']->branch_id]->branch_name;
     }
     $signature = $name . $info['other'][-1];
     foreach ($signature_info[$n]['arguments'] as $key => $argument) {
@@ -1285,9 +1285,9 @@ function api_page_function($branch, $function) {
     $signature .= ')';
     $signatures[$branch_label] = array(
       'signature' => $signature,
-      'url' => api_url($branches[$info['max branch']], $function),
+      'url' => api_url($branches[$info['max object']->branch_id], $info['max object']),
       'active' => $info['active'],
-      'status' => $branches[$info['max branch']]->status,
+      'status' => $branches[$info['max object']->branch_id]->status,
     );
   }
 
