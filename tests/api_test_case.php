@@ -2,7 +2,11 @@
 // $Id$
 
 class ApiTestCase extends DrupalWebTestCase {
+  private $default_branch;
+
   function setUp() {
+    $this->default_branch = variable_get('api_default_branch', NULL);
+    variable_del('api_default_branch');
     parent::setUp('job_queue', 'grammar_parser', 'api');
 
     include drupal_get_path('module', 'api') .'/api.admin.inc';
@@ -27,6 +31,12 @@ class ApiTestCase extends DrupalWebTestCase {
     api_shutdown();
 
     api_get_branches(TRUE);
+  }
+
+  function tearDown() {
+    parent::tearDown();
+    // Aparently SimpleTest is leaky sometimes.
+    variable_set('api_default_branch', $this->default_branch);
   }
 
   function getBranch() {
