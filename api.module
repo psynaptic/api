@@ -443,6 +443,26 @@ function api_menu() {
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
+      // Classes
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/class/%api_object'] = array(
+          'title' => 'Class',
+          'load arguments' => array($branch, 'class', 2),
+          'page callback' => 'api_page_class',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/%api_filename/class/%api_object/'. $branch->branch_name] = array(
+        'title' => $branch->title,
+        'load arguments' => array($branch, 'class', 2),
+        'page callback' => 'api_page_class',
+        'page arguments' => array($branch, 4),
+        'access arguments' => array('access API reference'),
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+      );
+
       // Files
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename'] = array(
@@ -646,6 +666,17 @@ function api_theme() {
       ),
       'template' => 'templates/api-global-page',
     ),
+    'api_class_page' => array(
+      'arguments' => array(
+        'branch' => NULL,
+        'class' => NULL,
+        'documentation' => NULL,
+        'code' => NULL,
+        'related_topics' => NULL,
+        'see' => NULL,
+      ),
+      'template' => 'templates/api-class-page',
+    ),
     'api_file_page' => array(
       'arguments' => array(
         'file' => NULL,
@@ -700,6 +731,13 @@ function api_preprocess_api_constant_page(&$variables) {
  */
 function api_preprocess_api_global_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['global']);
+}
+
+/**
+ * Theme preprocess function for api-global-page.tpl.php.
+ */
+function api_preprocess_api_class_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['class']);
 }
 
 /**
@@ -1247,7 +1285,7 @@ function api_page_function($branch, $function) {
       }
       if ($signature->class_did !== '0') {
         $class = api_object_load((int) $signature->class_did, $branches[$signature->branch_id], 'class', $signature->file_name);
-        $name .= $class->object_name . '::';
+        $name .= l($class->object_name, api_url($class)) . '::';
       }
       $name .= $tokens[0][1];
       $signature_info[$n] = array(
@@ -1375,6 +1413,23 @@ function api_page_global($branch, $global) {
 
   $output = theme('api_global_page', $branch, $global, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($global);
+  return $output;
+}
+
+/**
+ * Page callback that displays documentation for a class.
+ */
+function api_page_class($branch, $class) {
+  api_object_title_and_breadcrumb($branch, $class);
+
+  $documentation = api_link_documentation($class->documentation, $branch);
+  $related_topics = api_related_topics($class->did, $branch);
+  $code = api_link_code($class->code, $branch);
+  $see = api_link_documentation($class->see, $branch);
+
+  $output = theme('api_class_page', $branch, $class, $documentation, $code, $related_topics, $see);
+  $output .= _api_add_comments($class);
+
   return $output;
 }
 
