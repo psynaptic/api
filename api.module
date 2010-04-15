@@ -523,17 +523,28 @@ function api_filename_load($file_name, $branch) {
  * Menu object load callback for %api_object in menu paths.
  *
  * Loads an object from its name, type, and branch.
+ *
+ * @param $object_name_or_did
+ *   The string object name or int did to load.
  */
-function api_object_load($object_name, $branch, $object_type, $file_name = NULL) {
+function api_object_load($object_name_or_did, $branch, $object_type, $file_name = NULL) {
   static $cache;
 
-  $key = $object_name .':'. $object_type .':'. $branch->branch_id;
+  $key = $object_name_or_did .':'. $object_type .':'. $branch->branch_id;
   if (!isset($cache[$key])) {
     // Prepare the query
     $tables = array('{api_documentation} ad');
     $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did');
-    $where = "WHERE ad.object_name = '%s' AND ad.object_type = '%s' AND ad.branch_id = %d";
-    $arguments = array($object_name, $object_type, $branch->branch_id);
+    $where = "WHERE ad.object_type = '%s' AND ad.branch_id = %d";
+    $arguments = array($object_type, $branch->branch_id);
+    if (is_int($object_name_or_did)) {
+      $where .= " AND ad.did = %d";
+      $arguments[] = $object_name_or_did;
+    }
+    else {
+      $where .= " AND ad.object_name = '%s'";
+      $arguments[] = $object_name_or_did;
+    }
 
     if ($object_type !== 'file') {
       $file = api_filename_load($file_name, $branch);
@@ -1212,7 +1223,7 @@ function api_page_function($branch, $function) {
   $last_signature = '';
   $signatures = array();
   $n = 0;
-  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
+  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' AND d.class_did = %d ORDER BY b.weight", $function->title, $function->class_did);
   while ($signature = db_fetch_object($result)) {
     if ($signature->signature == $last_signature) {
       // Collapse unchanged signatures to one line.
@@ -1225,7 +1236,7 @@ function api_page_function($branch, $function) {
       array_shift($tokens);
       // Get function name
       $name = '';
-      while ($tokens[0] !== '(') {
+      while ($tokens[1] !== '(') {
         if (is_array($tokens[0])) {
           $name .= $tokens[0][1];
         }
@@ -1234,6 +1245,11 @@ function api_page_function($branch, $function) {
         }
         array_shift($tokens);
       }
+      if ($signature->class_did !== '0') {
+        $class = api_object_load((int) $signature->class_did, $branches[$signature->branch_id], 'class', $signature->file_name);
+        $name .= $class->object_name . '::';
+      }
+      $name .= $tokens[0][1];
       $signature_info[$n] = array(
         'object' => $signature,
         'max object' => $signature, // Keep track of the most-recent branch
