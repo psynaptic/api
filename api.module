@@ -546,17 +546,25 @@ function api_filename_load($file_name, $branch) {
  *
  * @param $object_name_or_did
  *   The string object name or int did to load.
+ * @param $branch
+ *   Branch object.
+ * @param $object_type
+ *   A string type, or array of strings. class, interface, function, etc.
  */
 function api_object_load($object_name_or_did, $branch, $object_type, $file_name = NULL) {
   static $cache;
 
-  $key = $object_name_or_did .':'. $object_type .':'. $branch->branch_id;
+  if (!is_array($object_type)) {
+    $object_type = array($object_type);
+  }
+  $key = $object_name_or_did .':'. implode('-', $object_type) .':'. $branch->branch_id;
   if (!isset($cache[$key])) {
     // Prepare the query
     $tables = array('{api_documentation} ad');
     $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did');
-    $where = "WHERE ad.object_type = '%s' AND ad.branch_id = %d";
-    $arguments = array($object_type, $branch->branch_id);
+    $where = "WHERE ad.object_type IN (" . db_placeholders($object_type, 'text') . ") AND ad.branch_id = %d";
+    $arguments = $object_type;
+    $arguments[] = $branch->branch_id;
     if (is_int($object_name_or_did)) {
       $where .= " AND ad.did = %d";
       $arguments[] = $object_name_or_did;
@@ -566,17 +574,17 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
       $arguments[] = $object_name_or_did;
     }
 
-    if ($object_type !== 'file') {
+    if (!in_array('file', $object_type)) {
       $file = api_filename_load($file_name, $branch);
       $where .= " AND ad.file_name = '%s'";
       $arguments[] = $file->file_name;
     }
 
-    if ($object_type === 'function') {
+    if (in_array('function', $object_type)) {
       $tables[] = 'LEFT JOIN {api_function} af ON af.did = ad.did';
       $fields[] = 'af.*';
     }
-    elseif ($object_type === 'file') {
+    elseif (in_array('file', $object_type)) {
       $tables[] = 'LEFT JOIN {api_file} af ON af.did = ad.did';
       $fields[] = 'af.*';
     }
@@ -1284,7 +1292,7 @@ function api_page_function($branch, $function) {
         array_shift($tokens);
       }
       if ($signature->class_did !== '0') {
-        $class = api_object_load((int) $signature->class_did, $branches[$signature->branch_id], 'class', $signature->file_name);
+        $class = api_object_load((int) $signature->class_did, $branches[$signature->branch_id], array('interface', 'class'), $signature->file_name);
         $name .= l($class->object_name, api_url($class)) . '::';
       }
       $name .= $tokens[0][1];
