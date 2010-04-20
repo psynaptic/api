@@ -105,7 +105,7 @@ function api_parse_html_file($docblock) {
  */
 function api_parse_php_file($docblock) {
   // Build grammar statements.
-  $editor = api_get_editor();
+  $editor = PGPEditor::getInstance();
   $reader = $editor->getReader();
   $reader->setSnippet($docblock['source']);
   $reader->addTokenNames();
@@ -145,20 +145,6 @@ function api_parse_php_file($docblock) {
 }
 
 /**
- * Returns a new, singleton PGPEditor object.
- *
- * @return PGPEditor
- *   A new PGPEditor object.
- */
-function api_get_editor() {
-  static $editor;
-  if (!$editor) {
-    $editor = new PGPEditor();
-  }
-  return $editor;
-}
-
-/**
  * Builds a list of documentation items.
  *
  * @param PGPBody $statements
@@ -170,7 +156,7 @@ function api_get_editor() {
  *   are added to the end of this array.
  */
 function api_documentation_loop($statements, $default_block, &$docblocks) {
-  $editor = api_get_editor();
+  $editor = PGPEditor::getInstance();
 
   // Traverse statement list to gather documentation items.
   $current = $statements->first();
@@ -187,7 +173,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
       case T_GLOBAL:
       case T_ASSIGNMENT: // Class property
         $docblock = $default_block;
-        $docblock['object_type'] = $editor->statementTypeToString($statement);
+        $docblock['object_type'] = $type == T_ASSIGNMENT ? 'property' : $editor->statementTypeToString($statement);
         if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
           $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }
