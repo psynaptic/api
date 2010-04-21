@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Redirect deprecated old style links.
+ *
+ * @param menu_tail
+ *   One or more menu parts that follows the old style api/file/ path.
+ */
 function api_file_redirect() {
   $branches = api_get_branches();
   $branch = $branches[variable_get('api_default_branch', NULL)];

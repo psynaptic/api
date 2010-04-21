@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Install hooks for API module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
 function api_schema() {
   $schema['api_branch'] = array(
     'fields' => array(
@@ -127,6 +135,9 @@ function api_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function api_install() {
   // Get access to api_save_branch().
   drupal_load('module', 'api');
@@ -136,6 +147,9 @@ function api_install() {
   variable_set('comment_preview_api', COMMENT_PREVIEW_OPTIONAL);
 }
 
+/**
+ * Implementation of hook_enable().
+ */
 function api_enable() {
   // Workaround for http://drupal.org/node/200931
   drupal_get_schema(NULL, TRUE);
@@ -157,6 +171,9 @@ function api_enable() {
   }
 }
 
+/**
+ * Implementation of hook_requirements().
+ */
 function api_requirements($phase) {
   $requirements = array();
   $t = get_t();
@@ -171,7 +188,6 @@ function api_requirements($phase) {
 
   return $requirements;
 }
-
 
 /**
  * Optimize the 'N functions call f()' query.
@@ -283,6 +299,9 @@ function api_update_20() {
   return $return;
 }
 
+/**
+ * Add branch id to api_reference_storage table.
+ */
 function api_update_21() {
   $return = array();
 
@@ -298,6 +317,9 @@ function api_update_21() {
   return $return;
 }
 
+/**
+ * Add branch id to api_documentation table.
+ */
 function api_update_22() {
   $return = array();
 
@@ -429,6 +451,9 @@ function api_update_28() {
   return $return;
 }
 
+/**
+ * Refer objects to the class they belong to.
+ */
 function api_update_29() {
   $return = array();
 
@@ -443,6 +468,9 @@ function api_update_29() {
   return $return;
 }
 
+/**
+ * Remove variables on uninstall.
+ */
 function api_uninstall() {
   drupal_uninstall_schema('api');
   variable_del('api_default_branch');

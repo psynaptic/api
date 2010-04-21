@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Drush commands for API module.
+ */
+
+/**
+ * Implemenation of hook_drush_help().
+ */
 function api_drush_help($section) {
   switch ($section) {
     case 'drush:api-reparse':
@@ -8,6 +16,9 @@ function api_drush_help($section) {
   }
 }
 
+/**
+ * Implementation of hook_drush_command().
+ */
 function api_drush_command() {
   return array(
     'api-reparse' => array(
@@ -20,6 +31,12 @@ function api_drush_command() {
   );
 }
 
+/**
+ * Flag a branch, or all branches, to be reparsed on the next cron run.
+ *
+ * @param $branch_or_file
+ *   Optional branch identifier. If omitted all branches will be reparsed.
+ */
 function api_drush_reparse($branch_or_file = NULL) {
   if (is_null($branch_or_file)) {
     // Reparse all.
@@ -38,3 +55,4 @@ function api_drush_reparse($branch_or_file = NULL) {
   }
   drush_log(dt('Marked @number files for reparsing.', array('@number' => db_affected_rows())), 'ok');
 }
+
