@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redirect deprecated old style links.
+ * Redirect deprecated API <=1.1 links.
  *
  * @param menu_tail
  *   One or more menu parts that follows the old style api/file/ path.
