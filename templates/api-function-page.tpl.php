@@ -1,3 +1,39 @@
+<?php
+// $Id$
+
+/**
+ * @file api-function-page.tpl.php
+ * Theme implementation to display a function overview.
+ *
+ * Available variables:
+ * - $documentation: Documentation from the comment header of the function.
+ * - $branch: Object with information about the branch.
+ * - $function: Object with information about the function.
+ * - $defined: HTML reference to file that defines this function.
+ * - $is_admin: True or false.
+ * - $logged_in: True or false.
+ *
+ * Available variables in the $branch object:
+ * - $branch->project: The machine name of the branch.
+ * - $branch->title: A proper title for the branch.
+ * - $branch->directories: The local included directories.
+ * - $branch->excluded_directories: The local excluded directories.
+ *
+ * Available variables in the $function object.
+ * - $function->title: Display name.
+ * - $function->return: What the function returns.
+ * - $function->parameters: The function parameters.
+ * - $function->related_topics: Related information about the function.
+ * - $function->object_type: For this template it will be 'function'.
+ * - $function->branch_id: An identifier for the branch.
+ * - $function->file_name: The path to the file in the source.
+ * - $function->summary: A one-line summary of the object.
+ * - $function->code: Escaped source code.
+ * - $function->see: HTML index of additional references.
+ *
+ * @see api_preprocess_api_function_page().
+ */
+?>
 <table id="api-function-signature">
   <thead>
     <tr><th class="branch"><?php print t('Versions') ?></th><th></th></tr>

@@ -1,3 +1,20 @@
+<?php
+// $Id$
+
+/**
+ * @file api-branch-default.tpl.php
+ * Theme implementation to display a branch overview.
+ *
+ * Available variables:
+ * - $branch: Information about the current branch.
+ *
+ * The $branch contains:
+ * - $branch->project: The machine name of the branch.
+ * - $branch->title: A proper title for the branch.
+ * - $branch->directories: The local included directories.
+ * - $branch->excluded_directories: The local excluded directories.
+ */
+?>
 <?php if (!empty($branch)) { ?>
   <h3><?php print l(t('Topics'), 'api/' . $branch->project . '/groups/' . $branch->branch_name); ?></h3>
   <?php print api_page_listing($branch, 'group', FALSE); ?>
