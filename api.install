@@ -131,6 +131,17 @@ function api_schema() {
       'to_did' => array('to_did'),
     ),
   );
+  $schema['api_overrides'] = array(
+    'description' => 'Keep track of method, property, and class constant parents.',
+    'fields' => array(
+      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'overrides_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'root_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes' => array(
+      'did' => array('did'),
+    ),
+  );
 
   return $schema;
 }
@@ -464,6 +475,24 @@ function api_update_29() {
     'default' => 0,
   ));
   db_add_index($return, 'api_documentation', 'class_did', array('class_did'));
+
+  return $return;
+}
+
+function api_update_30() {
+  $return = array();
+
+  db_create_table($return, 'api_overrides', array(
+    'description' => 'Keep track of method, property, and class constant parents.',
+    'fields' => array(
+      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'overrides_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'root_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes' => array(
+      'did' => array('did'),
+    ),
+  ));
 
   return $return;
 }

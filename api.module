@@ -1821,7 +1821,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   static $local_objects, $php_functions;
 
   if (is_null($local_objects)) {
-    $result = db_query("SELECT branch_id, object_name, title, object_type, summary, file_name FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id);
+    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch->branch_id);
     $local_objects = array(
       'function' => array(),
       'file' => array(),
@@ -1830,10 +1830,19 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
       'global' => array(),
     );
     while ($object = db_fetch_object($result)) {
-      $local_objects[$object->object_type][$object->title] = $object;
-      if ($object->object_type == 'file' || $object->object_type == 'group') {
-        $local_objects[$object->object_type][basename($object->object_name)] = $object;
+      switch ($object->object_type) {
+        case 'file':
+          $name = basename($object->object_name);
+          break;
+
+        case 'group':
+          $name = $object->object_name;
+          break;
+
+        default:
+          $name = $object->title;
       }
+      $local_objects[$object->object_type][$name] = $object;
     }
   }
 

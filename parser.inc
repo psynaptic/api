@@ -747,6 +747,32 @@ function api_shutdown() {
   // Figure out all the dids of the object/branch/types.
   db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
+  // Save overrides
+  $result = db_query("SELECT ad.did, ad.object_type, ad.title, ad.class_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
+  while ($object = db_fetch_object($result)) {
+    $override = array(
+      'did' => $object->did,
+      'overrides_did' => 0,
+      'root_did' => $object->did,
+    );
+    $overrides_did = 0;
+    $parents = array($object->class_did);
+    while ($parent = array_shift($parents)) {
+      $result_parents = db_query("SELECT ad.did, ars.to_did FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.title = '%s' WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->title, $parent);
+      while ($parent_class = db_fetch_object($result_parents)) {
+        $parents[] = $parent_class->to_did;
+        if (!is_null($parent_class->did)) {
+          if ($override['overrides_did'] === 0) {
+            $override['overrides_did'] = $parent_class->did;
+          }
+          $override['root_did'] = $parent_class->did;
+        }
+      }
+    }
+    drupal_write_record('api_overrides', $override);
+  }
+
+  // Save JSON autocomelete cache
   $directory = file_directory_path();
   if (is_dir($directory) && is_writable($directory) && (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC)) {
     $path = file_create_path('api');
