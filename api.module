@@ -1828,6 +1828,8 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
       'group' => array(),
       'constant' => array(),
       'global' => array(),
+      'class' => array(),
+      'interface' => array(),
     );
     while ($object = db_fetch_object($result)) {
       switch ($object->object_type) {
@@ -1863,6 +1865,12 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   }
   elseif (array_key_exists($name, $local_objects['function'])) {
     return $prepend . l($text, api_url($local_objects['function'][$name]), array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
+  }
+  elseif (array_key_exists($name, $local_objects['class'])) {
+    return $prepend . l($text, api_url($local_objects['class'][$name]), array('attributes' => array('title' => $local_objects['class'][$name]->summary, 'class' => 'local'))) . $append;
+  }
+  elseif (array_key_exists($name, $local_objects['interface'])) {
+    return $prepend . l($text, api_url($local_objects['interface'][$name]), array('attributes' => array('title' => $local_objects['interface'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $local_objects['file'])) {
     return $prepend . l($text, api_url($local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local'))) . $append;

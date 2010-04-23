@@ -23,7 +23,12 @@ class ApiLinkCodeTest extends ApiTestCase {
       array(
         'message' => 'Linking to method defined in multiple classes',
         'data' => '<span class="php-function-or-constant">foo</span>',
-        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/class.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
+      ),
+      array(
+        'message' => 'Marked-up class name linking',
+        'data' => '<span class="php-function-or-constant">Sample</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/class/Sample/6') .'" title="Sample class." class="local">Sample</a></span>',
       ),
 
       // Should not be linked
