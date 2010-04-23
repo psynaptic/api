@@ -115,6 +115,7 @@ function api_schema() {
     'primary key' => array('did'),
   );
   $schema['api_reference_storage'] = array(
+    'documentation' => 'Keep track of references. For classes/interafaces, from_did extends to_did.',
     'fields' => array(
       'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
       'branch_id' => array(
