@@ -1834,17 +1834,17 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
     while ($object = db_fetch_object($result)) {
       switch ($object->object_type) {
         case 'file':
-          $name = basename($object->object_name);
+          $object_name = basename($object->object_name);
           break;
 
         case 'group':
-          $name = $object->object_name;
+          $object_name = $object->object_name;
           break;
 
         default:
-          $name = $object->title;
+          $object_name = $object->title;
       }
-      $local_objects[$object->object_type][$name] = $object;
+      $local_objects[$object->object_type][$object_name] = $object;
     }
   }
 
