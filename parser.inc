@@ -372,7 +372,7 @@ function api_save_documentation($docblocks) {
       $class_dids[$docblock['object_name']] = $docblock['did'];
     }
 
-    db_query('DELETE FROM {api_overrides} WHERE did = %d OR overrides_did = %d OR root_did = %d', $did, $did, $did);
+    db_query('DELETE FROM {api_overrides} WHERE did = %d OR overrides_did = %d OR root_did = %d', $docblock['did'], $docblock['did'], $docblock['did']);
 
     switch ($docblock['object_type']) {
       case 'function':
