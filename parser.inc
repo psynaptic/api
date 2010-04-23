@@ -372,6 +372,8 @@ function api_save_documentation($docblocks) {
       $class_dids[$docblock['object_name']] = $docblock['did'];
     }
 
+    db_query('DELETE FROM {api_overrides} WHERE did = %d OR overrides_did = %d OR root_did = %d', $did, $did, $did);
+
     switch ($docblock['object_type']) {
       case 'function':
         db_query('DELETE FROM {api_function} WHERE did = %d', $docblock['did']);
@@ -418,6 +420,7 @@ function api_save_documentation($docblocks) {
     db_query('DELETE FROM {api_file} WHERE did IN (%s)', $old_dids);
     db_query('DELETE FROM {api_function} WHERE did IN (%s)', $old_dids);
     db_query('DELETE FROM {api_reference_storage} WHERE from_did IN (%s) OR to_did IN (%s)', $old_dids, $old_dids);
+    db_query('DELETE FROM {api_overrides} WHERE did IN (%s) OR overrides_did IN (%s) OR root_did IN (%s)', $old_dids, $old_dids, $old_dids);
   }
 
   api_schedule_shutdown();
