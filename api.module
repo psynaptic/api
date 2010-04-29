@@ -679,6 +679,9 @@ function api_theme() {
         'branch' => NULL,
         'class' => NULL,
         'documentation' => NULL,
+        'hierarchy' => NULL,
+        'methods' => NULL,
+        'constants' => NULL,
         'code' => NULL,
         'related_topics' => NULL,
         'see' => NULL,
@@ -1435,7 +1438,39 @@ function api_page_class($branch, $class) {
   $code = api_link_code($class->code, $branch);
   $see = api_link_documentation($class->see, $branch);
 
-  $output = theme('api_class_page', $branch, $class, $documentation, $code, $related_topics, $see);
+  // builds up class hierarchy
+  $children = api_class_children($class);
+  $self = theme('item_list', array('<strong>' . $class->title . '</strong>' . $children));
+  $hierarchy = api_class_parents($class, $self);
+
+  // builds up methods and constants lists
+  $rows = array(
+    'constant' => array(),
+    'function' => array(),
+  );
+
+  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN ('constant', 'function') ORDER BY title", $class->did, $class->branch_id);
+  while ($object = db_fetch_object($result)) {
+    $rows[$object->object_type][] = array(
+      l($object->title, api_url($object)),
+      api_link_documentation($object->summary, $branch),
+    );
+  }
+
+  $header = array(
+    t('Name'),
+    t('Description'),
+  );
+
+  if (count($rows)) {
+    foreach ($rows as $type => $row) {
+      if (count($row) > 0) {
+        $list[$type] = theme('table', $header, $row);
+      }
+    }
+  }
+
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['function'], $list['constant'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;
@@ -1909,4 +1944,43 @@ function api_link_link($name, $branch, $prepend = '', $append = '') {
   $words = preg_split('/\s+/', $name);
   $name = array_shift($words);
   return api_link_name($name, $branch, $prepend, $append, implode(' ', $words), TRUE);
+}
+
+/**
+ * Returns class parents (recursive)
+ *
+ * @param $class
+ *   The class to look for parents.
+ * @param $text
+ *   sub classes text.
+ *
+ * @return
+ *   The list as html.
+ */
+function api_class_parents($class, $text = '') {
+  $tree = array();
+  $result = db_query("SELECT DISTINCT rs.to_did as did, rs.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('class', 'interface')", $class->did, $class->branch_id);
+  $object = db_fetch_object($result);
+  if (isset($object->did)) {
+    return api_class_parents($object, theme('item_list', array(l($object->title, api_url($object)) . $text)));
+  }
+  return $text;
+}
+
+/**
+ * Returns class children (recursive)
+ *
+ * @param $class
+ *   The class to look for children.
+ *
+ * @return
+ *   The list as html.
+ */
+function api_class_children($class) {
+  $rows = array();
+  $result = db_query("SELECT DISTINCT rs.from_did as did, rs.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.from_did WHERE rs.to_did = %d AND rs.branch_id = %d AND rs.object_type IN ('class', 'interface')", $class->did, $class->branch_id);
+  while ($object = db_fetch_object($result)) {
+    $rows[] = l($object->title, api_url($object)) . api_class_children($object);
+  }
+  return theme('item_list', $rows);
 }
