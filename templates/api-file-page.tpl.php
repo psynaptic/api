@@ -35,6 +35,10 @@
 <?php print $see ?>
 <?php } ?>
 
+<?php if (!empty($interfaces)) { ?>
+<h3><?php print t('Interfaces') ?></h3>
+<?php print $interfaces ?>
+<?php } ?>
 <?php if (!empty($classes)) { ?>
 <h3><?php print t('Classes') ?></h3>
 <?php print $classes ?>
