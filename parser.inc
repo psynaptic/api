@@ -480,7 +480,7 @@ function api_autop($text) {
     if ($i % 2) {
       // Opening or closing tag?
       $open = ($chunk[1] != '/');
-      list($tag) = split('[ >]', substr($chunk, 2 - $open), 2);
+      list($tag) = preg_split('/[ >]/', substr($chunk, 2 - $open), 2);
       if (!$ignore) {
         if ($open) {
           $ignore = TRUE;
@@ -775,7 +775,7 @@ function api_shutdown() {
     drupal_write_record('api_overrides', $override);
   }
 
-  // Save JSON autocomelete cache
+  // Save JSON autocomplete cache
   $directory = file_directory_path();
   if (is_dir($directory) && is_writable($directory) && (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC)) {
     $path = file_create_path('api');
