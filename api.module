@@ -478,6 +478,25 @@ function api_menu() {
         'access arguments' => array('access API reference'),
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
+      // Interfaces
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/interface/%api_object'] = array(
+          'title' => 'Class',
+          'load arguments' => array($branch, 'interface', 2),
+          'page callback' => 'api_page_class',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/%api_filename/interface/%api_object/'. $branch->branch_name] = array(
+        'title' => $branch->title,
+        'load arguments' => array($branch, 'interface', 2),
+        'page callback' => 'api_page_class',
+        'page arguments' => array($branch, 4),
+        'access arguments' => array('access API reference'),
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+      );
 
       // Files
       if ($is_default) {
