@@ -156,6 +156,10 @@ function api_parse_php_file($docblock) {
  *   are added to the end of this array.
  */
 function api_documentation_loop($statements, $default_block, &$docblocks) {
+  static $object_types = array(
+    T_ASSIGNMENT => 'property',
+    T_CONST => 'constant',
+  );
   $editor = PGPEditor::getInstance();
 
   // Traverse statement list to gather documentation items.
@@ -173,7 +177,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
       case T_GLOBAL:
       case T_ASSIGNMENT: // Class property
         $docblock = $default_block;
-        $docblock['object_type'] = $type == T_ASSIGNMENT ? 'property' : $editor->statementTypeToString($statement);
+        $docblock['object_type'] = isset($object_types[(int) $type]) ? $object_types[(int) $type] : $editor->statementTypeToString($statement);
         if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
           $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }

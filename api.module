@@ -1484,11 +1484,11 @@ function api_page_class($branch, $class) {
 
   // builds up methods and constants lists
   $rows = array(
-    'const' => array(),
+    'constant' => array(),
     'function' => array(),
   );
 
-  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN ('const', 'function') ORDER BY title", $class->did, $class->branch_id);
+  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN ('constant', 'function') ORDER BY title", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     $rows[$object->object_type][] = array(
       l($object->title, api_url($object)),
@@ -1503,7 +1503,7 @@ function api_page_class($branch, $class) {
 
   $list = api_render_tables($rows, $header);
 
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['function'], $list['const'], $code, $related_topics, $see);
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['function'], $list['constant'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;

@@ -56,7 +56,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($class->summary, 'Sample class.', t('Sample has summary %summary.', array('%summary' => $class->summary)));
 
     // Check Sample::constant constant
-    $object = api_object_load('Sample::constant', $branch, 'const', 'classes.php');
+    $object = api_object_load('Sample::constant', $branch, 'constant', 'classes.php');
     $this->assertEqual($object->summary, 'A class constant.', t('Sample::constant has summary %summary.', array('%summary' => $object->summary)));
     $this->assertEqual($object->class_did, $class->did, t('constant belongs to parent class.'));
 
