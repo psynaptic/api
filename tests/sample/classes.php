@@ -37,6 +37,23 @@ interface SampleInterface {
 
 /**
  * Subclass.
+ *
+ * @see Sample::foo() should be link
  */
-class SubSample extends Sample {
+class SubSample extends Sample implements SampleInterfaceTwo {
+  /**
+   * Metasyntatic member function.
+   */
+  public function bar() {
+  }
+}
+
+/**
+ * Sample interface.
+ */
+interface SampleInterfaceTwo {
+  /**
+   * Implement this API.
+   */
+  public function bar();
 }
