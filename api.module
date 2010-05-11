@@ -1247,33 +1247,11 @@ function api_switch_project($current_branch, $url = '') {
  *   Rendered HTML for the listing.
  */
 function api_render_listing($result, $empty_message = NULL) {
-  $branches = api_get_branches();
-  $headers = array(
-    t('Name'),
-    t('Location'),
-    t('Description'),
-  );
-
-  $rows = array();
-  while ($object = db_fetch_object($result)) {
-    $rows[] = array(
-      l($object->title, api_url($object)),
-      '<small>'. api_file_link($object) .'</small>',
-      api_link_documentation($object->summary, $branches[$object->branch_id]),
-    );
+  $tables = api_render_members(api_query_list($result), true);
+  if (count($tables) > 0) {
+    return array_shift($tables);
   }
-
-  if (count($rows) == 0) {
-    if ($empty_message == NULL) {
-      return '';
-    }
-    else {
-      return '<p><em>'. $empty_message .'</em></p>';
-    }
-  }
-  else {
-    return theme('table', $headers, $rows);
-  }
+  return ($empty_message == NULL ? '' : '<p><em>'. $empty_message .'</em></p>' );
 }
 
 /**
@@ -1483,7 +1461,7 @@ function api_page_class($branch, $class) {
   // builds up class hierarchy
   $class = api_class_children($class);
   $parents = api_class_parents($class);
-  if (count($class->children) || count($parents->children) || count($class->interface)) {
+  if ((count($class->children) > 0) || (count($parents->children) > 0) || (count($class->interface) > 0)) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
@@ -1541,27 +1519,10 @@ function api_page_file($branch, $file) {
 
   $documentation = api_link_documentation($file->documentation, $branch);
   $see = api_link_documentation($file->see, $branch);
-  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id);
-  $rows = array(
-    'constant' => array(),
-    'global' => array(),
-    'function' => array(),
-    'interface' => array(),
-    'class' => array(),
-  );
-  while ($object = db_fetch_object($result)) {
-    $rows[$object->object_type][] = array(
-      l($object->title, api_url($object)),
-      api_link_documentation($object->summary, $branch),
-    );
-  }
-  $header = array(
-    t('Name'),
-    t('Description'),
-  );
-
-  $list = api_render_tables($rows, $header);
   $related_topics = api_related_topics($file->did, $branch);
+
+  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id);
+  $list = api_render_members(api_query_list($result));
 
   $output = theme('api_file_page', $file, $documentation, $list['interface'], $list['class'], $list['constant'], $list['global'], $list['function'], $see, $related_topics);
   $output .= _api_add_comments($file);
@@ -1622,26 +1583,8 @@ function api_page_group($branch, $group) {
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch);
 
-  $rows = array(
-    'constant' => array(),
-    'global' => array(),
-    'function' => array(),
-  );
   $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
-  while ($object = db_fetch_object($result)) {
-    $rows[$object->object_type][] = array(
-      l($object->title, api_url($object)),
-      '<small>'. api_file_link($object) .'</small>',
-      api_link_documentation($object->summary, $branch),
-    );
-  }
-  $header = array(
-    t('Name'),
-    t('Location'),
-    t('Description'),
-  );
-
-  $list = api_render_tables($rows, $header);
+  $list = api_render_members(api_query_list($result), true);
 
   $output = theme('api_group_page', $branch, $group, $documentation, $list['constant'], $list['global'], $list['function'], $list['file'], $see);
   $output .= _api_add_comments($group);
@@ -1977,15 +1920,17 @@ function api_link_link($name, $branch, $prepend = '', $append = '') {
 }
 
 /**
- * Returns class parents and interfaces (recursive)
+ * Returns class parents and interfaces (recursive).
  *
  * Get all interfaces first so we can return the recursive call after if needed
  *
  * @param $class
  *   The class to look for parents.
+ * @param $recursive
+ *   Boolean. toggles the recursivity flag.
  *
  * @return
- *   object class with
+ *   Object class with
  *     children = array(object class)
  *     interfaces = array(object interface).
  */
@@ -2004,13 +1949,13 @@ function api_class_parents($class, $recursive = TRUE) {
 }
 
 /**
- * Returns class children with interfaces (recursive)
+ * Returns class children with interfaces (recursive).
  *
  * @param $class
  *   The class to look for children.
  *
  * @return
- *   object class with
+ *   Object class with
  *     children = array(object class)
  *     interfaces = array(object interface).
  */
@@ -2085,7 +2030,7 @@ function api_members($class, $types = 'function') {
  * Sorts query result by object type to use with api_render_members().
  *
  * @param $result
- *   db_query() result.
+ *   A database query result object.
  *
  * @return
  *   Members list : array(type => array(title => object)).
@@ -2099,7 +2044,7 @@ function api_query_list($result) {
 }
 
 /**
- * Render class hierarchy (recursive)
+ * Render class hierarchy (recursive).
  *
  * @param $object
  *   Object hierarchy.
@@ -2110,7 +2055,7 @@ function api_query_list($result) {
  *   Themed hierarchy in html unordered list.
  */
 function api_render_class_hierarchy($object, $selected_did = '') {
-  if (count($object->interfaces)) {
+  if (count($object->interfaces) > 0) {
     $all_interfaces = &ctools_static('api_class_interfaces', array());
     foreach ($object->interfaces as $interface) {
       $all_interfaces[$interface->title] = $interface;
@@ -2119,7 +2064,7 @@ function api_render_class_hierarchy($object, $selected_did = '') {
     $interface_text = ' implements ' . implode(', ', $interfaces);
   }
 
-  if (count($object->children)) {
+  if (count($object->children) > 0) {
     foreach ($object->children as $child) {
       $children[] .= api_render_class_hierarchy($child, $selected_did);
     }
@@ -2129,19 +2074,21 @@ function api_render_class_hierarchy($object, $selected_did = '') {
 }
 
 /**
- * Render lists of tables with the same header
+ * Render lists of tables with the same header.
  *
- * @param $rows
+ * @param $tables
  *   An array of data to render with theme_table.
+ * @param $header
+ *   Array of fields for tables header.
  *
  * @return
  *   List of themed html tables.
  */
 function api_render_tables($tables, $header) {
   $list = array();
-  if (count($tables)) {
+  if (count($tables) > 0) {
     foreach ($tables as $type => $row) {
-      if (count($row)) {
+      if (count($row) > 0) {
         $list[$type] = theme('table', $header, $row);
       }
     }
@@ -2161,6 +2108,7 @@ function api_render_tables($tables, $header) {
  *   List of themed html tables.
  */
 function api_render_members($list, $link_file = FALSE) {
+  $branches = api_get_branches();
   foreach ($list as $type => $objects) {
     $rows[$type] = array();
     if (count($objects) > 0) {
@@ -2169,7 +2117,7 @@ function api_render_members($list, $link_file = FALSE) {
         if ($link_file) {
           $row[] = '<small>' . api_file_link($object) . '</small>';
         }
-        $row[] = api_link_documentation($object->summary, $branch);
+        $row[] = api_link_documentation($object->summary, $branches[$object->branch_id]);
         $rows[$type][] = $row;
       }
     }
