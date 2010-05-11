@@ -715,7 +715,6 @@ function api_theme() {
         'class' => NULL,
         'documentation' => NULL,
         'hierarchy' => NULL,
-        'interfaces' => NULL,
         'constants' => NULL,
         'inherited_constants' => NULL,
         'properties' => NULL,
@@ -1467,7 +1466,6 @@ function api_page_class($branch, $class) {
 
   $types = array('constant', 'property', 'function', );
   $members = api_members($class, $types);
-  $members['interface'] = ctools_static('api_class_interfaces', array());
   $list = api_render_members($members);
 
   // builds up inherited members lists
@@ -1505,7 +1503,7 @@ foreach (api_inherited($parents, $class->did, $types, FALSE) as $items) {
     }
   }
 
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['interface'], $list['constant'], $inherited['constant'], $list['property'], $inherited['property'], $list['function'], $inherited['function'], $code, $related_topics, $see);
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['constant'], $inherited['constant'], $list['property'], $inherited['property'], $list['function'], $inherited['function'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;
@@ -2056,9 +2054,7 @@ function api_query_list($result) {
  */
 function api_render_class_hierarchy($object, $selected_did = '') {
   if (count($object->interfaces) > 0) {
-    $all_interfaces = &ctools_static('api_class_interfaces', array());
     foreach ($object->interfaces as $interface) {
-      $all_interfaces[$interface->title] = $interface;
       $interfaces[$interface->title] = l($interface->title, api_url($interface));
     }
     $interface_text = ' implements ' . implode(', ', $interfaces);

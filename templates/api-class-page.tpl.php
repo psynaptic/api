@@ -43,11 +43,6 @@
   <?php print $hierarchy ?>
 <?php } ?>
 
-<?php if (!empty($interfaces)) { ?>
-  <h3><?php print t('Implemented Interfaces') ?></h3>
-  <?php print $interfaces ?>
-<?php } ?>
-
 <?php if (!empty($constants)) { ?>
   <h3><?php print t('Constants') ?></h3>
   <?php print $constants ?>
