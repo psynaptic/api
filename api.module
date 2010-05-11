@@ -2051,26 +2051,7 @@ function api_render_class_hierarchy($object, $selected_did = '') {
 }
 
 /**
- * Render lists of tables with the same header.
- *
- * @param $tables
- *   An array of data to render with theme_table.
- * @param $header
- *   Array of fields for tables header.
- *
- * @return
- *   List of themed html tables.
- */
-function api_render_tables($tables, $header) {
-  $list = array();
-  foreach ($tables as $type => $row) {
-    $list[$type] = theme('table', $header, $row);
-  }
-  return $list;
-}
-
-/**
- * Renders members lists.
+ * Renders members lists as html tables.
  *
  * @param $list
  *   Members list : array(type => array(title => object)).
@@ -2082,8 +2063,15 @@ function api_render_tables($tables, $header) {
  */
 function api_render_members($list, $link_file = FALSE) {
   $branches = api_get_branches();
+  $header = array(t('Name'));
+  if ($link_file) {
+    $header[] = t('Location');
+  }
+  $header[] = t('Description');
+
+  $ret = array();
   foreach ($list as $type => $objects) {
-    $rows[$type] = array();
+    $rows = array();
     foreach ($objects as $object) {
       $row = array(l($object->title, api_url($object)));
       if ($link_file) {
@@ -2094,14 +2082,9 @@ function api_render_members($list, $link_file = FALSE) {
         $summary .= ' <em>' . t('Inherited from !link', array('!link' => $object->class_link)) . '</em>';
       }
       $row[] = $summary;
-      $rows[$type][] = $row;
+      $rows[] = $row;
     }
+    $ret[$type] = theme('table', $header, $rows);
   }
-
-  $header = array(t('Name'));
-  if ($link_file) {
-    $header[] = t('Location');
-  }
-  $header[] = t('Description');
-  return api_render_tables($rows, $header);
+  return $ret;
 }
