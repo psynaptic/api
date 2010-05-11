@@ -715,8 +715,13 @@ function api_theme() {
         'class' => NULL,
         'documentation' => NULL,
         'hierarchy' => NULL,
-        'methods' => NULL,
+        'interfaces' => NULL,
         'constants' => NULL,
+        'inherited_constants' => NULL,
+        'properties' => NULL,
+        'inherited_properties' => NULL,
+        'methods' => NULL,
+        'inherited_methods' => NULL,
         'code' => NULL,
         'related_topics' => NULL,
         'see' => NULL,
@@ -1482,28 +1487,47 @@ function api_page_class($branch, $class) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
-  // builds up methods and constants lists
-  $rows = array(
-    'constant' => array(),
-    'function' => array(),
-  );
+  $types = array('constant', 'property', 'function', );
+  $members = api_members($class, $types);
+  $members['interface'] = ctools_static('api_class_interfaces', array());
+  $list = api_render_members($members);
 
-  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN ('constant', 'function') ORDER BY title", $class->did, $class->branch_id);
-  while ($object = db_fetch_object($result)) {
-    $rows[$object->object_type][] = array(
-      l($object->title, api_url($object)),
-      api_link_documentation($object->summary, $branch),
-    );
+  // builds up inherited members lists
+  $inherited_list = array();
+foreach (api_inherited($parents, $class->did, $types, FALSE) as $items) {
+    $class_link = l($items['class']->title, api_url($items['class']));
+    unset($items['class']);
+    if (count($items) > 0) {
+      foreach ($items as $objects) {
+        if (count($objects) > 0) {
+          foreach ($objects as $object) {
+            $inherited_list[$object->object_type][$object->title] = array(
+              l($object->title, api_url($object)),
+              $class_link,
+              api_link_documentation($object->summary, $branch),
+            );
+          }
+        }
+      }
+    }
   }
 
-  $header = array(
+  $inherited_header = array(
     t('Name'),
+    t('Class'),
     t('Description'),
   );
 
-  $list = api_render_tables($rows, $header);
+  if (count($inherited_list) > 0) {
+    foreach ($inherited_list as $type => $rows) {
+      if (count($rows) > 0) {
+        ksort($rows);
+        $inherited[$type] = theme('table', $inherited_header, $rows);
+      }
+    }
+  }
 
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['function'], $list['constant'], $code, $related_topics, $see);
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['interface'], $list['constant'], $inherited['constant'], $list['property'], $inherited['property'], $list['function'], $inherited['function'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;
@@ -1965,8 +1989,8 @@ function api_link_link($name, $branch, $prepend = '', $append = '') {
  *     children = array(object class)
  *     interfaces = array(object interface).
  */
-function api_class_parents($class, $recursive = true) {
-  $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
+function api_class_parents($class, $recursive = TRUE) {
+  $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name, d.summary as summary FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     if ($object->object_type === 'interface') {
       $class->interfaces[] = $object;
@@ -1994,9 +2018,84 @@ function api_class_children($class) {
   $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_documentation} d INNER JOIN {api_reference_storage} rs ON d.did = rs.from_did WHERE rs.to_did = %d AND d.branch_id = %d AND d.object_type = 'class'", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     // found a child : gather its interfaces, builds its possible children list, and adds it to the children list
-    $class->children[] = api_class_children(api_class_parents($object, false));
+    $class->children[] = api_class_children(api_class_parents($object, FALSE));
   }
   return $class;
+}
+
+/**
+ * Get list of hierarchy members (recursive).
+ *
+ * @param $hierarchy
+ *   Hierarchy tree as returned by api_class_parents().
+ * @param $class_did
+ *   Class did to compare to stop the recursive call.
+ * @param $types
+ *   Object types to gather. Can be a string of array of strings.
+ *   Allowed types : constant, property, function, interface.
+ * @param $include_current
+ *   Boolean. set to false to exclude members of the class matching class_did.
+ *
+ * @return
+ *   Array of
+ *     class => class object.
+ *     members list : type => array(title => object).
+ */
+function api_inherited($hierarchy, $class_did, $types = 'function', $include_current = TRUE) {
+  if ($hierarchy->did === $class_did) {
+    if ($include_current) {
+      unset($hierarchy->children);
+    }
+    else {
+      return array();
+    }
+  }
+
+  $list_child = (isset($hierarchy->children) ? api_inherited(array_shift($hierarchy->children), $class_did, $types, $include_current) : array());
+  unset($hierarchy->children);
+  unset($hierarchy->interfaces);
+  $list = api_members($hierarchy, $types);
+  $list['class'] = $hierarchy;
+  return array_merge(array($list), $list_child);
+}
+
+/**
+ * Get list of class members.
+ *
+ * @param $class
+ *   Class object.
+ * @param $types
+ *   Object types to gather. Can be a string of array of strings.
+ *   Allowed types : constant, property, function, interface.
+ *
+ * @return
+ *   Members list : array(type => array(title => object)).
+ */
+function api_members($class, $types = 'function') {
+  if (!is_array($types)) {
+    $types = array($types);
+  }
+
+  $args = array_merge(array($class->did, $class->branch_id), $types);
+  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN (" . db_placeholders($types, 'text') . ") ORDER BY title", $args);
+  return api_query_list($result);
+}
+
+/**
+ * Sorts query result by object type to use with api_render_members().
+ *
+ * @param $result
+ *   db_query() result.
+ *
+ * @return
+ *   Members list : array(type => array(title => object)).
+ */
+function api_query_list($result) {
+  $items = array();
+  while ($object = db_fetch_object($result)) {
+    $items[$object->object_type][$object->title] = $object;
+  }
+  return $items;
 }
 
 /**
@@ -2012,11 +2111,14 @@ function api_class_children($class) {
  */
 function api_render_class_hierarchy($object, $selected_did = '') {
   if (count($object->interfaces)) {
+    $all_interfaces = &ctools_static('api_class_interfaces', array());
     foreach ($object->interfaces as $interface) {
-      $interface_text = (empty($interface_text) ? '' : ',') . ' ' . l($interface->title, api_url($interface));
+      $all_interfaces[$interface->title] = $interface;
+      $interfaces[$interface->title] = l($interface->title, api_url($interface));
     }
-    $interface_text = ' implements' . $interface_text;
+    $interface_text = ' implements ' . implode(', ', $interfaces);
   }
+
   if (count($object->children)) {
     foreach ($object->children as $child) {
       $children[] .= api_render_class_hierarchy($child, $selected_did);
@@ -2046,3 +2148,38 @@ function api_render_tables($tables, $header) {
   }
   return $list;
 }
+
+/**
+ * Renders members lists.
+ *
+ * @param $list
+ *   Members list : array(type => array(title => object)).
+ * @param $link_file
+ *   Boolean : toggles the display of the file link column.
+ *
+ * @return
+ *   List of themed html tables.
+ */
+function api_render_members($list, $link_file = FALSE) {
+  foreach ($list as $type => $objects) {
+    $rows[$type] = array();
+    if (count($objects) > 0) {
+      foreach ($objects as $object) {
+        $row = array(l($object->title, api_url($object)));
+        if ($link_file) {
+          $row[] = '<small>' . api_file_link($object) . '</small>';
+        }
+        $row[] = api_link_documentation($object->summary, $branch);
+        $rows[$type][] = $row;
+      }
+    }
+  }
+
+  $header = array(t('Name'));
+  if ($link_file) {
+    $header[] = t('Location');
+  }
+  $header[] = t('Description');
+  return api_render_tables($rows, $header);
+}
+

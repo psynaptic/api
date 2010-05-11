@@ -38,22 +38,22 @@ interface SampleInterface {
 /**
  * Subclass.
  *
- * @see Sample::foo() should be link
+ * @see Sample::foo() should be a link
  */
 class SubSample extends Sample implements SampleInterfaceTwo {
   /**
-   * Metasyntatic member function.
+   * Another metasyntatic member function.
    */
   public function bar() {
   }
 }
 
 /**
- * Sample interface.
+ * Another Sample interface.
  */
 interface SampleInterfaceTwo {
   /**
-   * Implement this API.
+   * A public method.
    */
   public function bar();
 }
