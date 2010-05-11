@@ -48,29 +48,14 @@
   <?php print $constants ?>
 <?php } ?>
 
-<?php if (!empty($inherited_constants)) { ?>
-  <h3><?php print t('Inherited Constants') ?></h3>
-  <?php print $inherited_constants ?>
-<?php } ?>
-
 <?php if (!empty($properties)) { ?>
   <h3><?php print t('Properties') ?></h3>
   <?php print $properties ?>
 <?php } ?>
 
-<?php if (!empty($inherited_properties)) { ?>
-  <h3><?php print t('Inherited Properties') ?></h3>
-  <?php print $inherited_properties ?>
-<?php } ?>
-
 <?php if (!empty($methods)) { ?>
   <h3><?php print t('Methods') ?></h3>
   <?php print $methods ?>
-<?php } ?>
-
-<?php if (!empty($inherited_methods)) { ?>
-  <h3><?php print t('Inherited Methods') ?></h3>
-  <?php print $inherited_methods ?>
 <?php } ?>
 
 <?php print $defined; ?>

@@ -716,11 +716,8 @@ function api_theme() {
         'documentation' => NULL,
         'hierarchy' => NULL,
         'constants' => NULL,
-        'inherited_constants' => NULL,
         'properties' => NULL,
-        'inherited_properties' => NULL,
         'methods' => NULL,
-        'inherited_methods' => NULL,
         'code' => NULL,
         'related_topics' => NULL,
         'see' => NULL,
@@ -1466,44 +1463,25 @@ function api_page_class($branch, $class) {
 
   $types = array('constant', 'property', 'function', );
   $members = api_members($class, $types);
-  $list = api_render_members($members);
 
   // builds up inherited members lists
-  $inherited_list = array();
-foreach (api_inherited($parents, $class->did, $types, FALSE) as $items) {
+  foreach (api_inherited($parents, $class->did, $types, FALSE) as $items) {
     $class_link = l($items['class']->title, api_url($items['class']));
     unset($items['class']);
-    if (count($items) > 0) {
-      foreach ($items as $objects) {
-        if (count($objects) > 0) {
-          foreach ($objects as $object) {
-            $inherited_list[$object->object_type][$object->title] = array(
-              l($object->title, api_url($object)),
-              $class_link,
-              api_link_documentation($object->summary, $branch),
-            );
-          }
+    foreach ($items as $objects) {
+      foreach ($objects as $object) {
+        if (!isset($members[$object->object_type][$object->title])) {
+          $object->class_link = $class_link;
+          $members[$object->object_type][$object->title] = $object;
         }
       }
     }
+    // todo sort
   }
 
-  $inherited_header = array(
-    t('Name'),
-    t('Class'),
-    t('Description'),
-  );
+  $list = api_render_members($members);
 
-  if (count($inherited_list) > 0) {
-    foreach ($inherited_list as $type => $rows) {
-      if (count($rows) > 0) {
-        ksort($rows);
-        $inherited[$type] = theme('table', $inherited_header, $rows);
-      }
-    }
-  }
-
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['constant'], $inherited['constant'], $list['property'], $inherited['property'], $list['function'], $inherited['function'], $code, $related_topics, $see);
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['constant'], $list['property'], $list['function'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;
@@ -2108,7 +2086,11 @@ function api_render_members($list, $link_file = FALSE) {
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
-      $row[] = api_link_documentation($object->summary, $branches[$object->branch_id]);
+      $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
+      if (!empty($object->class_link)) {
+        $summary .= ' <em>' . t('Inherited from !link', array('!link' => $object->class_link)) . '</em>';
+      }
+      $row[] = $summary;
       $rows[$type][] = $row;
     }
   }
