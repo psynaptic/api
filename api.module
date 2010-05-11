@@ -1476,7 +1476,10 @@ function api_page_class($branch, $class) {
         }
       }
     }
-    // todo sort
+  }
+
+  foreach ($members as $type => &$objects) {
+    ksort($objects);
   }
 
   $list = api_render_members($members);
