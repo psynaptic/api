@@ -1933,6 +1933,7 @@ function api_link_link($name, $branch, $prepend = '', $append = '') {
  *     interfaces = array(object interface).
  */
 function api_class_parents($class, $recursive = TRUE) {
+  $class->interfaces = array();
   $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name, d.summary as summary FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     if ($object->object_type === 'interface') {
@@ -1958,6 +1959,7 @@ function api_class_parents($class, $recursive = TRUE) {
  *     interfaces = array(object interface).
  */
 function api_class_children($class) {
+  $class->children = array();
   $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_documentation} d INNER JOIN {api_reference_storage} rs ON d.did = rs.from_did WHERE rs.to_did = %d AND d.branch_id = %d AND d.object_type = 'class'", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     // found a child : gather its interfaces, builds its possible children list, and adds it to the children list
@@ -2060,12 +2062,10 @@ function api_render_class_hierarchy($object, $selected_did = '') {
     $interface_text = ' implements ' . implode(', ', $interfaces);
   }
 
-  if (count($object->children) > 0) {
-    foreach ($object->children as $child) {
-      $children[] .= api_render_class_hierarchy($child, $selected_did);
-    }
+  foreach ($object->children as $child) {
+    $children[] .= api_render_class_hierarchy($child, $selected_did);
   }
-  $object_text = ( $object->did === $selected_did ? '<strong>' . $object->title . '</strong>' : l($object->title, api_url($object)) );
+  $object_text = $object->did === $selected_did ? '<strong>' . $object->title . '</strong>' : l($object->title, api_url($object));
   return $object_text . $interface_text . theme('item_list', $children);
 }
 
@@ -2082,12 +2082,8 @@ function api_render_class_hierarchy($object, $selected_did = '') {
  */
 function api_render_tables($tables, $header) {
   $list = array();
-  if (count($tables) > 0) {
-    foreach ($tables as $type => $row) {
-      if (count($row) > 0) {
-        $list[$type] = theme('table', $header, $row);
-      }
-    }
+  foreach ($tables as $type => $row) {
+    $list[$type] = theme('table', $header, $row);
   }
   return $list;
 }
@@ -2107,15 +2103,13 @@ function api_render_members($list, $link_file = FALSE) {
   $branches = api_get_branches();
   foreach ($list as $type => $objects) {
     $rows[$type] = array();
-    if (count($objects) > 0) {
-      foreach ($objects as $object) {
-        $row = array(l($object->title, api_url($object)));
-        if ($link_file) {
-          $row[] = '<small>' . api_file_link($object) . '</small>';
-        }
-        $row[] = api_link_documentation($object->summary, $branches[$object->branch_id]);
-        $rows[$type][] = $row;
+    foreach ($objects as $object) {
+      $row = array(l($object->title, api_url($object)));
+      if ($link_file) {
+        $row[] = '<small>' . api_file_link($object) . '</small>';
       }
+      $row[] = api_link_documentation($object->summary, $branches[$object->branch_id]);
+      $rows[$type][] = $row;
     }
   }
 
@@ -2126,4 +2120,3 @@ function api_render_members($list, $link_file = FALSE) {
   $header[] = t('Description');
   return api_render_tables($rows, $header);
 }
-
