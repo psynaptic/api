@@ -2069,7 +2069,7 @@ function api_render_members($list, $link_file = FALSE) {
   }
   $header[] = t('Description');
 
-  $ret = array();
+  $return = array();
   foreach ($list as $type => $objects) {
     $rows = array();
     foreach ($objects as $object) {
@@ -2084,7 +2084,7 @@ function api_render_members($list, $link_file = FALSE) {
       $row[] = $summary;
       $rows[] = $row;
     }
-    $ret[$type] = theme('table', $header, $rows);
+    $return[$type] = theme('table', $header, $rows);
   }
-  return $ret;
+  return $return;
 }
