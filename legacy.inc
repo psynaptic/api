@@ -1,6 +1,8 @@
 <?php
+// $Id$
 
 /**
+ * @file
  * Redirect deprecated API <=1.1 links.
  *
  * @param menu_tail
@@ -12,7 +14,7 @@ function api_file_redirect() {
 
   $args = func_get_args();
   $suffix = '';
-  $file = new StdClass();
+  $file = new stdClass();
   $file->object_type = 'file';
   $file->branch = $branch;
   $file->branch_name = $branch->branch_name;

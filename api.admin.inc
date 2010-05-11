@@ -2,6 +2,7 @@
 // $Id$
 
 /**
+ * @file
  * Generates the main admin page for the API module.
  *
  * Menu callback for path admin/settings/api.
@@ -317,7 +318,7 @@ function api_branch_delete_form($form_state, $branch_id) {
 function api_branch_delete_form_submit($form, &$form_state) {
   $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d", $form['#branch']->branch_id);
   $dids = array();
-  while($did = db_fetch_object($result)) {
+  while ($did = db_fetch_object($result)) {
     $dids[] = $did->did;
   }
   if (count($dids) > 0) {
