@@ -1597,7 +1597,7 @@ function api_related_topics($did, $branch) {
 /**
  * Returns a link to the file a documentation object is in.
  *
- * @praam $object
+ * @param $object
  *   Documentation object.
  *
  * @return
@@ -1620,7 +1620,7 @@ function api_cron() {
  *
  * @param $code
  *   PHP code to scan for function names.
- * @praam $branch
+ * @param $branch
  *   Branch to make the links in.
  *
  * @return
@@ -1635,7 +1635,7 @@ function api_link_code($code, $branch) {
  *
  * @param $documentation
  *   Documentation to scan for function names.
- * @praam $branch
+ * @param $branch
  *   Branch to make the links in.
  *
  * @return
@@ -1670,7 +1670,7 @@ function api_filter_documentation($text, $branch) {
  *
  * @param $documentation
  *   PHP code to scan for function names.
- * @praam $branch
+ * @param $branch
  *   Branch to make the links in.
  * @stages
  *   Array of stages to process.
