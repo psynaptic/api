@@ -1246,7 +1246,7 @@ function api_switch_project($current_branch, $url = '') {
  *   Rendered HTML for the listing.
  */
 function api_render_listing($result, $empty_message = NULL) {
-  $tables = api_render_members(api_query_list($result), true);
+  $tables = api_render_members(api_query_list($result), TRUE);
   if (count($tables) > 0) {
     return array_shift($tables);
   }
@@ -1582,7 +1582,7 @@ function api_page_group($branch, $group) {
   $see = api_link_documentation($group->see, $branch);
 
   $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
-  $list = api_render_members(api_query_list($result), true);
+  $list = api_render_members(api_query_list($result), TRUE);
 
   $output = theme('api_group_page', $branch, $group, $documentation, $list['constant'], $list['global'], $list['function'], $list['file'], $see);
   $output .= _api_add_comments($group);
@@ -1783,7 +1783,7 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
  */
 function api_split($pattern, $subject, $callback_match = NULL, $callback_match_arguments = array(), $callback = NULL, $callback_arguments = array()) {
   $return = '';
-  $matched = false;
+  $matched = FALSE;
   foreach (preg_split($pattern, $subject, -1, PREG_SPLIT_DELIM_CAPTURE) as $part) {
     if ($matched) {
       if (is_null($callback_match)) {
@@ -1979,7 +1979,7 @@ function api_class_children($class) {
  *   Object types to gather. Can be a string of array of strings.
  *   Allowed types : constant, property, function, interface.
  * @param $include_current
- *   Boolean. set to false to exclude members of the class matching class_did.
+ *   Boolean. set to FALSE to exclude members of the class matching class_did.
  *
  * @return
  *   Array of
