@@ -1461,29 +1461,7 @@ function api_page_class($branch, $class) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
-  $types = array('constant', 'property', 'function', );
-  $members = api_members($class, $types);
-
-  // builds up inherited members lists
-  foreach (api_inherited($parents, $class->did, $types, FALSE) as $items) {
-    $class_link = l($items['class']->title, api_url($items['class']));
-    unset($items['class']);
-    foreach ($items as $objects) {
-      foreach ($objects as $object) {
-        if (!isset($members[$object->object_type][$object->title])) {
-          $object->class_link = $class_link;
-          $members[$object->object_type][$object->title] = $object;
-        }
-      }
-    }
-  }
-
-  foreach ($members as $type => &$objects) {
-    ksort($objects);
-  }
-
-  $list = api_render_members($members);
-
+  $list = api_render_members(api_inherited($parents, $class->did, array('constant', 'property', 'function')));
   $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['constant'], $list['property'], $list['function'], $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
@@ -1950,39 +1928,41 @@ function api_class_children($class) {
 }
 
 /**
- * Get list of hierarchy members (recursive).
+ * Get list of inherited members (recursive).
  *
- * @param $hierarchy
- *   Hierarchy tree as returned by api_class_parents().
- * @param $class_did
+ * @param $class
+ *   Class object with hierarchy as returned by api_class_parents().
+ * @param $last_did
  *   Class did to compare to stop the recursive call.
  * @param $types
  *   Object types to gather. Can be a string of array of strings.
  *   Allowed types : constant, property, function, interface.
- * @param $include_current
- *   Boolean. set to FALSE to exclude members of the class matching class_did.
+ * @param $members
+ *   Members lists to merge.
  *
  * @return
- *   Array of
- *     class => class object.
- *     members list : type => array(title => object).
+ *   Members list : array(type => array(title => object)).
  */
-function api_inherited($hierarchy, $class_did, $types = 'function', $include_current = TRUE) {
-  if ($hierarchy->did === $class_did) {
-    if ($include_current) {
-      unset($hierarchy->children);
-    }
-    else {
-      return array();
+function api_inherited($class, $last_did, $types = 'function', $members = array()) {
+  foreach (api_members($class, $types) as $objects) {
+    foreach ($objects as $object) {
+      if ($class->did != $last_did) {
+        $object->class_link = l($class->title, api_url($class));
+      }
+      $members[$object->object_type][$object->title] = $object;
     }
   }
 
-  $list_child = (isset($hierarchy->children) ? api_inherited(array_shift($hierarchy->children), $class_did, $types, $include_current) : array());
-  unset($hierarchy->children);
-  unset($hierarchy->interfaces);
-  $list = api_members($hierarchy, $types);
-  $list['class'] = $hierarchy;
-  return array_merge(array($list), $list_child);
+  // if its the last child, sort members, else we need another call
+  if ($class->did === $last_did) {
+    foreach ($members as $type => &$objects) {
+      ksort($objects);
+    }
+  }
+  else {
+    $members = api_inherited(array_shift($class->children), $last_did, $types, $members);
+  }
+  return $members;
 }
 
 /**
