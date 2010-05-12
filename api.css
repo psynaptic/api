@@ -105,3 +105,7 @@ dl.api-related-topics dd {
   color: #9d9d93;
   font-size: 0.8333em;
 }
+
+.api-inheritance-source {
+  float:right;
+}

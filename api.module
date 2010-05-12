@@ -1946,9 +1946,15 @@ function api_class_children($class) {
 function api_inherited($class, $last_did, $types = 'function', $members = array()) {
   foreach (api_members($class, $types) as $objects) {
     foreach ($objects as $object) {
-      if ($class->did != $last_did) {
-        $object->class_link = l($class->title, api_url($class));
+      if ($class->did === $last_did) {
+        if (isset($members[$object->object_type][$object->title])) {
+          $object->link_overrides =  l(strip_tags($members[$object->object_type][$object->title]->link_inherited), api_url($members[$object->object_type][$object->title]));
+        }
       }
+      else {
+        $object->link_inherited = l($class->title, api_url($class));
+      }
+      
       $members[$object->object_type][$object->title] = $object;
     }
   }
@@ -2058,10 +2064,12 @@ function api_render_members($list, $link_file = FALSE) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
       $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
-      if (!empty($object->class_link)) {
-        $summary .= ' <em>' . t('Inherited from !link', array('!link' => $object->class_link)) . '</em>';
+      $source = isset($object->link_overrides) ? " <em class='api-inheritance-source'>" . t('Overrides !link', array('!link' => $object->link_overrides)) . '</em>' : '';
+      if (isset($object->link_inherited) && empty($source)) {
+        $source = " <em class='api-inheritance-source'>" . t('Inherited from !link', array('!link' => $object->link_inherited)) . '</em>';
       }
-      $row[] = $summary;
+
+      $row[] = $summary . $source;
       $rows[] = $row;
     }
     $return[$type] = theme('table', $header, $rows);
