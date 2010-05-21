@@ -1267,13 +1267,18 @@ function api_page_function_dump($branch_name) {
  * Sets the page title and breadcrumb for an object display page.
  */
 function api_object_title_and_breadcrumb($branch, $object) {
-  drupal_set_title($object->title);
+  drupal_set_title($object->object_name);
   $breadcrumb = array(
     l(t('Home'), ''),
     l(t('API reference'), 'api/' . $branch->project),
   );
   if ($object->object_type !== 'file') {
     $breadcrumb[] = l(basename($object->file_name), api_url($object, TRUE));
+  }
+  if (!empty($object->class_did)) {
+    $branches = api_get_branches();
+    $class = api_object_load((int) $object->class_did, $branches[$object->branch_id], array('interface', 'class'), $object->file_name);
+    $breadcrumb[] = l($class->object_name, api_url($class));
   }
   drupal_set_breadcrumb($breadcrumb);
 }
