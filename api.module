@@ -1209,7 +1209,7 @@ function api_page_branch($branch) {
  * Page callback for displaying documentation for an object.
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
-  $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
+  $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND (class_did = 0 OR object_type = 'group') ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   return api_render_listing($result) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
