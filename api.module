@@ -459,6 +459,26 @@ function api_menu() {
         'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
 
+      // Properties
+      if ($is_default) {
+        $items['api/' . $branch->project . '/%api_filename/property/%api_object'] = array(
+          'title' => 'Property',
+          'load arguments' => array($branch, 'property', 2),
+          'page callback' => 'api_page_property',
+          'page arguments' => array($branch, 4),
+          'access arguments' => array('access API reference'),
+          'type' => MENU_CALLBACK,
+        );
+      }
+      $items['api/' . $branch->project . '/%api_filename/property/%api_object/'. $branch->branch_name] = array(
+        'title' => $branch->title,
+        'load arguments' => array($branch, 'property', 2),
+        'page callback' => 'api_page_property',
+        'page arguments' => array($branch, 4),
+        'access arguments' => array('access API reference'),
+        'type' => $is_default ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+      );
+
       // Classes
       if ($is_default) {
         $items['api/' . $branch->project . '/%api_filename/class/%api_object'] = array(
@@ -708,6 +728,17 @@ function api_theme() {
         'see' => NULL,
       ),
       'template' => 'templates/api-global-page',
+    ),
+    'api_property_page' => array(
+      'arguments' => array(
+        'branch' => NULL,
+        'property' => NULL,
+        'documentation' => NULL,
+        'code' => NULL,
+        'related_topics' => NULL,
+        'see' => NULL,
+      ),
+      'template' => 'templates/api-property-page',
     ),
     'api_class_page' => array(
       'arguments' => array(
@@ -1445,6 +1476,22 @@ function api_page_global($branch, $global) {
 
   $output = theme('api_global_page', $branch, $global, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($global);
+  return $output;
+}
+
+/**
+ * Page callback that displays documentation for a global.
+ */
+function api_page_property($branch, $property) {
+  api_object_title_and_breadcrumb($branch, $property);
+
+  $documentation = api_link_documentation($property->documentation, $branch);
+  $related_topics = api_related_topics($property->did, $branch);
+  $code = api_link_code($property->code, $branch);
+  $see = api_link_documentation($property->see, $branch);
+
+  $output = theme('api_global_page', $branch, $property, $documentation, $code, $related_topics, $see);
+  $output .= _api_add_comments($property);
   return $output;
 }
 
