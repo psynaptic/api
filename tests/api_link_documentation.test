@@ -45,6 +45,11 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'data' => '@link Sample::property A property @endlink',
         'expected' => '<a href="'. url('api/test/classes.php/property/Sample::property/6') .'" title="A property." class="local">A property</a>',
       ),
+      array(
+        'message' => 'Class @link',
+        'data' => '@link Sample A class @endlink',
+        'expected' => '<a href="'. url('api/test/classes.php/class/Sample/6') .'" title="Sample class." class="local">A class</a>',
+      ),
 
       // Should not be linked
       array(
