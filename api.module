@@ -1738,7 +1738,7 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
 
     // Find file names, which are an arbitrary number of strings joined with
     // '.'
-    'file' => '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%e',
+    'file' => '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%',
 
     // Find class names, which have a capital letter.
     'class' => '/\b(\w*[A-Z]\w*)\b/',
