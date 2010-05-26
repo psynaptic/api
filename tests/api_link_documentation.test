@@ -50,6 +50,12 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'data' => '@link Sample A class @endlink',
         'expected' => '<a href="'. url('api/test/classes.php/class/Sample/6') .'" title="Sample class." class="local">A class</a>',
       ),
+      array(
+        'message' => 'Class aggressive link',
+        'data' => 'Sample',
+        'expected' => '<a href="'. url('api/test/classes.php/class/Sample/6') .'" title="Sample class." class="local">Sample</a>',
+        'aggressive_classes' => TRUE,
+      ),
 
       // Should not be linked
       array(
@@ -76,6 +82,17 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'message' => 'Function \\@link',
         'data' => '\\@link sample_function A sample function. @endlink',
         'expected' => '@link sample_function A sample function. @endlink',
+      ),
+      array(
+        'message' => 'Class aggressive link with trailing letter',
+        'data' => 'Samplea',
+        'expected' => 'Samplea',
+        'aggressive_classes' => TRUE,
+      ),
+      array(
+        'message' => 'Class link',
+        'data' => 'Sample',
+        'expected' => 'Sample',
       ),
 
       // Should be linked
@@ -140,7 +157,7 @@ class ApiLinkDocumentationTest extends ApiTestCase {
     );
 
     foreach ($tests as $test) {
-      $result = api_link_documentation($test['data'], $this->getBranch());
+      $result = api_link_documentation($test['data'], $this->getBranch(), isset($test['aggressive_classes']) ? $test['aggressive_classes'] : FALSE);
       $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }

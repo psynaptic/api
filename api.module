@@ -1422,7 +1422,7 @@ function api_page_function($branch, $function) {
   $documentation = api_link_documentation($function->documentation, $branch);
   $parameters = api_link_documentation($function->parameters, $branch);
   $return = api_link_documentation($function->return_value, $branch);
-  $see = api_link_documentation($function->see, $branch);
+  $see = api_link_documentation($function->see, $branch, TRUE);
   $code = api_link_code($function->code, $branch);
   $related_topics = api_related_topics($function->did, $branch);
 
@@ -1456,7 +1456,7 @@ function api_page_constant($branch, $constant) {
   $documentation = api_link_documentation($constant->documentation, $branch);
   $code = api_link_code($constant->code, $branch);
   $related_topics = api_related_topics($constant->did, $branch);
-  $see = api_link_documentation($function->see, $branch);
+  $see = api_link_documentation($function->see, $branch, TRUE);
 
   $output = theme('api_constant_page', $branch, $constant, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($constant);
@@ -1472,7 +1472,7 @@ function api_page_global($branch, $global) {
   $documentation = api_link_documentation($global->documentation, $branch);
   $related_topics = api_related_topics($global->did, $branch);
   $code = api_link_code($global->code, $branch);
-  $see = api_link_documentation($global->see, $branch);
+  $see = api_link_documentation($global->see, $branch, TRUE);
 
   $output = theme('api_global_page', $branch, $global, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($global);
@@ -1488,7 +1488,7 @@ function api_page_property($branch, $property) {
   $documentation = api_link_documentation($property->documentation, $branch);
   $related_topics = api_related_topics($property->did, $branch);
   $code = api_link_code($property->code, $branch);
-  $see = api_link_documentation($property->see, $branch);
+  $see = api_link_documentation($property->see, $branch, TRUE);
 
   $output = theme('api_global_page', $branch, $property, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($property);
@@ -1504,7 +1504,7 @@ function api_page_class($branch, $class) {
   $documentation = api_link_documentation($class->documentation, $branch);
   $related_topics = api_related_topics($class->did, $branch);
   $code = api_link_code($class->code, $branch);
-  $see = api_link_documentation($class->see, $branch);
+  $see = api_link_documentation($class->see, $branch, TRUE);
 
   // builds up class hierarchy
   $class = api_class_children($class);
@@ -1527,7 +1527,7 @@ function api_page_file($branch, $file) {
   api_object_title_and_breadcrumb($branch, $file);
 
   $documentation = api_link_documentation($file->documentation, $branch);
-  $see = api_link_documentation($file->see, $branch);
+  $see = api_link_documentation($file->see, $branch, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
 
   $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id);
@@ -1590,7 +1590,7 @@ function api_page_group($branch, $group) {
   api_object_title_and_breadcrumb($branch, $group);
 
   $documentation = api_link_documentation($group->documentation, $branch);
-  $see = api_link_documentation($group->see, $branch);
+  $see = api_link_documentation($group->see, $branch, TRUE);
 
   $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
   $list = api_render_members(api_query_list($result), TRUE);
@@ -1670,12 +1670,14 @@ function api_link_code($code, $branch) {
  *   Documentation to scan for function names.
  * @param $branch
  *   Branch to make the links in.
+ * @param $aggressive_classes
+ *   Try linking every word with a capital letter to a class or interface.
  *
  * @return
  *   Documentation with function names formatted as links.
  */
-function api_link_documentation($documentation, $branch) {
-  return _filter_url(api_filter_documentation($documentation, $branch), NULL);
+function api_link_documentation($documentation, $branch, $aggressive_classes = FALSE) {
+  return _filter_url(api_filter_documentation($documentation, $branch, $aggressive_classes), NULL);
 }
 
 /**
@@ -1689,13 +1691,19 @@ function api_link_documentation($documentation, $branch) {
  *   Text to filter.
  * @param $branch
  *   Branch object to use for links.
+ * @param $aggressive_classes
+ *   Try linking every word with a capital letter to a class or interface.
  *
  * @return
  *   Text with function names turned into links.
  */
-function api_filter_documentation($text, $branch) {
+function api_filter_documentation($text, $branch, $aggressive_classes = FALSE) {
   // Remove escaping from \@.
-  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, array('tags', 'link', 'function', 'file')));
+  $stages = array('tags', 'link', 'function', 'file');
+  if ($aggressive_classes) {
+    $stages[] = 'class';
+  }
+  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, $stages));
 }
 
 /**
@@ -1731,6 +1739,9 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
     // Find file names, which are an arbitrary number of strings joined with
     // '.'
     'file' => '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%e',
+
+    // Find class names, which have a capital letter.
+    'class' => '/\b(\w*[A-Z]\w*)\b/',
   );
   $stage = array_shift($stages);
 
