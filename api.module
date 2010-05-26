@@ -1897,6 +1897,9 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
   elseif (array_key_exists($name, $local_objects['constant'])) {
     return $prepend . l($text, api_url($local_objects['constant'][$name]), array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local'))) . $append;
   }
+  elseif (array_key_exists($name, $local_objects['property'])) {
+    return $prepend . l($text, api_url($local_objects['property'][$name]), array('attributes' => array('title' => $local_objects['property'][$name]->summary, 'class' => 'local'))) . $append;
+  }
   elseif (array_key_exists($name, $local_objects['global'])) {
     return $prepend . l($text, api_url($local_objects['global'][$name]), array('attributes' => array('title' => $local_objects['global'][$name]->summary, 'class' => 'local'))) . $append;
   }

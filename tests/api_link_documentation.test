@@ -35,6 +35,16 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'data' => 'Sample::foo(',
         'expected' => '<a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">Sample::foo</a>(',
       ),
+      array(
+        'message' => 'Class constant @link',
+        'data' => '@link Sample::constant A class constant @endlink',
+        'expected' => '<a href="'. url('api/test/classes.php/constant/Sample::constant/6') .'" title="A class constant." class="local">A class constant</a>',
+      ),
+      array(
+        'message' => 'Property @link',
+        'data' => '@link Sample::property A property @endlink',
+        'expected' => '<a href="'. url('api/test/classes.php/property/Sample::property/6') .'" title="A property." class="local">A property</a>',
+      ),
 
       // Should not be linked
       array(
