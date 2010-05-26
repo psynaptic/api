@@ -72,6 +72,7 @@ dl.api-related-topics dd {
 #api-function-signature .branch {
   padding-left: 2em;
   text-align: right;
+  white-space: nowrap;
 }
 #api-function-signature th {
   font-size: 0.6944em;
