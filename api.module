@@ -770,10 +770,7 @@ function api_theme() {
         'branch' => NULL,
         'group' => NULL,
         'documentation' => NULL,
-        'constants' => NULL,
-        'globals' => NULL,
-        'functions' => NULL,
-        'files' => NULL,
+        'objects' => NULL,
         'see' => NULL,
       ),
       'template' => 'templates/api-group-page'
@@ -1286,7 +1283,6 @@ function api_render_listing($result, $empty_message = NULL, $show_headings = TRU
     'file' => t('Files'),
     'interface' => t('Interfaces'),
     'class' => t('Classes'),
-    'const' => t('Constants'),
   );
   $output = '';
   foreach ($tables as $key => $table) {
@@ -1608,10 +1604,9 @@ function api_page_group($branch, $group) {
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch, TRUE);
 
-  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type IN ('constant', 'global', 'function', 'file') WHERE r.to_did = %d ORDER BY d.object_name", $group->did);
-  $list = api_render_members(api_query_list($result), TRUE);
+  $objects = api_render_listing(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did));
 
-  $output = theme('api_group_page', $branch, $group, $documentation, $list['constant'], $list['global'], $list['function'], $list['file'], $see);
+  $output = theme('api_group_page', $branch, $group, $documentation, $objects, $see);
   $output .= _api_add_comments($group);
   return $output;
 }
