@@ -1119,7 +1119,7 @@ function api_search_listing($branch_name) {
   }
   else {
     // Wildcard search.
-    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, d.* FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.object_name LIKE '%%%s%%' ORDER BY d.title", 50, 0, NULL, $branch_name, $search_text);
+    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.title", 50, 0, NULL, $branch_name, $search_text);
     return api_render_listing($result, t('No search results found.')) . theme('pager', NULL, 50, 0);
   }
 }
@@ -1241,7 +1241,7 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND (class_did = 0 OR object_type = 'group') ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing($result) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing($result, NULL, FALSE) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 /**
@@ -1269,16 +1269,37 @@ function api_switch_project($current_branch, $url = '') {
  *   A database query result object.
  * @param $empty_message
  *   An optional string to display instead of an empty table.
+ * @param $show_headings
+ *   If you expect only one object type, you might not want the provided
+ *   heading.
  *
  * @return
  *   Rendered HTML for the listing.
  */
-function api_render_listing($result, $empty_message = NULL) {
+function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE) {
   $tables = api_render_members(api_query_list($result), TRUE);
-  if (count($tables) > 0) {
-    return array_shift($tables);
+  if (count($tables) === 0) {
+    return is_null($empty_message) ? '' : '<p><em>'. $empty_message .'</em></p>';
   }
-  return ($empty_message == NULL ? '' : '<p><em>'. $empty_message .'</em></p>' );
+  $headings = array(
+    'function' => t('Functions & methods'),
+    'property' => t('Properties'),
+    'group' => t('Groups'),
+    'global' => t('Globals'),
+    'constant' => t('Constants'),
+    'file' => t('Files'),
+    'interface' => t('Interfaces'),
+    'class' => t('Classes'),
+    'const' => t('Constants'),
+  );
+  $output = '';
+  foreach ($tables as $key => $table) {
+    if ($show_headings) {
+      $output .= '<h3>' . $headings[$key] . '</h3>';
+    }
+    $output .= $table;
+  }
+  return $output;
 }
 
 /**
@@ -2073,7 +2094,7 @@ function api_members($class, $types = 'function') {
 function api_query_list($result) {
   $items = array();
   while ($object = db_fetch_object($result)) {
-    $items[$object->object_type][$object->title] = $object;
+    $items[$object->object_type][$object->object_name] = $object;
   }
   return $items;
 }
