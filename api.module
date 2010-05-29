@@ -759,11 +759,7 @@ function api_theme() {
       'arguments' => array(
         'file' => NULL,
         'documentation' => NULL,
-        'interfaces' => NULL,
-        'classes' => NULL,
-        'constants' => NULL,
-        'globals' => NULL,
-        'functions' => NULL,
+        'objects' => NULL,
         'see' => NULL,
         'related_topics' => NULL,
       ),
@@ -1551,10 +1547,9 @@ function api_page_file($branch, $file) {
   $see = api_link_documentation($file->see, $branch, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
 
-  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id);
-  $list = api_render_members(api_query_list($result));
+  $objects = api_render_listing(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id));
 
-  $output = theme('api_file_page', $file, $documentation, $list['interface'], $list['class'], $list['constant'], $list['global'], $list['function'], $see, $related_topics);
+  $output = theme('api_file_page', $file, $documentation, $objects, $see, $related_topics);
   $output .= _api_add_comments($file);
   return $output;
 }
