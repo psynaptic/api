@@ -746,9 +746,7 @@ function api_theme() {
         'class' => NULL,
         'documentation' => NULL,
         'hierarchy' => NULL,
-        'constants' => NULL,
-        'properties' => NULL,
-        'methods' => NULL,
+        'objects' => NULL,
         'code' => NULL,
         'related_topics' => NULL,
         'see' => NULL,
@@ -1113,7 +1111,7 @@ function api_search_listing($branch_name) {
   else {
     // Wildcard search.
     $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.title", 50, 0, NULL, $branch_name, $search_text);
-    return api_render_listing($result, t('No search results found.')) . theme('pager', NULL, 50, 0);
+    return api_render_listing(api_query_list($result, t('No search results found.'))) . theme('pager', NULL, 50, 0);
   }
 }
 
@@ -1234,7 +1232,7 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND (class_did = 0 OR object_type = 'group') ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing($result, NULL, FALSE) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing(api_query_list($result, NULL, FALSE)) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 /**
@@ -1270,7 +1268,7 @@ function api_switch_project($current_branch, $url = '') {
  *   Rendered HTML for the listing.
  */
 function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE) {
-  $tables = api_render_members(api_query_list($result), TRUE);
+  $tables = api_render_members($result, TRUE);
   if (count($tables) === 0) {
     return is_null($empty_message) ? '' : '<p><em>'. $empty_message .'</em></p>';
   }
@@ -1526,8 +1524,8 @@ function api_page_class($branch, $class) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
-  $list = api_render_members(api_inherited($parents, $class->did, array('constant', 'property', 'function')));
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $list['constant'], $list['property'], $list['function'], $code, $related_topics, $see);
+  $objects = api_render_listing(api_inherited($parents, $class->did));
+  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $objects, $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
   return $output;
@@ -1543,7 +1541,7 @@ function api_page_file($branch, $file) {
   $see = api_link_documentation($file->see, $branch, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
 
-  $objects = api_render_listing(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id));
+  $objects = api_render_listing(api_query_list(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id)));
 
   $output = theme('api_file_page', $file, $documentation, $objects, $see, $related_topics);
   $output .= _api_add_comments($file);
@@ -1604,7 +1602,7 @@ function api_page_group($branch, $group) {
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch, TRUE);
 
-  $objects = api_render_listing(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did));
+  $objects = api_render_listing(api_query_list(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did)));
 
   $output = theme('api_group_page', $branch, $group, $documentation, $objects, $see);
   $output .= _api_add_comments($group);
@@ -2013,17 +2011,14 @@ function api_class_children($class) {
  *   Class object with hierarchy as returned by api_class_parents().
  * @param $last_did
  *   Class did to compare to stop the recursive call.
- * @param $types
- *   Object types to gather. Can be a string of array of strings.
- *   Allowed types : constant, property, function, interface.
  * @param $members
  *   Members lists to merge.
  *
  * @return
  *   Members list : array(type => array(title => object)).
  */
-function api_inherited($class, $last_did, $types = 'function', $members = array()) {
-  foreach (api_members($class, $types) as $objects) {
+function api_inherited($class, $last_did, $members = array()) {
+  foreach (api_query_list(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d ORDER BY title", $class->did, $class->branch_id)) as $objects) {
     foreach ($objects as $object) {
       if ($class->did === $last_did) {
         if (isset($members[$object->object_type][$object->title])) {
@@ -2045,31 +2040,9 @@ function api_inherited($class, $last_did, $types = 'function', $members = array(
     }
   }
   else {
-    $members = api_inherited(array_shift($class->children), $last_did, $types, $members);
+    $members = api_inherited(array_shift($class->children), $last_did, $members);
   }
   return $members;
-}
-
-/**
- * Get list of class members.
- *
- * @param $class
- *   Class object.
- * @param $types
- *   Object types to gather. Can be a string of array of strings.
- *   Allowed types : constant, property, function, interface.
- *
- * @return
- *   Members list : array(type => array(title => object)).
- */
-function api_members($class, $types = 'function') {
-  if (!is_array($types)) {
-    $types = array($types);
-  }
-
-  $args = array_merge(array($class->did, $class->branch_id), $types);
-  $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d AND object_type IN (" . db_placeholders($types, 'text') . ") ORDER BY title", $args);
-  return api_query_list($result);
 }
 
 /**

@@ -43,20 +43,7 @@
   <?php print $hierarchy ?>
 <?php } ?>
 
-<?php if (!empty($constants)) { ?>
-  <h3><?php print t('Constants') ?></h3>
-  <?php print $constants ?>
-<?php } ?>
-
-<?php if (!empty($properties)) { ?>
-  <h3><?php print t('Properties') ?></h3>
-  <?php print $properties ?>
-<?php } ?>
-
-<?php if (!empty($methods)) { ?>
-  <h3><?php print t('Methods') ?></h3>
-  <?php print $methods ?>
-<?php } ?>
+<?php print $objects; ?>
 
 <?php print $defined; ?>
 <?php print theme('ctools_collapsible', t('View code'), $code, $collapsed = TRUE) ?>
