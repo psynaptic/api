@@ -1111,7 +1111,7 @@ function api_search_listing($branch_name) {
   else {
     // Wildcard search.
     $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.title", 50, 0, NULL, $branch_name, $search_text);
-    return api_render_listing(api_query_list($result), t('No search results found.')) . theme('pager', NULL, 50, 0);
+    return api_render_listing(api_query_list($result), t('No search results found.'), TRUE, TRUE) . theme('pager', NULL, 50, 0);
   }
 }
 
@@ -1232,7 +1232,7 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND (class_did = 0 OR object_type = 'group') ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing(api_query_list($result, NULL, FALSE)) . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing(api_query_list($result), NULL, FALSE, $object_type !== 'file') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 /**
@@ -1263,12 +1263,14 @@ function api_switch_project($current_branch, $url = '') {
  * @param $show_headings
  *   If you expect only one object type, you might not want the provided
  *   heading.
+ * @param $link_file
+ *   Boolean : toggles the display of the file link column.
  *
  * @return
  *   Rendered HTML for the listing.
  */
-function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE) {
-  $tables = api_render_members($result, TRUE);
+function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE, $link_file = FALSE) {
+  $tables = api_render_members($result, $link_file);
   if (count($tables) === 0) {
     return is_null($empty_message) ? '' : '<p><em>'. $empty_message .'</em></p>';
   }
@@ -2046,7 +2048,7 @@ function api_inherited($class, $last_did, $members = array()) {
 }
 
 /**
- * Sorts query result by object type to use with api_render_members().
+ * Sorts query result by object type.
  *
  * @param $result
  *   A database query result object.
