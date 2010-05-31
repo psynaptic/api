@@ -1111,7 +1111,7 @@ function api_search_listing($branch_name) {
   else {
     // Wildcard search.
     $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.title", 50, 0, NULL, $branch_name, $search_text);
-    return api_render_listing(api_query_list($result, t('No search results found.'))) . theme('pager', NULL, 50, 0);
+    return api_render_listing(api_query_list($result), t('No search results found.')) . theme('pager', NULL, 50, 0);
   }
 }
 
