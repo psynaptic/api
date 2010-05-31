@@ -1554,7 +1554,7 @@ function api_page_class($branch, $class) {
   // builds up class hierarchy
   $class = api_class_children($class);
   $parents = api_class_parents($class);
-  if ((count($class->children) > 0) || (count($parents->children) > 0) || (count($class->interface) > 0)) {
+  if (count($class->children) > 0 || count($parents->children) > 0 || count($class->interface) > 0) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
@@ -2041,41 +2041,33 @@ function api_class_children($class) {
 /**
  * Get list of inherited members (recursive).
  *
- * @param $class
- *   Class object with hierarchy as returned by api_class_parents().
- * @param $last_did
- *   Class did to compare to stop the recursive call.
- * @param $members
- *   Members lists to merge.
+ * @param $parents
+ *   Class parents object with hierarchy as returned by api_class_parents().
+ * @param $target_did
+ *   Class did being viewed.
  *
  * @return
  *   Members list : array(type => array(title => object)).
  */
-function api_inherited($class, $last_did, $members = array()) {
-  foreach (api_query_list(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d ORDER BY title", $class->did, $class->branch_id)) as $objects) {
-    foreach ($objects as $object) {
-      if ($class->did === $last_did) {
-        if (isset($members[$object->object_type][$object->title])) {
-          $object->link_overrides = l(strip_tags($members[$object->object_type][$object->title]->link_inherited), api_url($members[$object->object_type][$object->title]));
-        }
+function api_inherited($parents, $target_did) {
+  $members = array();
+  foreach (array_merge(array($parents), $parents->children) as $class) {
+    $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d", $class->did, $class->branch_id);
+    while ($object = db_fetch_object($result)) {
+      if (isset($members[$object->object_type][$object->title])) {
+        $object->link_overrides = l(strip_tags($members[$object->object_type][$object->title]->link_inherited), api_url($members[$object->object_type][$object->title]));
       }
-      else {
+      if ($class->did !== $target_did) {
         $object->link_inherited = l($class->title, api_url($class));
       }
-      
       $members[$object->object_type][$object->title] = $object;
     }
   }
 
-  // if its the last child, sort members, else we need another call
-  if ($class->did === $last_did) {
-    foreach ($members as $type => &$objects) {
-      ksort($objects);
-    }
+  foreach ($members as &$objects) {
+    ksort($objects);
   }
-  else {
-    $members = api_inherited(array_shift($class->children), $last_did, $members);
-  }
+
   return $members;
 }
 
