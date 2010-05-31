@@ -1256,8 +1256,8 @@ function api_switch_project($current_branch, $url = '') {
 /**
  * Renders an overview of documentation objects in a table.
  *
- * @param $result
- *   A database query result object.
+ * @param $list
+ *   Members list : array(type => array(title => object)).
  * @param $empty_message
  *   An optional string to display instead of an empty table.
  * @param $show_headings
@@ -1269,11 +1269,43 @@ function api_switch_project($current_branch, $url = '') {
  * @return
  *   Rendered HTML for the listing.
  */
-function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE, $link_file = FALSE) {
-  $tables = api_render_members($result, $link_file);
-  if (count($tables) === 0) {
+function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE, $link_file = FALSE) {
+  if (count($list) === 0) {
     return is_null($empty_message) ? '' : '<p><em>'. $empty_message .'</em></p>';
   }
+
+  $branches = api_get_branches();
+  $header = array(t('Name'));
+  if ($link_file) {
+    $header[] = t('Location');
+  }
+  $header[] = t('Description');
+
+  $tables = array();
+  foreach ($list as $type => $objects) {
+    $rows = array();
+    foreach ($objects as $object) {
+      $row = array(l($object->title, api_url($object)));
+      if ($link_file) {
+        $row[] = '<small>' . api_file_link($object) . '</small>';
+      }
+      $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
+      if (isset($object->link_overrides)) {
+        $source = ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => $object->link_overrides));
+      }
+      elseif (isset($object->link_inherited)) {
+        $source = ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => $object->link_inherited)) . '</em>';
+      }
+      else {
+        $source = '';
+      }
+
+      $row[] = $summary . $source;
+      $rows[] = $row;
+    }
+    $tables[$type] = theme('table', $header, $rows);
+  }
+
   $headings = array(
     'function' => t('Functions & methods'),
     'property' => t('Properties'),
@@ -2088,50 +2120,4 @@ function api_render_class_hierarchy($object, $selected_did = '') {
   }
   $object_text = $object->did === $selected_did ? '<strong>' . $object->title . '</strong>' : l($object->title, api_url($object));
   return $object_text . $interface_text . theme('item_list', $children);
-}
-
-/**
- * Renders members lists as html tables.
- *
- * @param $list
- *   Members list : array(type => array(title => object)).
- * @param $link_file
- *   Boolean : toggles the display of the file link column.
- *
- * @return
- *   List of themed html tables.
- */
-function api_render_members($list, $link_file = FALSE) {
-  $branches = api_get_branches();
-  $header = array(t('Name'));
-  if ($link_file) {
-    $header[] = t('Location');
-  }
-  $header[] = t('Description');
-
-  $return = array();
-  foreach ($list as $type => $objects) {
-    $rows = array();
-    foreach ($objects as $object) {
-      $row = array(l($object->title, api_url($object)));
-      if ($link_file) {
-        $row[] = '<small>' . api_file_link($object) . '</small>';
-      }
-      $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
-      if (isset($object->link_overrides)) {
-        $source = ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => $object->link_overrides));
-      }
-      elseif (isset($object->link_inherited)) {
-        $source = ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => $object->link_inherited)) . '</em>';
-      }
-      else {
-        $source = '';
-      }
-
-      $row[] = $summary . $source;
-      $rows[] = $row;
-    }
-    $return[$type] = theme('table', $header, $rows);
-  }
-  return $return;
 }
