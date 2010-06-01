@@ -1290,17 +1290,13 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
       $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
-      if (isset($object->link_overrides)) {
-        $source = ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => $object->link_overrides));
+      if (isset($object->overrides)) {
+        $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($object->overrides->title, api_url($object->overrides))));
       }
-      elseif (isset($object->link_inherited)) {
-        $source = ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => $object->link_inherited)) . '</em>';
+      elseif (isset($object->inherited)) {
+        $summary .= ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => l($object->inherited->title, api_url($object->inherited)))) . '</em>';
       }
-      else {
-        $source = '';
-      }
-
-      $row[] = $summary . $source;
+      $row[] = $summary;
       $rows[] = $row;
     }
     $tables[$type] = theme('table', $header, $rows);
@@ -2055,10 +2051,10 @@ function api_inherited($parents, $target_did) {
     $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d", $class->did, $class->branch_id);
     while ($object = db_fetch_object($result)) {
       if (isset($members[$object->object_type][$object->title])) {
-        $object->link_overrides = l(strip_tags($members[$object->object_type][$object->title]->link_inherited), api_url($members[$object->object_type][$object->title]));
+        $object->overrides = $members[$object->object_type][$object->title]->inherited;
       }
       if ($class->did !== $target_did) {
-        $object->link_inherited = l($class->title, api_url($class));
+        $object->inherited = $class;
       }
       $members[$object->object_type][$object->title] = $object;
     }
