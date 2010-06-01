@@ -57,3 +57,5 @@ interface SampleInterfaceTwo {
    */
   public function bar();
 }
+
+$random_assignment_not_to_be_parsed = NULL;

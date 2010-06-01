@@ -169,13 +169,16 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
     $type = is_object($statement) ? $statement->type : $statement['type'];
     // Common processing.
     switch ($type) {
+      case T_ASSIGNMENT: // Class property
+        if (empty($default_block['class'])) {
+          break;
+        } // Explicit fallthrough.
       case T_INTERFACE:
       case T_CLASS:
       case T_FUNCTION:
       case T_DEFINE:
       case T_CONST:
       case T_GLOBAL:
-      case T_ASSIGNMENT: // Class property
         $docblock = $default_block;
         $docblock['object_type'] = isset($object_types[(int) $type]) ? $object_types[(int) $type] : $editor->statementTypeToString($statement);
         if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
