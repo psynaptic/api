@@ -1285,7 +1285,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
   foreach ($list as $type => $objects) {
     $rows = array();
     foreach ($objects as $object) {
-      $row = array(l($object->title, api_url($object)));
+      $row = array(l($object->object_name, api_url($object)));
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
