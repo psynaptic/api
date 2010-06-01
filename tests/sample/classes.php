@@ -15,11 +15,15 @@ class Sample implements SampleInterface {
 
   /**
    * A property.
+   *
+   * @var SampleInterface
    */
   private $property = 'variable value';
 
   /**
    * Metasyntatic member function.
+   *
+   * @throws SampleException when it all goes wrong.
    */
   public function foo() {
   }

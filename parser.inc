@@ -349,6 +349,20 @@ function api_save_documentation($docblocks) {
       }
       $docblock['see'] = api_format_documentation($docblock['see']);
 
+      // Find @var, a class name
+      $docblock['var'] = '';
+      if (preg_match('/' . API_RE_TAG_START . 'var(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
+        $docblock['content'] = str_replace($match[0], '', $docblock['content']);
+        $docblock['var'] = trim($match[1]);
+      }
+
+      // Find @throws, a paragraph
+      $docblock['throws'] = '';
+      if (preg_match('/' . API_RE_TAG_START . 'throws(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
+        $docblock['content'] = str_replace($match[0], '', $docblock['content']);
+        $docblock['throws'] = api_format_documentation($match[1]);
+      }
+
       $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
     $docblock['summary'] = api_documentation_summary($docblock['documentation']);

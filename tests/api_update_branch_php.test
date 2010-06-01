@@ -64,11 +64,13 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $object = api_object_load('Sample::property', $branch, 'property', 'classes.php');
     $this->assertEqual($object->summary, 'A property.', t('Sample::property has summary %summary.', array('%summary' => $object->summary)));
     $this->assertEqual($object->class_did, $class->did, t('property belongs to parent class.'));
+    $this->assertEqual($object->var, 'SampleInterface', t('property has @var.'));
 
     // Check Sample::foo() method
     $object = api_object_load('Sample::foo', $branch, 'function', 'classes.php');
     $this->assertEqual($object->summary, 'Metasyntatic member function.', t('Sample::foo() has summary %summary.', array('%summary' => $object->summary)));
     $this->assertEqual($object->class_did, $class->did, t('Method belongs to parent class.'));
+    $this->assertTrue(strpos($object->throws, 'SampleException when it all goes wrong.') !== FALSE, t('Sample::foo() throws exception.'));
 
     // Check SampleInterface interface
     $interface = api_object_load('SampleInterface', $branch, 'interface', 'classes.php');

@@ -28,11 +28,16 @@
  * - $property->summary: A one-line summary of the object.
  * - $property->code: Escaped source code.
  * - $property->see: HTML index of additional references.
+ * - $property->var: Type of property.
  *
  * @see api_preprocess_api_property().
  */
 ?>
 <?php print $documentation ?>
+
+<?php if (!empty($var)) { ?>
+  <p><strong><?php print t('Type') ?>:</strong> <?php print $var; ?></p>
+<?php } ?>
 
 <?php if (!empty($see)) { ?>
 <h3><?php print t('See also') ?></h3>

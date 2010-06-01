@@ -81,6 +81,16 @@ function api_schema() {
         'size' => 'medium',
         'not null' => TRUE,
       ),
+      'var' => array(
+        'type' => 'varchar',
+        'length' => 127,
+        'not null' => TRUE,
+      ),
+      'throws' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
       'class_did' => array(
         'type' => 'int',
         'unsigned' => TRUE,
@@ -493,6 +503,23 @@ function api_update_30() {
     'indexes' => array(
       'did' => array('did'),
     ),
+  ));
+
+  return $return;
+}
+
+function api_update_31() {
+  $return = array();
+
+  db_add_field($return, 'api_documentation', 'var', array(
+    'type' => 'varchar',
+    'length' => 127,
+    'not null' => TRUE,
+  ));
+  db_add_field($return, 'api_documentation', 'throws', array(
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => TRUE,
   ));
 
   return $return;

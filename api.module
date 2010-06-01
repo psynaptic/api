@@ -616,7 +616,7 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
   if (!isset($cache[$key])) {
     // Prepare the query
     $tables = array('{api_documentation} ad');
-    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did');
+    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did', 'ad.var', 'ad.throws');
     $where = "WHERE ad.object_type IN (" . db_placeholders($object_type, 'text') . ") AND ad.branch_id = %d";
     $arguments = $object_type;
     $arguments[] = $branch->branch_id;
@@ -704,6 +704,7 @@ function api_theme() {
         'call' => NULL,
         'code' => NULL,
         'see' => NULL,
+        'throws' => NULL,
       ),
       'template' => 'templates/api-function-page',
     ),
@@ -737,6 +738,7 @@ function api_theme() {
         'code' => NULL,
         'related_topics' => NULL,
         'see' => NULL,
+        'var' => NULL,
       ),
       'template' => 'templates/api-property-page',
     ),
@@ -1464,6 +1466,7 @@ function api_page_function($branch, $function) {
   $parameters = api_link_documentation($function->parameters, $branch);
   $return = api_link_documentation($function->return_value, $branch);
   $see = api_link_documentation($function->see, $branch, TRUE);
+  $throws = api_link_documentation($function->throws, $branch, TRUE);
   $code = api_link_code($function->code, $branch);
   $related_topics = api_related_topics($function->did, $branch);
 
@@ -1483,7 +1486,7 @@ function api_page_function($branch, $function) {
     $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
   }
 
-  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see);
+  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see, $throws);
   $output .= _api_add_comments($function);
   return $output;
 }
@@ -1530,8 +1533,9 @@ function api_page_property($branch, $property) {
   $related_topics = api_related_topics($property->did, $branch);
   $code = api_link_code($property->code, $branch);
   $see = api_link_documentation($property->see, $branch, TRUE);
+  $var = api_link_name($property->var, $branch);
 
-  $output = theme('api_global_page', $branch, $property, $documentation, $code, $related_topics, $see);
+  $output = theme('api_property_page', $branch, $property, $documentation, $code, $related_topics, $see, $var);
   $output .= _api_add_comments($property);
   return $output;
 }

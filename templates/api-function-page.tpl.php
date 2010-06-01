@@ -30,6 +30,7 @@
  * - $function->summary: A one-line summary of the object.
  * - $function->code: Escaped source code.
  * - $function->see: HTML index of additional references.
+ * - $function->throws: Paragraph describing possible exceptions.
  *
  * @see api_preprocess_api_function_page().
  */
@@ -70,6 +71,11 @@
 <?php if (!empty($return)) { ?>
 <h3><?php print t('Return value') ?></h3>
 <?php print $return ?>
+<?php } ?>
+
+<?php if (!empty($throws)) { ?>
+  <h3><?php print t('Throws') ?></h3>
+  <?php print $throws ?>
 <?php } ?>
 
 <?php if (!empty($see)) { ?>
