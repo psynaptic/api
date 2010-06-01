@@ -1101,10 +1101,10 @@ function api_search_listing($branch_name) {
   $search_text = implode('/', $search_text);
   drupal_set_title(t('Search for %search', array('%search' => $search_text)));
 
-  $count = db_result(db_query("SELECT COUNT(d.title) FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.title = '%s'", $branch_name, $search_text));
+  $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
   if ($count == 1) {
     // Exact match.
-    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, d.* FROM {api_branch} b INNER JOIN {api_documentation} d ON b.branch_id = d.branch_id WHERE b.branch_name = '%s' AND d.title = '%s'", $branch_name, $search_text));
+    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
     $branches = api_get_branches();
     drupal_goto(api_url($item));
   }
@@ -1128,10 +1128,10 @@ function api_search_listing($branch_name) {
  *   JavaScript listing of all the objects in the branch.
  */
 function api_autocomplete($branch_name, $page = TRUE) {
-  $result = db_query("SELECT d.title, d.object_type FROM {api_documentation} d INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE b.branch_name = '%s' AND d.object_type <> 'mainpage' ORDER BY LENGTH(d.title)", $branch_name);
+  $result = db_query("SELECT ad.object_name, ad.object_type FROM {api_documentation} ad INNER JOIN {api_branch} b ON ad.branch_id = b.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_type <> 'mainpage' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY LENGTH(ad.object_name)", $branch_name);
   $objects = array();
   while ($object = db_fetch_object($result)) {
-    $objects[] = $object->title;
+    $objects[] = $object->object_name;
   }
 
   if ($page) {
