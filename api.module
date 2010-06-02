@@ -1020,7 +1020,7 @@ function api_get_active_branch() {
     if (isset($item['page_arguments'][0]->branch_name)) {
       $branch = $item['page_arguments'][0];
     }
-    elseif (isset($branch_names[$item['page_arguments'][0]])) {
+    elseif (strpos($item['path'], 'api/search') === 0 && isset($branch_names[$item['page_arguments'][0]])) {
       // Search page, use the default project if possible
       foreach ($branches as $possible_branch) {
         if ($possible_branch->project === $branches[$default_branch]->project && $possible_branch->branch_name === $item['page_arguments'][0]) {
