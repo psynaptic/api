@@ -2005,7 +2005,7 @@ function api_link_link($name, $branch, $prepend = '', $append = '') {
  */
 function api_class_parents($class, $recursive = TRUE) {
   $class->interfaces = array();
-  $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name, d.summary as summary FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
+  $result = db_query("SELECT DISTINCT d.did, d.branch_id, d.title, d.object_type, d.file_name, d.object_name, d.summary FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     if ($object->object_type === 'interface') {
       $class->interfaces[] = $object;
@@ -2031,7 +2031,7 @@ function api_class_parents($class, $recursive = TRUE) {
  */
 function api_class_children($class) {
   $class->children = array();
-  $result = db_query("SELECT DISTINCT d.did as did, d.branch_id as branch_id, d.title as title, d.object_type as object_type, d.file_name as file_name, d.object_name as object_name FROM {api_documentation} d INNER JOIN {api_reference_storage} rs ON d.did = rs.from_did WHERE rs.to_did = %d AND d.branch_id = %d AND d.object_type = 'class'", $class->did, $class->branch_id);
+  $result = db_query("SELECT DISTINCT d.did, d.branch_id, d.title, d.object_type, d.file_name, d.object_name FROM {api_documentation} d INNER JOIN {api_reference_storage} rs ON d.did = rs.from_did WHERE rs.to_did = %d AND d.branch_id = %d AND d.object_type = 'class'", $class->did, $class->branch_id);
   while ($object = db_fetch_object($result)) {
     // found a child : gather its interfaces, builds its possible children list, and adds it to the children list
     $class->children[] = api_class_children(api_class_parents($object, FALSE));
@@ -2062,6 +2062,9 @@ function api_inherited($parents, $target_did) {
         $object->inherited = $class;
       }
       $members[$object->object_type][$object->title] = $object;
+    }
+    if ($class->did === $target_did) { // $parents->children goes down the tree and we need to stop.
+      break;
     }
   }
 
