@@ -1901,6 +1901,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
       'global' => array(),
       'class' => array(),
       'interface' => array(),
+      'property' => array(),
     );
     while ($object = db_fetch_object($result)) {
       switch ($object->object_type) {
