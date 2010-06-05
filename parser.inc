@@ -181,13 +181,14 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
       case T_GLOBAL:
         $docblock = $default_block;
         $docblock['object_type'] = isset($object_types[(int) $type]) ? $object_types[(int) $type] : $editor->statementTypeToString($statement);
+        $class_prefix = empty($default_block['class']) ? '' : $default_block['class'] . '::';
         if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
-          $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
+          $docblock['object_name'] = $class_prefix . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }
         else {
-          $docblock['object_name'] = (empty($default_block['class']) ? '' : $default_block['class'] . '::') . $editor->statementOperandToText($statement);
+          $docblock['object_name'] = $class_prefix . $editor->statementOperandToText($statement);
         }
-        $docblock['title'] = $editor->statementOperandToText($statement);
+        $docblock['title'] = $class_prefix . $editor->statementOperandToText($statement);
         $docblock['start_line'] = $current->line;
         $docblock['content'] = $editor->commentToString($statement->comment);
         unset($statement->comment);

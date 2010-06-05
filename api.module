@@ -1103,16 +1103,16 @@ function api_search_listing($branch_name) {
   $search_text = implode('/', $search_text);
   drupal_set_title(t('Search for %search', array('%search' => $search_text)));
 
-  $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
+  $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
   if ($count == 1) {
     // Exact match.
-    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
+    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
     $branches = api_get_branches();
     drupal_goto(api_url($item));
   }
   else {
     // Wildcard search.
-    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_name LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.object_type, ad.title", 50, 0, NULL, $branch_name, $search_text);
+    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.object_type, ad.title", 50, 0, NULL, $branch_name, $search_text);
     return api_render_listing(api_query_list($result), t('No search results found.'), TRUE, TRUE) . theme('pager', NULL, 50, 0);
   }
 }
@@ -1130,10 +1130,10 @@ function api_search_listing($branch_name) {
  *   JavaScript listing of all the objects in the branch.
  */
 function api_autocomplete($branch_name, $page = TRUE) {
-  $result = db_query("SELECT ad.object_name, ad.object_type FROM {api_documentation} ad INNER JOIN {api_branch} b ON ad.branch_id = b.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_type <> 'mainpage' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY LENGTH(ad.object_name)", $branch_name);
+  $result = db_query("SELECT ad.title, ad.object_type FROM {api_documentation} ad INNER JOIN {api_branch} b ON ad.branch_id = b.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_type <> 'mainpage' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY LENGTH(ad.title)", $branch_name);
   $objects = array();
   while ($object = db_fetch_object($result)) {
-    $objects[] = $object->object_name;
+    $objects[] = $object->title;
   }
 
   if ($page) {
@@ -1234,7 +1234,7 @@ function api_page_branch($branch) {
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND (class_did = 0 OR object_type = 'group') ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
-  return api_render_listing(api_query_list($result), NULL, FALSE, $object_type !== 'file') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing(api_query_list($result), NULL, FALSE, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 /**
@@ -1287,7 +1287,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
   foreach ($list as $type => $objects) {
     $rows = array();
     foreach ($objects as $object) {
-      $row = array(l($object->object_name, api_url($object)));
+      $row = array(l($object->title, api_url($object)));
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
@@ -1341,7 +1341,7 @@ function api_page_function_dump($branch_name) {
  * Sets the page title and breadcrumb for an object display page.
  */
 function api_object_title_and_breadcrumb($branch, $object) {
-  drupal_set_title($object->object_name);
+  drupal_set_title($object->title);
   $breadcrumb = array(
     l(t('Home'), ''),
     l(t('API reference'), 'api/' . $branch->project),
