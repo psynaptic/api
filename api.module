@@ -1291,7 +1291,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
-      $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
+      $summary = api_link_documentation($object->summary, $branches[$object->branch_id], $function->class_did);
       if (isset($object->overrides)) {
         $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($object->overrides->title, api_url($object->overrides))));
       }
@@ -1462,12 +1462,12 @@ function api_page_function($branch, $function) {
     );
   }
 
-  $documentation = api_link_documentation($function->documentation, $branch);
-  $parameters = api_link_documentation($function->parameters, $branch);
-  $return = api_link_documentation($function->return_value, $branch);
-  $see = api_link_documentation($function->see, $branch, TRUE);
-  $throws = api_link_documentation($function->throws, $branch, TRUE);
-  $code = api_link_code($function->code, $branch);
+  $documentation = api_link_documentation($function->documentation, $branch, $function->class_did);
+  $parameters = api_link_documentation($function->parameters, $branch, $function->class_did);
+  $return = api_link_documentation($function->return_value, $branch, $function->class_did);
+  $see = api_link_documentation($function->see, $branch, $function->class_did, TRUE);
+  $throws = api_link_documentation($function->throws, $branch, $function->class_did, TRUE);
+  $code = api_link_code($function->code, $branch, $function->class_did);
   $related_topics = api_related_topics($function->did, $branch);
 
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.to_did = %d", $function->did));
@@ -1497,10 +1497,10 @@ function api_page_function($branch, $function) {
 function api_page_constant($branch, $constant) {
   api_object_title_and_breadcrumb($branch, $constant);
 
-  $documentation = api_link_documentation($constant->documentation, $branch);
-  $code = api_link_code($constant->code, $branch);
+  $documentation = api_link_documentation($constant->documentation, $branch, $constant->class_did);
+  $code = api_link_code($constant->code, $branch, $constant->class_did);
   $related_topics = api_related_topics($constant->did, $branch);
-  $see = api_link_documentation($function->see, $branch, TRUE);
+  $see = api_link_documentation($function->see, $branch, $constant->class_did, TRUE);
 
   $output = theme('api_constant_page', $branch, $constant, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($constant);
@@ -1516,7 +1516,7 @@ function api_page_global($branch, $global) {
   $documentation = api_link_documentation($global->documentation, $branch);
   $related_topics = api_related_topics($global->did, $branch);
   $code = api_link_code($global->code, $branch);
-  $see = api_link_documentation($global->see, $branch, TRUE);
+  $see = api_link_documentation($global->see, $branch, $global->class_did, TRUE);
 
   $output = theme('api_global_page', $branch, $global, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($global);
@@ -1529,11 +1529,11 @@ function api_page_global($branch, $global) {
 function api_page_property($branch, $property) {
   api_object_title_and_breadcrumb($branch, $property);
 
-  $documentation = api_link_documentation($property->documentation, $branch);
+  $documentation = api_link_documentation($property->documentation, $branch, $property->class_did);
   $related_topics = api_related_topics($property->did, $branch);
-  $code = api_link_code($property->code, $branch);
-  $see = api_link_documentation($property->see, $branch, TRUE);
-  $var = api_link_name($property->var, $branch);
+  $code = api_link_code($property->code, $branch, $property->class_did);
+  $see = api_link_documentation($property->see, $branch, $property->class_did, TRUE);
+  $var = api_link_name($property->var, $branch, $property->class_did);
 
   $output = theme('api_property_page', $branch, $property, $documentation, $code, $related_topics, $see, $var);
   $output .= _api_add_comments($property);
@@ -1546,10 +1546,10 @@ function api_page_property($branch, $property) {
 function api_page_class($branch, $class) {
   api_object_title_and_breadcrumb($branch, $class);
 
-  $documentation = api_link_documentation($class->documentation, $branch);
+  $documentation = api_link_documentation($class->documentation, $branch, $class->did);
   $related_topics = api_related_topics($class->did, $branch);
-  $code = api_link_code($class->code, $branch);
-  $see = api_link_documentation($class->see, $branch, TRUE);
+  $code = api_link_code($class->code, $branch, $class->did);
+  $see = api_link_documentation($class->see, $branch, $class->did, TRUE);
 
   // builds up class hierarchy
   $class = api_class_children($class);
@@ -1572,7 +1572,7 @@ function api_page_file($branch, $file) {
   api_object_title_and_breadcrumb($branch, $file);
 
   $documentation = api_link_documentation($file->documentation, $branch);
-  $see = api_link_documentation($file->see, $branch, TRUE);
+  $see = api_link_documentation($file->see, $branch, NULL, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
 
   $objects = api_render_listing(api_query_list(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id)));
@@ -1634,7 +1634,7 @@ function api_page_group($branch, $group) {
   api_object_title_and_breadcrumb($branch, $group);
 
   $documentation = api_link_documentation($group->documentation, $branch);
-  $see = api_link_documentation($group->see, $branch, TRUE);
+  $see = api_link_documentation($group->see, $branch, NULL, TRUE);
 
   $objects = api_render_listing(api_query_list(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did)));
 
@@ -1702,8 +1702,8 @@ function api_cron() {
  * @return
  *   Code with function names formatted as links.
  */
-function api_link_code($code, $branch) {
-  return _api_link_documentation($code, $branch, array('code function'));
+function api_link_code($code, $branch, $class_did = NULL) {
+  return _api_link_documentation($code, $branch, $class_did, array('code function'));
 }
 
 /**
@@ -1746,7 +1746,7 @@ function api_filter_documentation($text, $branch, $aggressive_classes = FALSE) {
   if ($aggressive_classes) {
     $stages[] = 'class';
   }
-  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, $stages));
+  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, NULL, $stages));
 }
 
 /**
@@ -1764,7 +1764,7 @@ function api_filter_documentation($text, $branch, $aggressive_classes = FALSE) {
  *
  * @see api_link_code()
  */
-function _api_link_documentation($documentation, $branch, $stages = array()) {
+function _api_link_documentation($documentation, $branch, $class_did = NULL, $stages = array()) {
   $patterns = array(
     // Find HTML tags, which will not be filtered.
     'tags' => '/(<[^>]+?'.'>)/',
@@ -1818,7 +1818,7 @@ function _api_link_documentation($documentation, $branch, $stages = array()) {
     $callback = NULL;
   }
 
-  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append), $callback, array($branch, $stages));
+  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append, $class_did), $callback, array($branch, $class_did, $stages));
 }
 
 /**
@@ -1888,11 +1888,11 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  * @return
  *   The text as a link to the object page.
  */
-function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL, $is_link = FALSE) {
+function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE) {
   static $local_objects, $php_functions;
 
   if (is_null($local_objects)) {
-    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d", $branch->branch_id);
+    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d ORDER BY ad.class_did = %d", $branch->branch_id, $class_did);
     $local_objects = array(
       'function' => array(),
       'file' => array(),
@@ -1914,8 +1914,9 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
           break;
 
         default:
-          if ($object->is_root) {
-            $local_objects[$object->object_type][$object->title] = $object;
+          if ($object->is_root || $object->class_did === $class_did) {
+            // The latter is preferred, and happens by that query's ORDER BY.
+            $local_objects[$object->object_type][preg_replace('/^.*::/', '', $object->object_name)] = $object;
           }
           $local_objects[$object->object_type][$object->object_name] = $object;
       }
@@ -1982,10 +1983,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $text = NULL
  * @return
  *   The text as a link.
  */
-function api_link_link($name, $branch, $prepend = '', $append = '') {
+function api_link_link($name, $branch, $prepend = '', $append = '', $class_did = NULL) {
   $words = preg_split('/\s+/', $name);
   $name = array_shift($words);
-  return api_link_name($name, $branch, $prepend, $append, implode(' ', $words), TRUE);
+  return api_link_name($name, $branch, $prepend, $append, $class_did, implode(' ', $words), TRUE);
 }
 
 /**
