@@ -1533,7 +1533,7 @@ function api_page_property($branch, $property) {
   $related_topics = api_related_topics($property->did, $branch);
   $code = api_link_code($property->code, $branch, $property->class_did);
   $see = api_link_documentation($property->see, $branch, $property->class_did, TRUE);
-  $var = api_link_name($property->var, $branch, $property->class_did);
+  $var = api_link_name($property->var, $branch, '', '', $property->class_did);
 
   $output = theme('api_property_page', $branch, $property, $documentation, $code, $related_topics, $see, $var);
   $output .= _api_add_comments($property);
@@ -1719,8 +1719,8 @@ function api_link_code($code, $branch, $class_did = NULL) {
  * @return
  *   Documentation with function names formatted as links.
  */
-function api_link_documentation($documentation, $branch, $aggressive_classes = FALSE) {
-  return _filter_url(api_filter_documentation($documentation, $branch, $aggressive_classes), NULL);
+function api_link_documentation($documentation, $branch, $class_did = NULL, $aggressive_classes = FALSE) {
+  return _filter_url(api_filter_documentation($documentation, $branch, $class_did, $aggressive_classes), NULL);
 }
 
 /**
@@ -1740,13 +1740,13 @@ function api_link_documentation($documentation, $branch, $aggressive_classes = F
  * @return
  *   Text with function names turned into links.
  */
-function api_filter_documentation($text, $branch, $aggressive_classes = FALSE) {
+function api_filter_documentation($text, $branch, $class_did = NULL, $aggressive_classes = FALSE) {
   // Remove escaping from \@.
   $stages = array('tags', 'link', 'function', 'file');
   if ($aggressive_classes) {
     $stages[] = 'class';
   }
-  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, NULL, $stages));
+  return preg_replace('!\\\@!', '@', _api_link_documentation($text, $branch, $class_did, $stages));
 }
 
 /**
