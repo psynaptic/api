@@ -1291,7 +1291,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
-      $summary = api_link_documentation($object->summary, $branches[$object->branch_id], $function->class_did);
+      $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
       if (isset($object->overrides)) {
         $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($object->overrides->title, api_url($object->overrides))));
       }
