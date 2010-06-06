@@ -1889,11 +1889,11 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  *   The text as a link to the object page.
  */
 function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE) {
-  static $local_objects, $php_functions;
+  static $local_objects = array(), $php_functions;
 
-  if (is_null($local_objects)) {
+  if (!isset($local_objects[$class_did])) {
     $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d ORDER BY ad.class_did = %d", $branch->branch_id, $class_did);
-    $local_objects = array(
+    $local_objects[$class_did] = array(
       'function' => array(),
       'file' => array(),
       'group' => array(),
@@ -1906,19 +1906,19 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     while ($object = db_fetch_object($result)) {
       switch ($object->object_type) {
         case 'file':
-          $local_objects[$object->object_type][basename($object->object_name)] = $object;
+          $local_objects[$class_did][$object->object_type][basename($object->object_name)] = $object;
           break;
 
         case 'group':
-          $local_objects[$object->object_type][$object->object_name] = $object;
+          $local_objects[$class_did][$object->object_type][$object->object_name] = $object;
           break;
 
         default:
           if ($object->is_root || $object->class_did === $class_did) {
             // The latter is preferred, and happens by that query's ORDER BY.
-            $local_objects[$object->object_type][preg_replace('/^.*::/', '', $object->object_name)] = $object;
+            $local_objects[$class_did][$object->object_type][preg_replace('/^.*::/', '', $object->object_name)] = $object;
           }
-          $local_objects[$object->object_type][$object->object_name] = $object;
+          $local_objects[$class_did][$object->object_type][$object->object_name] = $object;
       }
     }
   }
@@ -1935,29 +1935,29 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     $text = $name;
   }
 
-  if ($is_link && array_key_exists($name, $local_objects['group'])) {
-    return $prepend . l($text, api_url($local_objects['group'][$name])) . $append;
+  if ($is_link && array_key_exists($name, $local_objects[$class_did]['group'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['group'][$name])) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['function'])) {
-    return $prepend . l($text, api_url($local_objects['function'][$name]), array('attributes' => array('title' => $local_objects['function'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['function'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['function'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['function'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['class'])) {
-    return $prepend . l($text, api_url($local_objects['class'][$name]), array('attributes' => array('title' => $local_objects['class'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['class'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['class'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['class'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['interface'])) {
-    return $prepend . l($text, api_url($local_objects['interface'][$name]), array('attributes' => array('title' => $local_objects['interface'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['interface'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['interface'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['interface'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['file'])) {
-    return $prepend . l($text, api_url($local_objects['file'][$name]), array('attributes' => array('title' => $local_objects['file'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['file'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['file'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['file'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['constant'])) {
-    return $prepend . l($text, api_url($local_objects['constant'][$name]), array('attributes' => array('title' => $local_objects['constant'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['constant'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['constant'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['constant'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['property'])) {
-    return $prepend . l($text, api_url($local_objects['property'][$name]), array('attributes' => array('title' => $local_objects['property'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['property'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['property'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['property'][$name]->summary, 'class' => 'local'))) . $append;
   }
-  elseif (array_key_exists($name, $local_objects['global'])) {
-    return $prepend . l($text, api_url($local_objects['global'][$name]), array('attributes' => array('title' => $local_objects['global'][$name]->summary, 'class' => 'local'))) . $append;
+  elseif (array_key_exists($name, $local_objects[$class_did]['global'])) {
+    return $prepend . l($text, api_url($local_objects[$class_did]['global'][$name]), array('attributes' => array('title' => $local_objects[$class_did]['global'][$name]->summary, 'class' => 'local'))) . $append;
   }
   elseif (array_key_exists($name, $php_functions)) {
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
