@@ -157,7 +157,7 @@ class ApiLinkDocumentationTest extends ApiTestCase {
     );
 
     foreach ($tests as $test) {
-      $result = api_link_documentation($test['data'], $this->getBranch(), isset($test['aggressive_classes']) ? $test['aggressive_classes'] : FALSE);
+      $result = api_link_documentation($test['data'], $this->getBranch(), isset($test['class_did']) ? $test['class_did'] : NULL, isset($test['aggressive_classes']) ? $test['aggressive_classes'] : FALSE);
       $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }
