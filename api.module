@@ -1554,7 +1554,7 @@ function api_page_class($branch, $class) {
   // builds up class hierarchy
   $class = api_class_children($class);
   $parents = api_class_parents($class);
-  if (count($class->children) > 0 || count($parents->children) > 0 || count($class->interface) > 0) {
+  if (count($class->children) > 0 || count($parents->children) > 0 || count($class->interfaces) > 0) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
