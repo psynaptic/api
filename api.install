@@ -69,6 +69,13 @@ function api_schema() {
         'not null' => TRUE,
       ),
       'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
+      'member_name' => array(
+        'description' => 'For class members, the name without Class::',
+        'type' => 'varchar',
+        'length' => 127,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'file_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
@@ -520,6 +527,20 @@ function api_update_31() {
     'type' => 'text',
     'size' => 'medium',
     'not null' => TRUE,
+  ));
+
+  return $return;
+}
+
+function api_update_32() {
+  $return = array();
+
+  db_add_field($return, 'api_documentation', 'member_name', array(
+    'description' => 'For class members, the name without Class::',
+    'type' => 'varchar',
+    'length' => 127,
+    'not null' => TRUE,
+    'default' => '',
   ));
 
   return $return;

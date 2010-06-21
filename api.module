@@ -615,8 +615,8 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
   $key = $object_name_or_did .':'. implode('-', $object_type) .':'. $branch->branch_id;
   if (!isset($cache[$key])) {
     // Prepare the query
-    $tables = array('{api_documentation} ad');
-    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did', 'ad.var', 'ad.throws');
+    $tables = array('{api_documentation} ad', 'LEFT JOIN {api_overrides} ao ON ao.did = ad.did');
+    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did', 'ad.var', 'ad.throws', 'ao.overrides_did', 'ao.root_did', 'ad.member_name');
     $where = "WHERE ad.object_type IN (" . db_placeholders($object_type, 'text') . ") AND ad.branch_id = %d";
     $arguments = $object_type;
     $arguments[] = $branch->branch_id;

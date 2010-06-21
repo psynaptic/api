@@ -183,11 +183,12 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         $docblock['object_type'] = isset($object_types[(int) $type]) ? $object_types[(int) $type] : $editor->statementTypeToString($statement);
         $class_prefix = empty($default_block['class']) ? '' : $default_block['class'] . '::';
         if ($type == T_GLOBAL || $type == T_ASSIGNMENT) {
-          $docblock['object_name'] = $class_prefix . preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
+          $docblock['member_name'] = preg_replace('/^\$/', '', $editor->statementOperandToText($statement));
         }
         else {
-          $docblock['object_name'] = $class_prefix . $editor->statementOperandToText($statement);
+          $docblock['member_name'] = $editor->statementOperandToText($statement);
         }
+        $docblock['object_name'] = $class_prefix . $docblock['member_name'];
         $docblock['title'] = $class_prefix . $editor->statementOperandToText($statement);
         $docblock['start_line'] = $current->line;
         $docblock['content'] = $editor->commentToString($statement->comment);
@@ -773,7 +774,7 @@ function api_shutdown() {
   db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
   // Save overrides
-  $result = db_query("SELECT ad.did, ad.object_type, ad.title, ad.class_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
+  $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
   while ($object = db_fetch_object($result)) {
     $override = array(
       'did' => $object->did,
@@ -783,7 +784,7 @@ function api_shutdown() {
     $overrides_did = 0;
     $parents = array($object->class_did);
     while ($parent = array_shift($parents)) {
-      $result_parents = db_query("SELECT ad.did, ars.to_did FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.title = '%s' WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->title, $parent);
+      $result_parents = db_query("SELECT ad.did, ars.to_did FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
       while ($parent_class = db_fetch_object($result_parents)) {
         $parents[] = $parent_class->to_did;
         if (!is_null($parent_class->did)) {
