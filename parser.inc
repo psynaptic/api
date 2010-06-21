@@ -774,22 +774,26 @@ function api_shutdown() {
   db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
   // Save overrides
-  $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
+  $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did LEFT JOIN {api_function} af ON af.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
   while ($object = db_fetch_object($result)) {
     $override = array(
       'did' => $object->did,
       'overrides_did' => 0,
+      'documented_did' => api_has_documentation($object) ? $object->did : 0,
       'root_did' => $object->did,
     );
     $overrides_did = 0;
     $parents = array($object->class_did);
     while ($parent = array_shift($parents)) {
-      $result_parents = db_query("SELECT ad.did, ars.to_did FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
+      $result_parents = db_query("SELECT ad.did, ars.to_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' INNER JOIN {api_function} af ON af.did = ad.did WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
       while ($parent_class = db_fetch_object($result_parents)) {
         $parents[] = $parent_class->to_did;
         if (!is_null($parent_class->did)) {
           if ($override['overrides_did'] === 0) {
             $override['overrides_did'] = $parent_class->did;
+          }
+          if ($override['documented_did'] === 0 && api_has_documentation($parent_class)) {
+            $override['documented_did'] = $parent_class->did;
           }
           $override['root_did'] = $parent_class->did;
         }
@@ -823,6 +827,15 @@ function api_shutdown() {
   }
 
   cache_clear_all();
+}
+
+function api_has_documentation($object) {
+  foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
+    if (!empty($object->$member)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**

@@ -89,7 +89,11 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual(db_result(db_query("SELECT count(*) FROM {api_reference_storage} WHERE branch_id = %d AND from_did = %d AND to_did = %d AND object_type = 'class'", $branch->branch_id, $subclass->did, $class->did)), 1, t('SubSample extends Sample.'));
 
     // Check overrides
+    $subSample_bar = api_object_load('SubSample::bar', $branch, 'function', 'classes.php');
+    $sampleInterfaceTwo_bar = api_object_load('SampleInterfaceTwo::bar', $branch, 'function', 'classes.php');
     $this->assertEqual($sample_foo->overrides_did, $sampleInterface_foo->did, t('Sample::foo() overrides SampleInterface::foo()'));
     $this->assertEqual($sample_foo->root_did, $sampleInterface_foo->did, t('Sample::foo()\'s root is SampleInterface::foo()'));
+    $this->assertEqual($sample_foo->documented_did, $sample_foo->did, t('Sample::foo() is documented by itself.'));
+    $this->assertEqual($subSample_bar->documented_did, $sampleInterfaceTwo_bar->did, t('SubSample::bar() is documented by SampleInterfaceTwo::bar()'));
   }
 }

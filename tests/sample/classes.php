@@ -45,9 +45,7 @@ interface SampleInterface {
  * @see Sample::foo() should be a link
  */
 class SubSample extends Sample implements SampleInterfaceTwo {
-  /**
-   * Another metasyntatic member function.
-   */
+  // Not documented.
   public function bar() {
   }
 }

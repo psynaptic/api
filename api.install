@@ -154,6 +154,7 @@ function api_schema() {
     'fields' => array(
       'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'overrides_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'documented_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'root_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
     ),
     'indexes' => array(
@@ -541,6 +542,18 @@ function api_update_32() {
     'length' => 127,
     'not null' => TRUE,
     'default' => '',
+  ));
+
+  return $return;
+}
+
+function api_update_33() {
+  $return = array();
+
+  db_add_field($return, 'api_overrides', 'documented_did', array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
   ));
 
   return $return;
