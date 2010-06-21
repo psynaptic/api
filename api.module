@@ -629,7 +629,7 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
       $arguments[] = $object_name_or_did;
     }
 
-    if (!in_array('file', $object_type)) {
+    if (!is_null($file_name)) {
       $file = api_filename_load($file_name, $branch);
       $where .= " AND ad.file_name = '%s'";
       $arguments[] = $file->file_name;
@@ -1292,11 +1292,12 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
       $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
-      if (isset($object->overrides)) {
-        $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($object->overrides->title, api_url($object->overrides))));
-      }
-      elseif (isset($object->inherited)) {
+      if (isset($object->inherited)) {
         $summary .= ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => l($object->inherited->title, api_url($object->inherited)))) . '</em>';
+      }
+      elseif ($object->overrides_did !== '0') {
+        $overrides = api_object_load((int) $object->overrides_did, $branches[$object->branch_id], array('function', 'property', 'constant'));
+        $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</em>';
       }
       $row[] = $summary;
       $rows[] = $row;
@@ -2054,11 +2055,8 @@ function api_class_children($class) {
 function api_inherited($parents, $target_did) {
   $members = array();
   foreach (array_merge(array($parents), $parents->children) as $class) {
-    $result = db_query("SELECT branch_id, title, object_name, summary, object_type, file_name FROM {api_documentation} WHERE class_did = %d AND branch_id = %d", $class->did, $class->branch_id);
+    $result = db_query("SELECT ad.did, ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did = %d AND ad.branch_id = %d", $class->did, $class->branch_id);
     while ($object = db_fetch_object($result)) {
-      if (isset($members[$object->object_type][$object->title])) {
-        $object->overrides = $members[$object->object_type][$object->title]->inherited;
-      }
       if ($class->did !== $target_did) {
         $object->inherited = $class;
       }
