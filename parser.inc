@@ -785,7 +785,7 @@ function api_shutdown() {
     $overrides_did = 0;
     $parents = array($object->class_did);
     while ($parent = array_shift($parents)) {
-      $result_parents = db_query("SELECT ad.did, ars.to_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' INNER JOIN {api_function} af ON af.did = ad.did WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
+      $result_parents = db_query("SELECT ad.did, ars.to_did, ad.summary, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' INNER JOIN {api_function} af ON af.did = ad.did WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
       while ($parent_class = db_fetch_object($result_parents)) {
         $parents[] = $parent_class->to_did;
         if (!is_null($parent_class->did)) {
@@ -794,6 +794,12 @@ function api_shutdown() {
           }
           if ($override['documented_did'] === 0 && api_has_documentation($parent_class)) {
             $override['documented_did'] = $parent_class->did;
+            // Save the inherited summary
+            $inherited_summary = array(
+              'summary' => $parent_class->summary,
+              'did' => $object->did,
+            );
+            drupal_write_record('api_documentation', $inherited_summary, 'did');
           }
           $override['root_did'] = $parent_class->did;
         }

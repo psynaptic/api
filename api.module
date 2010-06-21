@@ -645,6 +645,14 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
     }
     // Now build it
     $cache[$key] = db_fetch_object(db_query_range('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments, 0, 1));
+
+    // Grab documentation from documented parent.
+    if (!empty($cache[$key]->documented_did) && $cache[$key]->documented_did !== $cache[$key]->did) {
+      $documented_object = api_object_load((int) $cache[$key]->documented_did, $branch, $object_type);
+      foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
+        $cache[$key]->$member = $documented_object->$member;
+      }
+    }
   }
 
   return $cache[$key];
