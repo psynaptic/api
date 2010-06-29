@@ -392,11 +392,11 @@ function api_update_23() {
   ));
   $result = db_query("SELECT branch_id, directories, excluded_directories FROM {api_branch}");
   while ($branch = db_fetch_object($result)) {
-    $branch->data = serialize(array(
+    $data = serialize(array(
       'directories' => $branch->directories,
       'excluded_directories' => $branch->excluded_directories,
     ));
-    drupal_write_record('api_branch', $branch, 'branch_id');
+    db_query("UPDATE {api_branch} SET data = '%s' WHERE branch_id = %d", $data, $branch->branch_id);
   }
   db_drop_field($return, 'api_branch', 'directories');
   db_drop_field($return, 'api_branch', 'excluded_directories');
@@ -410,16 +410,7 @@ function api_update_23() {
 function api_update_24() {
   $return = array();
 
-  $branch->type = 'php';
-  $branch->project = 'php';
-  $branch->branch_name = 'php';
-  $branch->title = 'PHP functions';
-  $branch->data = array(
-    'summary' => variable_get('api_php_funcsummary', ''),
-    'path' => variable_get('api_php_funcpath', ''),
-  );
-  api_save_branch($branch);
-
+  db_query("INSERT INTO {api_branch} (type, project, branch_name, title, data) VALUES ('%s', '%s', '%s', '%s', '%s')", 'php', 'php', 'php', 'PHP functions', serialize(array('summary' => variable_get('api_php_funcsummary', ''), 'path' => variable_get('api_php_funcpath', ''))));
   variable_del('api_php_funcsummary');
   variable_del('api_php_funcpath');
 
