@@ -1303,7 +1303,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
       if (isset($object->inherited)) {
         $summary .= ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => l($object->inherited->title, api_url($object->inherited)))) . '</em>';
       }
-      elseif ($object->overrides_did !== '0') {
+      elseif (!empty($object->overrides_did)) {
         $overrides = api_object_load((int) $object->overrides_did, $branches[$object->branch_id], array('function', 'property', 'constant'));
         $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</em>';
       }
