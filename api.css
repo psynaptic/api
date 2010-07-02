@@ -64,7 +64,11 @@ dl.api-related-topics dd {
 }
 #api-function-signature th,
 #api-function-signature td {
+  background: #fff;
   padding: 0.2em;
+}
+#api-function-signature td code {
+  background: #fff;
 }
 #api-function-signature {
   font-size: 1.2em;
