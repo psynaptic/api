@@ -7,7 +7,6 @@ html.js div.api-expandable div.content {
 
 /* PHP code */
 .php {
-  font-family: monospace;
   overflow: auto;
 }
 .php .php-comment {
