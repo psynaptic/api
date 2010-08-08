@@ -417,6 +417,7 @@ function api_save_documentation($docblocks) {
 
       case 'interface':
       case 'class':
+        db_query("DELETE FROM {api_reference_storage} WHERE branch_id = '%s' AND object_type IN ('class', 'interface') AND from_did = %d", $docblocks[0]['branch']->branch_id, $docblock['did']);
         foreach ($docblock['extends'] as $extend) {
           api_reference($docblocks[0]['branch'], 'class', $extend, $docblock['did']);
         }
@@ -774,8 +775,10 @@ function api_shutdown() {
   db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
   // Save overrides
+  $changed_classes = array();
   $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did LEFT JOIN {api_function} af ON af.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
   while ($object = db_fetch_object($result)) {
+    $changed_classes[$object->class_did] = TRUE;
     $override = array(
       'did' => $object->did,
       'overrides_did' => 0,
@@ -785,10 +788,13 @@ function api_shutdown() {
     $overrides_did = 0;
     $parents = array($object->class_did);
     while ($parent = array_shift($parents)) {
-      $result_parents = db_query("SELECT ad.did, ars.to_did, ad.summary, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' INNER JOIN {api_function} af ON af.did = ad.did WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
+      $result_parents = db_query("SELECT ad.did, ars.to_did, ad.summary, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var, ad.class_did FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.class_did = ars.to_did AND ad.object_type = '%s' AND ad.member_name = '%s' LEFT JOIN {api_function} af ON af.did = ad.did WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface')", $object->object_type, $object->member_name, $parent);
       while ($parent_class = db_fetch_object($result_parents)) {
         $parents[] = $parent_class->to_did;
-        if (!is_null($parent_class->did)) {
+        if (!empty($parent_class->class_did)) {
+          $changed_classes[$parent_class->class_did] = TRUE;
+        }
+        if (!is_null($parent_class->did)) { // If documented
           if ($override['overrides_did'] === 0) {
             $override['overrides_did'] = $parent_class->did;
           }
@@ -806,6 +812,38 @@ function api_shutdown() {
       }
     }
     drupal_write_record('api_overrides', $override);
+  }
+
+  // Save members
+  while (list($class_did,) = each($changed_classes)) {
+    // Add child classes to $changed_classes
+    $result_chidren = db_query("SELECT ars.from_did FROM {api_reference_storage} ars WHERE ars.to_did = %d AND ars.object_type IN ('class', 'interface') AND ars.from_did <> 0", $class_did);
+    while ($child = db_fetch_object($result_chidren)) {
+      $changed_classes[$child->from_did] = TRUE;
+    }
+    // Walk up the tree to find members
+    $members = array('');
+    $parents = array($class_did);
+    while ($parent = array_shift($parents)) {
+      $result_parents = db_query("SELECT ars.to_did FROM {api_reference_storage} ars WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface') AND ars.to_did <> 0", $parent);
+      while ($object = db_fetch_object($result_parents)) {
+        $parents[] = $object->to_did;
+      }
+      $result_members = db_query("SELECT did, member_name FROM {api_documentation} WHERE class_did = %d AND member_name NOT IN (" . db_placeholders($members, 'text') . ")", array_merge(array($parent), array_keys($members)));
+      while ($member = db_fetch_object($result_members)) {
+        $members[$member->member_name] = $member->did;
+      }
+    }
+    // Save them
+    array_shift($members);
+    db_query("DELETE FROM {api_members} WHERE class_did = %d", $class_did);
+    foreach ($members as $did) {
+      $api_member = array(
+        'class_did' => $class_did,
+        'did' => $did,
+      );
+      drupal_write_record('api_members', $api_member);
+    }
   }
 
   // Save JSON autocomplete cache

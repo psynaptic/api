@@ -1300,10 +1300,7 @@ function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE,
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }
       $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
-      if (isset($object->inherited)) {
-        $summary .= ' <em class="api-inheritance-source">' . t('Inherited from !link', array('!link' => l($object->inherited->title, api_url($object->inherited)))) . '</em>';
-      }
-      elseif (!empty($object->overrides_did)) {
+      if (!empty($object->overrides_did)) {
         $overrides = api_object_load((int) $object->overrides_did, $branches[$object->branch_id], array('function', 'property', 'constant'));
         $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</em>';
       }
@@ -1567,7 +1564,7 @@ function api_page_class($branch, $class) {
     $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
   }
 
-  $objects = api_render_listing(api_inherited($parents, $class->did));
+  $objects = api_render_listing(api_query_list(db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did FROM {api_members} am INNER JOIN {api_documentation} ad ON ad.did = am.did LEFT JOIN {api_overrides} ao ON ao.did = am.did WHERE am.class_did = %d ORDER BY title", $class->did)));
   $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $objects, $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
@@ -2047,39 +2044,6 @@ function api_class_children($class) {
     $class->children[] = api_class_children(api_class_parents($object, FALSE));
   }
   return $class;
-}
-
-/**
- * Get list of inherited members (recursive).
- *
- * @param $parents
- *   Class parents object with hierarchy as returned by api_class_parents().
- * @param $target_did
- *   Class did being viewed.
- *
- * @return
- *   Members list : array(type => array(title => object)).
- */
-function api_inherited($parents, $target_did) {
-  $members = array();
-  foreach (array_merge(array($parents), $parents->children) as $class) {
-    $result = db_query("SELECT ad.did, ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.class_did = %d AND ad.branch_id = %d", $class->did, $class->branch_id);
-    while ($object = db_fetch_object($result)) {
-      if ($class->did !== $target_did) {
-        $object->inherited = $class;
-      }
-      $members[$object->object_type][$object->title] = $object;
-    }
-    if ($class->did === $target_did) { // $parents->children goes down the tree and we need to stop.
-      break;
-    }
-  }
-
-  foreach ($members as &$objects) {
-    ksort($objects);
-  }
-
-  return $members;
 }
 
 /**

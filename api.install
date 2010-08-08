@@ -161,6 +161,16 @@ function api_schema() {
       'did' => array('did'),
     ),
   );
+  $schema['api_members'] = array(
+    'description' => 'Keep track of class members, including inherited members.',
+    'fields' => array(
+      'class_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes' => array(
+      'class_did' => array('did'),
+    ),
+  );
 
   return $schema;
 }
@@ -545,6 +555,26 @@ function api_update_33() {
     'type' => 'int',
     'not null' => TRUE,
     'default' => 0,
+  ));
+
+  return $return;
+}
+
+/**
+ * Add {api_members}
+ */
+function api_update_34() {
+  $return = array();
+
+  db_create_table($return, 'api_members', array(
+    'description' => 'Keep track of class members, including inherited members.',
+    'fields' => array(
+      'class_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'indexes' => array(
+      'class_did' => array('did'),
+    ),
   ));
 
   return $return;
