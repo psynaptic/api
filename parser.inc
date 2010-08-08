@@ -325,7 +325,7 @@ function api_save_documentation($docblocks) {
       // Find parameter definitions.
       $offset = 0;
       $docblock['parameters'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'param(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'param\s(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
         $docblock['parameters'] .= "\n\n". $param_match[1][0];
         $offset = $param_match[0][1];
@@ -334,7 +334,7 @@ function api_save_documentation($docblocks) {
 
       // Find return value definitions.
       $docblock['return_value'] = '';
-      preg_match_all('/' . API_RE_TAG_START . 'return(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
+      preg_match_all('/' . API_RE_TAG_START . 'return\s(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $return_matches, PREG_SET_ORDER);
       foreach ($return_matches as $return_match) {
         $docblock['content'] = str_replace($return_match[0], '', $docblock['content']);
         $docblock['return_value'] .= "\n\n". $return_match[1];
@@ -344,7 +344,7 @@ function api_save_documentation($docblocks) {
       // Find @see lines.
       $offset = 0;
       $docblock['see'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'see(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'see\s(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($match[0][0], '', $docblock['content']);
         $docblock['see'] .= "\n\n". $match[1][0];
         $offset = $match[0][1];
@@ -353,14 +353,14 @@ function api_save_documentation($docblocks) {
 
       // Find @var, a class name
       $docblock['var'] = '';
-      if (preg_match('/' . API_RE_TAG_START . 'var(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
+      if (preg_match('/' . API_RE_TAG_START . 'var\s(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
         $docblock['content'] = str_replace($match[0], '', $docblock['content']);
         $docblock['var'] = trim($match[1]);
       }
 
       // Find @throws, a paragraph
       $docblock['throws'] = '';
-      if (preg_match('/' . API_RE_TAG_START . 'throws(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
+      if (preg_match('/' . API_RE_TAG_START . 'throws\s(.*?)(\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
         $docblock['content'] = str_replace($match[0], '', $docblock['content']);
         $docblock['throws'] = api_format_documentation($match[1]);
       }
@@ -542,7 +542,7 @@ function api_autop($text) {
  * Regular expression callback for @code in api_format_documentation().
  */
 function api_format_embedded_php($matches) {
-  return "\n\n". api_format_php("<?php\n". decode_entities($matches[1]) ."\n?".">") ."\n\n";
+  return "\n\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">") ."\n\n";
 }
 
 /**
