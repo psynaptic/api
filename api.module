@@ -848,8 +848,8 @@ function api_init() {
 
   // If we happen to be on an API node page, redirect.
   if (($node = menu_get_object()) && $node->type == 'api') {
-    $documentation = db_fetch_object(db_query('SELECT * FROM {api_documentation} WHERE did = %d', $node->nid));
-    drupal_goto('api/' . $documentation->object_type . '/' . $documentation->object_name . '/' . $documentation->branch_name);
+    $documentation = db_fetch_object(db_query('SELECT branch_id, object_type, file_name, object_name FROM {api_documentation} WHERE did = %d', $node->nid));
+    drupal_goto(api_url($documentation));
   }
 }
 
