@@ -1901,7 +1901,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
 function api_split($pattern, $subject, $callback_match = NULL, $callback_match_arguments = array(), $callback = NULL, $callback_arguments = array()) {
   $return = '';
   $matched = FALSE;
-  foreach (preg_split($pattern, $subject, -1, PREG_SPLIT_DELIM_CAPTURE) as $part) {
+  foreach (preg_split($pattern . 'sm', $subject, -1, PREG_SPLIT_DELIM_CAPTURE) as $part) {
     if ($matched) {
       if (is_null($callback_match)) {
         $return .= $part;
