@@ -839,6 +839,8 @@ function api_init() {
   drupal_add_js(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js');
   drupal_add_css(drupal_get_path('module', 'api') . '/api.css');
   drupal_add_js(drupal_get_path('module', 'api') . '/api.js');
+  $branch = api_get_active_branch();
+  drupal_add_js(array('apiAutoCompletePath' => base_path() . variable_get('api_autocomplete_path_' . $branch->branch_name, 'api/autocomplete/' . $branch->branch_name)), 'setting');
 
   // Add OpenSearch autodiscovery links.
   foreach (api_get_branch_names() as $branch_name) {
@@ -874,11 +876,11 @@ function api_block($op, $delta = NULL, $edit = array()) {
       return array(
         'api-search' => array(
           'info' => t('API search'),
-          'cache' => BLOCK_CACHE_PER_PAGE | BLOCK_CACHE_PER_USER,
+          'cache' => BLOCK_CACHE_PER_PAGE,
         ),
         'navigation' => array(
           'info' => t('API navigation'),
-          'cache' => BLOCK_CACHE_PER_PAGE | BLOCK_CACHE_PER_ROLE,
+          'cache' => BLOCK_CACHE_PER_PAGE,
         ),
       );
 
@@ -1059,7 +1061,6 @@ function api_get_active_branch() {
  * @see api_search_form_submit()
  */
 function api_search_form($form_state, $branch) {
-  drupal_add_js(array('apiAutoCompletePath' => base_path() . variable_get('api_autocomplete_path_' . $branch->branch_name, url('api/autocomplete/' . $branch->branch_name))), 'setting');
   $form = array(
     '#token' => FALSE,
   );
