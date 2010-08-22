@@ -755,6 +755,7 @@ function api_theme() {
         'branch' => NULL,
         'class' => NULL,
         'documentation' => NULL,
+        'implements' => NULL,
         'hierarchy' => NULL,
         'objects' => NULL,
         'code' => NULL,
@@ -1557,16 +1558,61 @@ function api_page_class($branch, $class) {
   $code = api_link_code($class->code, $branch, $class->did);
   $see = api_link_documentation($class->see, $branch, $class->did, TRUE);
 
-  // builds up class hierarchy
-  $class = api_class_children($class);
-  $parents = api_class_parents($class);
-  if (count($class->children) > 0 || count($parents->children) > 0 || count($class->interfaces) > 0) {
-    $hierarchy = theme('item_list', array(api_render_class_hierarchy($parents, $class->did)));
+  $implements = array();
+  $hierarchy = '';
+  if ($class->object_type === 'class') {
+    // Walk up the hierarchy
+    $root = $parent = $class;
+    while ($parent = db_fetch_object(db_query_range("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $parent->did, 0, 1))) {
+      $root = $parent;
+    }
+    $hierarchy = theme('item_list', array(api_class_hierarchy($root)));
+  }
+  elseif ($class->object_type === 'interface') {
+    $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'interface' GROUP BY ad.did ORDER BY ad.object_name", $class->did);
+    while ($object = db_fetch_object($result)) {
+      $implements[] = l($object->object_name, api_url($object));
+    }
+    $implements = theme('item_list', $implements);
   }
 
   $objects = api_render_listing(api_query_list(db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did FROM {api_members} am INNER JOIN {api_documentation} ad ON ad.did = am.did LEFT JOIN {api_overrides} ao ON ao.did = am.did WHERE am.class_did = %d ORDER BY title", $class->did)));
-  $output = theme('api_class_page', $branch, $class, $documentation, $hierarchy, $objects, $code, $related_topics, $see);
+  $output = theme('api_class_page', $branch, $class, $documentation, $implements, $hierarchy, $objects, $code, $related_topics, $see);
   $output .= _api_add_comments($class);
+
+  return $output;
+}
+
+/**
+ * Render a class hierarchy.
+ *
+ * @param $class
+ *   Class object with at least did, branch_id, file_name, object_type, and
+ *   object_name.
+ * @return
+ *   HTML string.
+ */
+function api_class_hierarchy($class) {
+  // Find parent interfaces
+  $interfaces = $classes = array();
+  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'interface' GROUP BY ars.to_did ORDER BY ad.object_name", $class->did);
+  while ($object = db_fetch_object($result)) {
+    $interfaces[] = l($object->object_name, api_url($object));
+  }
+
+  // Find child classes
+  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'class' GROUP BY ars.from_did ORDER BY ad.object_name", $class->did);
+  while ($object = db_fetch_object($result)) {
+    $classes[] = api_class_hierarchy($object);
+  }
+
+  $output = l($class->object_name, api_url($class));
+  if (count($interfaces) > 0) {
+    $output .= ' ' . t('implements') . ' ' . implode(', ', $interfaces);
+  }
+  if (count($classes) > 0) {
+    $output .= theme('item_list', $classes);
+  }
 
   return $output;
 }
@@ -1996,57 +2042,6 @@ function api_link_link($name, $branch, $prepend = '', $append = '', $class_did =
 }
 
 /**
- * Returns class parents and interfaces (recursive).
- *
- * Get all interfaces first so we can return the recursive call after if needed
- *
- * @param $class
- *   The class to look for parents.
- * @param $recursive
- *   Boolean. toggles the recursivity flag.
- *
- * @return
- *   Object class with
- *     children = array(object class)
- *     interfaces = array(object interface).
- */
-function api_class_parents($class, $recursive = TRUE) {
-  $class->interfaces = array();
-  $result = db_query("SELECT DISTINCT d.did, d.branch_id, d.title, d.object_type, d.file_name, d.object_name, d.summary FROM {api_reference_storage} rs INNER JOIN {api_documentation} d ON d.did = rs.to_did WHERE rs.from_did = %d AND rs.branch_id = %d AND rs.object_type IN ('interface'" . ($recursive ? ", 'class'" : '') . ") ORDER BY d.object_type DESC", $class->did, $class->branch_id);
-  while ($object = db_fetch_object($result)) {
-    if ($object->object_type === 'interface') {
-      $class->interfaces[] = $object;
-    }
-    else {
-      $object->children[] = $class;
-      return api_class_parents($object);
-    }
-  }
-  return $class;
-}
-
-/**
- * Returns class children with interfaces (recursive).
- *
- * @param $class
- *   The class to look for children.
- *
- * @return
- *   Object class with
- *     children = array(object class)
- *     interfaces = array(object interface).
- */
-function api_class_children($class) {
-  $class->children = array();
-  $result = db_query("SELECT DISTINCT d.did, d.branch_id, d.title, d.object_type, d.file_name, d.object_name FROM {api_documentation} d INNER JOIN {api_reference_storage} rs ON d.did = rs.from_did WHERE rs.to_did = %d AND d.branch_id = %d AND d.object_type = 'class'", $class->did, $class->branch_id);
-  while ($object = db_fetch_object($result)) {
-    // found a child : gather its interfaces, builds its possible children list, and adds it to the children list
-    $class->children[] = api_class_children(api_class_parents($object, FALSE));
-  }
-  return $class;
-}
-
-/**
  * Sorts query result by object type.
  *
  * @param $result
@@ -2061,30 +2056,4 @@ function api_query_list($result) {
     $items[$object->object_type][$object->object_name] = $object;
   }
   return $items;
-}
-
-/**
- * Render class hierarchy (recursive).
- *
- * @param $object
- *   Object hierarchy.
- * @param $selected_did
- *   Selected class did.
- *
- * @return
- *   Themed hierarchy in html unordered list.
- */
-function api_render_class_hierarchy($object, $selected_did = '') {
-  if (count($object->interfaces) > 0) {
-    foreach ($object->interfaces as $interface) {
-      $interfaces[$interface->title] = l($interface->title, api_url($interface));
-    }
-    $interface_text = ' implements ' . implode(', ', $interfaces);
-  }
-
-  foreach ($object->children as $child) {
-    $children[] .= api_render_class_hierarchy($child, $selected_did);
-  }
-  $object_text = $object->did === $selected_did ? '<strong>' . $object->title . '</strong>' : l($object->title, api_url($object));
-  return $object_text . $interface_text . theme('item_list', $children);
 }

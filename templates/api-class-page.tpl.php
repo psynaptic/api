@@ -38,6 +38,11 @@
   <?php print $see ?>
 <?php } ?>
 
+<?php if (!empty($implements)) { ?>
+  <h3><?php print t('Implmented by') ?></h3>
+  <?php print $implements ?>
+<?php } ?>
+
 <?php if (!empty($hierarchy)) { ?>
   <h3><?php print t('Hierarchy') ?></h3>
   <?php print $hierarchy ?>
