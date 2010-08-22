@@ -56,15 +56,15 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($class->summary, 'Sample class.', t('Sample has summary %summary.', array('%summary' => $class->summary)));
 
     // Check Sample::constant constant
-    $object = api_object_load('Sample::constant', $branch, 'constant', 'classes.php');
-    $this->assertEqual($object->summary, 'A class constant.', t('Sample::constant has summary %summary.', array('%summary' => $object->summary)));
-    $this->assertEqual($object->class_did, $class->did, t('constant belongs to parent class.'));
+    $sample_constant = api_object_load('Sample::constant', $branch, 'constant', 'classes.php');
+    $this->assertEqual($sample_constant->summary, 'A class constant.', t('Sample::constant has summary %summary.', array('%summary' => $sample_constant->summary)));
+    $this->assertEqual($sample_constant->class_did, $class->did, t('constant belongs to parent class.'));
 
     // Check Sample::property property
-    $object = api_object_load('Sample::property', $branch, 'property', 'classes.php');
-    $this->assertEqual($object->summary, 'A property.', t('Sample::property has summary %summary.', array('%summary' => $object->summary)));
-    $this->assertEqual($object->class_did, $class->did, t('property belongs to parent class.'));
-    $this->assertEqual($object->var, 'SampleInterface', t('property has @var.'));
+    $sample_property = api_object_load('Sample::property', $branch, 'property', 'classes.php');
+    $this->assertEqual($sample_property->summary, 'A property.', t('Sample::property has summary %summary.', array('%summary' => $sample_property->summary)));
+    $this->assertEqual($sample_property->class_did, $class->did, t('property belongs to parent class.'));
+    $this->assertEqual($sample_property->var, 'SampleInterface', t('property has @var.'));
 
     // Check Sample::foo() method
     $sample_foo = api_object_load('Sample::foo', $branch, 'function', 'classes.php');
@@ -95,5 +95,27 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($sample_foo->root_did, $sampleInterface_foo->did, t('Sample::foo()\'s root is SampleInterface::foo()'));
     $this->assertEqual($sample_foo->documented_did, $sample_foo->did, t('Sample::foo() is documented by itself.'));
     $this->assertEqual($subSample_bar->documented_did, $sampleInterfaceTwo_bar->did, t('SubSample::bar() is documented by SampleInterfaceTwo::bar()'));
+
+    // Check membership
+    $result = db_query('SELECT did FROM {api_members} WHERE class_did = %d', $class->did);
+    $dids = array();
+    while ($row = db_fetch_object($result)) {
+      $dids[$row->did] = TRUE;
+    }
+    $this->assertEqual(count($dids), 3, t('Found %count members of Sample.', array('%count' => count($dids))));
+    $this->assertEqual($dids[$sample_foo->did], TRUE, t('Sample::foo is a member of Sample.'));
+    $this->assertEqual($dids[$sample_constant->did], TRUE, t('Sample::constant is a member of Sample.'));
+    $this->assertEqual($dids[$sample_property->did], TRUE, t('Sample::property is a member of Sample.'));
+
+    $result = db_query('SELECT did FROM {api_members} WHERE class_did = %d', $subclass->did);
+    $dids = array();
+    while ($row = db_fetch_object($result)) {
+      $dids[$row->did] = TRUE;
+    }
+    $this->assertEqual(count($dids), 4, t('Found %count members of SubSample.', array('%count' => count($dids))));
+    $this->assertEqual($dids[$sample_foo->did], TRUE, t('Sample::foo is a member of SubSample.'));
+    $this->assertEqual($dids[$sample_constant->did], TRUE, t('Sample::constant is a member of SubSample.'));
+    $this->assertEqual($dids[$sample_property->did], TRUE, t('Sample::property is a member of SubSample.'));
+    $this->assertEqual($dids[$subSample_bar->did], TRUE, t('SubSample::bar is a member of SubSample.'));
   }
 }
