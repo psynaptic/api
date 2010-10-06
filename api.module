@@ -829,6 +829,13 @@ function api_preprocess_api_group_page(&$variables) {
 }
 
 /**
+ * Theme preprocess function for api-property-page.tpl.php.
+ */
+function api_preprocess_api_property_page(&$variables) {
+  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['property']);
+}
+
+/**
  * Implementation of hook_init().
  *
  * Adds CSS and JavaScript for the search auto-complete. Adds OpenSearch
