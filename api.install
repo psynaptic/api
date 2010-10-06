@@ -40,7 +40,6 @@ function api_schema() {
         'description' => 'Serialized type-specific data',
         'type' => 'text',
         'not null' => TRUE,
-        'default' => '',
       ),
       'status' => array(
         'description' => 'Should this branch be shown in the UI',
