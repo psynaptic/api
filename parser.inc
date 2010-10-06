@@ -39,6 +39,7 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
     'modified' => filemtime($file_path),
     'source' => str_replace(array("\r\n", "\r"), array("\n", "\n"), file_get_contents($file_path)),
     'content' => '',
+    'class' => '',
   );
 
   $match = array();
@@ -297,24 +298,27 @@ function api_save_documentation($docblocks) {
     }
 
     // Handle nested function groups.
-    foreach ($nested_groups as $group_id) {
+    if (!isset($nested_groups[$docblock['class']])) {
+      $nested_groups[$docblock['class']] = array();
+    }
+    foreach ($nested_groups[$docblock['class']] as $group_id) {
       if (!empty($group_id)) {
         $docblock['groups'][] = $group_id;
       }
     }
     if (preg_match('/' . API_RE_TAG_START . '{/', $docblock['content'])) {
       if ($docblock['object_type'] === 'group') {
-        array_push($nested_groups, $docblock['object_name']);
+        array_push($nested_groups[$docblock['class']], $docblock['object_name']);
       }
       elseif (isset($docblock['groups'])) {
-        array_push($nested_groups, reset($docblock['groups']));
+        array_push($nested_groups[$docblock['class']], reset($docblock['groups']));
       }
       else {
-        array_push($nested_groups, '');
+        array_push($nested_groups[$docblock['class']], '');
       }
     }
     if (preg_match('/' . API_RE_TAG_START . '}/', $docblock['content'])) {
-      array_pop($nested_groups);
+      array_pop($nested_groups[$docblock['class']]);
     }
 
     if (empty($docblock['object_type'])) {
@@ -918,6 +922,7 @@ function api_update_branch_php($branch) {
         'title' => $function_match[1],
         'documentation' => $function_match[0],
         'content' => '',
+        'class' => '',
       );
     }
     api_save_documentation($docblocks);

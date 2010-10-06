@@ -5,6 +5,14 @@
  */
 
 /**
+ * @defgroup class_samples Class Samples
+ *
+ * A sample group of classes. Should not include members.
+ *
+ * @{
+ */
+
+/**
  * Sample class.
  */
 class Sample implements SampleInterface {
@@ -61,3 +69,7 @@ interface SampleInterfaceTwo {
 }
 
 $random_assignment_not_to_be_parsed = NULL;
+
+/**
+ * @} end samples
+ */
