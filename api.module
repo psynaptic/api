@@ -574,7 +574,7 @@ function api_menu() {
     }
   }
 
-  // Redirect old links.
+  // Redirect 1.0 file links.
   $items['api/file/%menu_tail'] = array(
     'page callback' => 'api_file_redirect',
     'page arguments' => array(2),
@@ -582,7 +582,37 @@ function api_menu() {
     'file' => 'legacy.inc',
   );
 
+  // Redirect 1.1 links.
+  $items['api/function/%api_legacy_1_1_object'] = 
+  $items['api/function/%api_legacy_1_1_object/%'] = array(
+    'load arguments' => array('function', 3),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+
   return $items;
+}
+
+/**
+ * Find object for old URLs and return link.
+ */
+function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
+  $branches = api_get_branches();
+  if ($branch_name === '') {
+    $branch = $branches[variable_get('api_default_branch', NULL)];
+  }
+  else {
+    $default_project = $branches[variable_get('api_default_branch', NULL)]->project;
+    foreach ($branches as $b) {
+      if ($b->project === $default_project && $b->branch_name === $branch_name) {
+        $branch = $b;
+        break;
+      }
+    }
+  }
+  $args = func_get_args();
+  return api_url(api_object_load($object_name, $branch, $object_type));
 }
 
 /**

@@ -24,6 +24,7 @@ class ApiTestCase extends DrupalWebTestCase {
       'excluded_directories' => '',
     );
     api_save_branch($branch);
+    variable_set('api_default_branch', $branch->branch_id);
 
     // Parse the code.
     api_update_all_branches();
