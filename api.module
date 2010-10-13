@@ -644,8 +644,41 @@ function api_menu() {
     'access callback' => TRUE,
   );
   // Branch listings
-  // 'api/...s/branch'
-  // 'api/branch'
+  $items['api/functions/%api_legacy_1_1_listing'] = array(
+    'load arguments' => array('functions'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['api/files/%api_legacy_1_1_listing'] = array(
+    'load arguments' => array('files'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['api/constants/%api_legacy_1_1_listing'] = array(
+    'load arguments' => array('constants'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['api/globals/%api_legacy_1_1_listing'] = array(
+    'load arguments' => array('globals'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['api/topics/%api_legacy_1_1_listing'] = array(
+    'load arguments' => array('topics'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['api/%api_legacy_1_1_listing'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+  );
 
   return $items;
 }
@@ -655,6 +688,16 @@ function api_menu() {
  */
 function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
   return api_url(api_object_load($object_name, api_get_branch_by_name($branch_name), $object_type));
+}
+
+function api_legacy_1_1_listing_load($branch_name, $type = NULL) {
+  $branch = api_get_branch_by_name($branch_name);
+  if (isset($type)) {
+    return 'api/' . $branch->project . '/' . $type . '/' . $branch->branch_name;
+  }
+  else {
+    return 'api/' . $branch->project . '/' . $branch->branch_name;
+  }
 }
 
 /**
