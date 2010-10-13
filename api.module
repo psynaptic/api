@@ -583,6 +583,7 @@ function api_menu() {
   );
 
   // Redirect 1.1 links.
+  // Objects
   $items['api/function/%api_legacy_1_1_object'] = 
   $items['api/function/%api_legacy_1_1_object/%'] = array(
     'load arguments' => array('function', 3),
@@ -611,6 +612,40 @@ function api_menu() {
     'page arguments' => array(2),
     'access callback' => TRUE,
   );
+  // Default listings
+  $items['api/functions'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project . '/functions'),
+    'access callback' => TRUE,
+  );
+  $items['api/files'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project . '/files'),
+    'access callback' => TRUE,
+  );
+  $items['api/constants'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project . '/constants'),
+    'access callback' => TRUE,
+  );
+  $items['api/globals'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project . '/globals'),
+    'access callback' => TRUE,
+  );
+  $items['api/topics'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project . '/topics'),
+    'access callback' => TRUE,
+  );
+  $items['api'] = array(
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('api/' . $default_branch->project),
+    'access callback' => TRUE,
+  );
+  // Branch listings
+  // 'api/...s/branch'
+  // 'api/branch'
 
   return $items;
 }
@@ -619,21 +654,25 @@ function api_menu() {
  * Find object for old URLs and return link.
  */
 function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
+  return api_url(api_object_load($object_name, api_get_branch_by_name($branch_name), $object_type));
+}
+
+/**
+ * Useful for old URLs which do not include project.
+ */
+function api_get_branch_by_name($branch_name) {
   $branches = api_get_branches();
-  if ($branch_name === '') {
-    $branch = $branches[variable_get('api_default_branch', NULL)];
+  if (empty($branch_name)) {
+    return $branches[variable_get('api_default_branch', NULL)];
   }
   else {
     $default_project = $branches[variable_get('api_default_branch', NULL)]->project;
-    foreach ($branches as $b) {
-      if ($b->project === $default_project && $b->branch_name === $branch_name) {
-        $branch = $b;
-        break;
+    foreach ($branches as $branch) {
+      if ($branch->project === $default_project && $branch->branch_name === $branch_name) {
+        return $branch;
       }
     }
   }
-  $args = func_get_args();
-  return api_url(api_object_load($object_name, $branch, $object_type));
 }
 
 /**
