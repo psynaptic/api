@@ -584,32 +584,32 @@ function api_menu() {
 
   // Redirect 1.1 links.
   // Objects
-  $items['api/function/%api_legacy_1_1_object'] = 
-  $items['api/function/%api_legacy_1_1_object/%'] = array(
+  $items['api/function/%api_legacy_1_2_object'] = 
+  $items['api/function/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('function', 3),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/constant/%api_legacy_1_1_object'] = 
-  $items['api/constant/%api_legacy_1_1_object/%'] = array(
+  $items['api/constant/%api_legacy_1_2_object'] = 
+  $items['api/constant/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('constant', 3),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/global/%api_legacy_1_1_object'] = 
-  $items['api/global/%api_legacy_1_1_object/%'] = array(
+  $items['api/global/%api_legacy_1_2_object'] = 
+  $items['api/global/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('global', 3),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/group/%api_legacy_1_1_object'] = 
-  $items['api/group/%api_legacy_1_1_object/%'] = array(
+  $items['api/group/%api_legacy_1_2_object'] = 
+  $items['api/group/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('group', 3),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
@@ -654,42 +654,42 @@ function api_menu() {
     'type' => MENU_CALLBACK,
   );
   // Branch listings
-  $items['api/functions/%api_legacy_1_1_listing'] = array(
+  $items['api/functions/%api_legacy_1_2_listing'] = array(
     'load arguments' => array('functions'),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/files/%api_legacy_1_1_listing'] = array(
+  $items['api/files/%api_legacy_1_2_listing'] = array(
     'load arguments' => array('files'),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/constants/%api_legacy_1_1_listing'] = array(
+  $items['api/constants/%api_legacy_1_2_listing'] = array(
     'load arguments' => array('constants'),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/globals/%api_legacy_1_1_listing'] = array(
+  $items['api/globals/%api_legacy_1_2_listing'] = array(
     'load arguments' => array('globals'),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/groups/%api_legacy_1_1_listing'] = array(
+  $items['api/groups/%api_legacy_1_2_listing'] = array(
     'load arguments' => array('groups'),
     'page callback' => 'drupal_goto',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/%api_legacy_1_1_listing'] = array(
+  $items['api/%api_legacy_1_2_listing'] = array(
     'page callback' => 'drupal_goto',
     'page arguments' => array(1),
     'access callback' => TRUE,
@@ -702,7 +702,7 @@ function api_menu() {
 /**
  * Find object for old URLs and return link.
  */
-function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
+function api_legacy_1_2_object_load($object_name, $object_type, $branch_name) {
   foreach (api_get_branches_by_name($branch_name) as $branch) {
     $object = api_object_load($object_name, $branch, $object_type);
     if (!empty($object)) {
@@ -714,7 +714,7 @@ function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
 /**
  * Redirect old listings.
  */
-function api_legacy_1_1_listing_load($branch_name, $type = NULL) {
+function api_legacy_1_2_listing_load($branch_name, $type = NULL) {
   $branches = api_get_branches();
   $branch = $branches[variable_get('api_default_branch', NULL)];
   if (empty($branch_name)) {
