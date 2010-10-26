@@ -703,35 +703,49 @@ function api_menu() {
  * Find object for old URLs and return link.
  */
 function api_legacy_1_1_object_load($object_name, $object_type, $branch_name) {
-  return api_url(api_object_load($object_name, api_get_branch_by_name($branch_name), $object_type));
+  foreach (api_get_branches_by_name($branch_name) as $branch) {
+    $object = api_object_load($object_name, $branch, $object_type);
+    if (!empty($object)) {
+      return api_url($object);
+    }
+  }
 }
 
+/**
+ * Redirect old listings.
+ */
 function api_legacy_1_1_listing_load($branch_name, $type = NULL) {
-  $branch = api_get_branch_by_name($branch_name);
+  $branches = api_get_branches();
+  $branch = $branches[variable_get('api_default_branch', NULL)];
+  if (empty($branch_name)) {
+    $branch_name = $branch->branch_name;
+  }
   if (isset($type)) {
-    return 'api/' . $branch->project . '/' . $type . '/' . $branch->branch_name;
+    return 'api/' . $branch->project . '/' . $type . '/' . $branch_name;
   }
   else {
-    return 'api/' . $branch->project . '/' . $branch->branch_name;
+    return 'api/' . $branch->project . '/' . $branch_name;
   }
 }
 
 /**
  * Useful for old URLs which do not include project.
  */
-function api_get_branch_by_name($branch_name) {
+function api_get_branches_by_name($branch_name) {
   $branches = api_get_branches();
+  $return = array();
   if (empty($branch_name)) {
-    return $branches[variable_get('api_default_branch', NULL)];
+    return api_get_branches_by_name($branches[variable_get('api_default_branch', NULL)]->branch_name);
   }
   else {
-    $default_project = $branches[variable_get('api_default_branch', NULL)]->project;
     foreach ($branches as $branch) {
-      if ($branch->project === $default_project && $branch->branch_name === $branch_name) {
-        return $branch;
+      if ($branch->branch_name === $branch_name) {
+        $return[] = $branch;
       }
     }
   }
+
+  return $return;
 }
 
 /**
