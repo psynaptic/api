@@ -107,6 +107,7 @@ function api_schema() {
     'primary key' => array('did'),
     'indexes' => array(
       'object_name' => array('object_name', 'branch_id', 'object_type'),
+      'object_type' => array('object_type'),
       'branch_id' => array('branch_id'),
       'title' => array('title'),
       'class_did' => array('class_did'),
@@ -140,8 +141,18 @@ function api_schema() {
         'not null' => TRUE,
       ),
       'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
-      'from_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'to_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'from_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'to_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'indexes' => array(
       'object_ref' => array('object_name', 'branch_id', 'object_type'),
@@ -151,10 +162,30 @@ function api_schema() {
   $schema['api_overrides'] = array(
     'description' => 'Keep track of method, property, and class constant parents.',
     'fields' => array(
-      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'overrides_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'documented_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'root_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'overrides_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'documented_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'root_did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'indexes' => array(
       'did' => array('did'),
@@ -576,6 +607,53 @@ function api_update_34() {
       'class_did' => array('did'),
     ),
   ));
+
+  return $return;
+}
+
+/**
+ * Standardize column types and add missing indexes.
+ */
+function api_update_35() {
+  $return = array();
+
+  db_change_field($return, 'api_overrides', 'did', 'did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_change_field($return, 'api_overrides', 'overrides_did', 'overrides_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_change_field($return, 'api_overrides', 'documented_did', 'documented_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_change_field($return, 'api_overrides', 'root_did', 'root_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_change_field($return, 'api_reference_storage', 'from_did', 'from_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_change_field($return, 'api_reference_storage', 'to_did', 'to_did', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_add_index($return, 'api_documentation', 'object_type', array('object_type'));
 
   return $return;
 }
