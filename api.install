@@ -235,7 +235,7 @@ function api_enable() {
     $branch->title = 'PHP functions';
     $branch->status = 0;
     $branch->data = array(
-      'summary' => 'http://cvs.php.net/viewvc.cgi/phpdoc/funcsummary.txt?view=co',
+      'summary' => 'http://svn.php.net/repository/phpdoc/doc-base/trunk/funcsummary.txt',
       'path' => 'http://php.net/!function',
     );
     api_save_branch($branch);
