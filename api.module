@@ -881,6 +881,7 @@ function api_theme() {
         'see' => NULL,
         'throws' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-function-page',
     ),
@@ -893,6 +894,7 @@ function api_theme() {
         'related_topics' => NULL,
         'see' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-constant-page',
     ),
@@ -905,6 +907,7 @@ function api_theme() {
         'related_topics' => NULL,
         'see' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-global-page',
     ),
@@ -918,6 +921,7 @@ function api_theme() {
         'see' => NULL,
         'var' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-property-page',
     ),
@@ -933,6 +937,7 @@ function api_theme() {
         'related_topics' => NULL,
         'see' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-class-page',
     ),
@@ -955,6 +960,7 @@ function api_theme() {
         'objects' => NULL,
         'see' => NULL,
       ),
+      'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-group-page'
     ),
@@ -969,44 +975,9 @@ function api_theme() {
 }
 
 /**
- * Theme preprocess function for api-function-page.tpl.php.
+ * Theme preprocess function for API object pages.
  */
-function api_preprocess_api_function_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
-}
-
-/**
- * Theme preprocess function for api-constant-page.tpl.php.
- */
-function api_preprocess_api_constant_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
-}
-
-/**
- * Theme preprocess function for api-global-page.tpl.php.
- */
-function api_preprocess_api_global_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
-}
-
-/**
- * Theme preprocess function for api-class-page.tpl.php.
- */
-function api_preprocess_api_class_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
-}
-
-/**
- * Theme preprocess function for api-group-page.tpl.php.
- */
-function api_preprocess_api_group_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
-}
-
-/**
- * Theme preprocess function for api-property-page.tpl.php.
- */
-function api_preprocess_api_property_page(&$variables) {
+function api_preprocess_api_object_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
 }
 
