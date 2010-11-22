@@ -1293,7 +1293,7 @@ function api_search_listing($branch_name) {
   else {
     // Wildcard search.
     $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.object_type, ad.title", 50, 0, NULL, $branch_name, str_replace(array('_', '%'), array('\_', '\%'), $search_text));
-    return api_render_listing(api_query_list($result), t('No search results found.'), TRUE, TRUE) . theme('pager', NULL, 50, 0);
+    return api_render_listing($result, t('No search results found.'), TRUE, TRUE) . theme('pager', NULL, 50, 0);
   }
 }
 
@@ -1419,7 +1419,7 @@ function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   else {
     $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   }
-  return api_render_listing(api_query_list($result), NULL, FALSE, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  return api_render_listing($result, NULL, FALSE, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
 }
 
 /**
@@ -1443,8 +1443,8 @@ function api_switch_project($current_branch, $url = '') {
 /**
  * Renders an overview of documentation objects in a table.
  *
- * @param $list
- *   Members list : array(type => array(title => object)).
+ * @param $result
+ *   A database query result object.
  * @param $empty_message
  *   An optional string to display instead of an empty table.
  * @param $show_headings
@@ -1456,7 +1456,13 @@ function api_switch_project($current_branch, $url = '') {
  * @return
  *   Rendered HTML for the listing.
  */
-function api_render_listing($list, $empty_message = NULL, $show_headings = TRUE, $link_file = FALSE) {
+function api_render_listing($result, $empty_message = NULL, $show_headings = TRUE, $link_file = FALSE) {
+  // Group query result by object type.
+  $list = array();
+  while ($object = db_fetch_object($result)) {
+    $list[$object->object_type][$object->did] = $object;
+  }
+
   if (count($list) === 0) {
     return is_null($empty_message) ? '' : '<p><em>'. $empty_message .'</em></p>';
   }
@@ -1752,7 +1758,7 @@ function api_page_class($branch, $class) {
     $implements = theme('item_list', $implements);
   }
 
-  $objects = api_render_listing(api_query_list(db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did, ad.did FROM {api_members} am INNER JOIN {api_documentation} ad ON ad.did = am.did LEFT JOIN {api_overrides} ao ON ao.did = am.did WHERE am.class_did = %d ORDER BY title", $class->did)));
+  $objects = api_render_listing(db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ao.overrides_did, ad.did FROM {api_members} am INNER JOIN {api_documentation} ad ON ad.did = am.did LEFT JOIN {api_overrides} ao ON ao.did = am.did WHERE am.class_did = %d ORDER BY title", $class->did));
   $output = theme('api_class_page', $branch, $class, $documentation, $implements, $hierarchy, $objects, $code, $related_topics, $see);
   $output .= _api_add_comments($class);
 
@@ -1803,7 +1809,7 @@ function api_page_file($branch, $file) {
   $see = api_link_documentation($file->see, $branch, NULL, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
 
-  $objects = api_render_listing(api_query_list(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name, did FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id)));
+  $objects = api_render_listing(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name, did FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id));
 
   $output = theme('api_file_page', $file, $documentation, $objects, $see, $related_topics);
   $output .= _api_add_comments($file);
@@ -1864,7 +1870,7 @@ function api_page_group($branch, $group) {
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch, NULL, TRUE);
 
-  $objects = api_render_listing(api_query_list(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did)));
+  $objects = api_render_listing(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did));
 
   $output = theme('api_group_page', $branch, $group, $documentation, $objects, $see);
   $output .= _api_add_comments($group);
@@ -2215,21 +2221,4 @@ function api_link_link($name, $branch, $prepend = '', $append = '', $class_did =
   $words = preg_split('/\s+/', $name);
   $name = array_shift($words);
   return api_link_name($name, $branch, $prepend, $append, $class_did, implode(' ', $words), TRUE);
-}
-
-/**
- * Sorts query result by object type.
- *
- * @param $result
- *   A database query result object.
- *
- * @return
- *   Members list : array(type => array(title => object)).
- */
-function api_query_list($result) {
-  $items = array();
-  while ($object = db_fetch_object($result)) {
-    $items[$object->object_type][$object->did] = $object;
-  }
-  return $items;
 }
