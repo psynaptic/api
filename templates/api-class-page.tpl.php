@@ -8,7 +8,7 @@
  * Available variables:
  * - $documentation: Documentation from the comment header of the class.
  * - $branch: Object with information about the branch.
- * - $class: Object with information about the class.
+ * - $object: Object with information about the class.
  * - $defined: HTML reference to file that defines this class.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
@@ -19,14 +19,14 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $class object.
- * - $class->title: Display name.
- * - $class->object_type: For this template it will be 'class'.
- * - $class->branch_id: An identifier for the branch.
- * - $class->file_name: The path to the file in the source.
- * - $class->summary: A one-line summary of the object.
- * - $class->code: Escaped source code.
- * - $class->see: HTML index of additional references.
+ * Available variables in the $object object.
+ * - $object->title: Display name.
+ * - $object->object_type: For this template it will be 'class'.
+ * - $object->branch_id: An identifier for the branch.
+ * - $object->file_name: The path to the file in the source.
+ * - $object->summary: A one-line summary of the object.
+ * - $object->code: Escaped source code.
+ * - $object->see: HTML index of additional references.
  *
  * @see api_preprocess_api_class_page().
  */

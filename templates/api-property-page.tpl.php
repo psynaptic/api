@@ -8,7 +8,7 @@
  * Available variables:
  * - $documentation: Documentation from the comment header of the function.
  * - $branch: Object with information about the branch.
- * - $property: Object with information about the function.
+ * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
@@ -19,16 +19,16 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $property object.
- * - $property->title: Display name.
- * - $property->related_topics: Related information about the function.
- * - $property->object_type: For this template it will be 'function'.
- * - $property->branch_id: An identifier for the branch.
- * - $property->file_name: The path to the file in the source.
- * - $property->summary: A one-line summary of the object.
- * - $property->code: Escaped source code.
- * - $property->see: HTML index of additional references.
- * - $property->var: Type of property.
+ * Available variables in the $object object.
+ * - $object->title: Display name.
+ * - $object->related_topics: Related information about the function.
+ * - $object->object_type: For this template it will be 'function'.
+ * - $object->branch_id: An identifier for the branch.
+ * - $object->file_name: The path to the file in the source.
+ * - $object->summary: A one-line summary of the object.
+ * - $object->code: Escaped source code.
+ * - $object->see: HTML index of additional references.
+ * - $object->var: Type of property.
  *
  * @see api_preprocess_api_property().
  */

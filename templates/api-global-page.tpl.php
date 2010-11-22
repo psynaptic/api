@@ -8,7 +8,7 @@
  * Available variables:
  * - $documentation: Documentation from the comment header of the function.
  * - $branch: Object with information about the branch.
- * - $global: Object with information about the function.
+ * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
@@ -19,15 +19,15 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $global object.
- * - $global->title: Display name.
- * - $global->related_topics: Related information about the function.
- * - $global->object_type: For this template it will be 'function'.
- * - $global->branch_id: An identifier for the branch.
- * - $global->file_name: The path to the file in the source.
- * - $global->summary: A one-line summary of the object.
- * - $global->code: Escaped source code.
- * - $global->see: HTML index of additional references.
+ * Available variables in the $object object.
+ * - $object->title: Display name.
+ * - $object->related_topics: Related information about the function.
+ * - $object->object_type: For this template it will be 'function'.
+ * - $object->branch_id: An identifier for the branch.
+ * - $object->file_name: The path to the file in the source.
+ * - $object->summary: A one-line summary of the object.
+ * - $object->code: Escaped source code.
+ * - $object->see: HTML index of additional references.
  *
  * @see api_preprocess_api_global_page().
  */
