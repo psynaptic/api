@@ -1284,7 +1284,7 @@ function api_search_listing($branch_name) {
   drupal_set_title(t('Search for %search', array('%search' => $search_text)));
 
   $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
-  if ($count == 1) {
+  if ((int) $count === 1) {
     // Exact match.
     $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
     $branches = api_get_branches();
