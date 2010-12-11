@@ -102,3 +102,21 @@ html.js div.api-expandable div.content {
 .api-inheritance-source {
   float:right;
 }
+
+#api-alternatives,
+#api-alternatives li {
+  margin: 0;
+  padding: 0;
+}
+#api-alternatives,
+#api-alternatives ol {
+  list-style: none;
+}
+#api-alternatives strong {
+  float: left;
+  clear: left;
+}
+#api-alternatives ol li {
+  display: inline;
+  padding-left: 1em;
+}

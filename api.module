@@ -86,7 +86,7 @@ function api_get_branches($_reset = FALSE) {
   static $branches;
 
   if (!isset($branches) || $_reset) {
-    $result = db_query("SELECT branch_id, project, branch_name, title, type, data, status FROM {api_branch} ORDER BY weight");
+    $result = db_query("SELECT branch_id, project, branch_name, title, type, data, status, weight FROM {api_branch} ORDER BY weight");
     $branches = array();
     while ($branch = db_fetch_object($result)) {
       drupal_unpack($branch);
@@ -979,6 +979,37 @@ function api_theme() {
  */
 function api_preprocess_api_object_page(&$variables) {
   $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
+
+  // Find alternative versions in different files and branches.
+  $branches = api_get_branches();
+  $alternatives = array(
+    '#prefix' => '<ol id="api-alternatives">',
+    '#suffix' => '</ol>',
+  );
+  $result = db_query("SELECT ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_documentation} ad WHERE ad.object_type = '%s' AND ad.object_name = '%s'", $variables['object']->object_type, $variables['object']->object_name);
+  while ($alternative = db_fetch_object($result)) {
+    // Group by project.
+    if (!isset($alternatives[$branches[$alternative->branch_id]->project])) {
+      $alternatives[$branches[$alternative->branch_id]->project] = array(
+        '#prefix' => '<li><strong>' . $branches[$alternative->branch_id]->project . '</strong><ol>',
+        '#suffix' => '</ol></li>',
+      );
+    }
+
+    // Construct link label.
+    $label = $branches[$alternative->branch_id]->branch_name;
+    if ($alternative->file_name !== $variables['object']->file_name) {
+      $label .= ' ' . basename($alternative->file_name);
+    }
+
+    $alternatives[$branches[$alternative->branch_id]->project][] = array(
+      '#prefix' => '<li>',
+      '#value' => l($label, api_url($alternative)),
+      '#weight' => $branches[$alternative->branch_id]->weight,
+      '#suffix' => '</li>',
+    );
+  }
+  $variables['alternatives'] = drupal_render($alternatives);
 }
 
 /**

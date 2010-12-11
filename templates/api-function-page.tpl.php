@@ -35,6 +35,8 @@
  * @see api_preprocess_api_function_page().
  */
 ?>
+<?php print $alternatives; ?>
+
 <table id="api-function-signature">
   <thead>
     <tr><th class="branch"><?php print t('Versions') ?></th><th></th></tr>
