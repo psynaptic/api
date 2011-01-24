@@ -15,6 +15,9 @@
  * - $see: Related api objects.
  */
 ?>
+
+<?php print $alternatives; ?>
+
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>

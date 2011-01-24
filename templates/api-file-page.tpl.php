@@ -7,22 +7,25 @@
  *
  * Available variables:
  * - $documentation: Documentation from the comment header of the file.
- * - $file: Object with information about the file.
+ * - $object: Object with information about the file.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
  * - $user: user object.
  *
- * Available variables in the $file object:
- * - $file->title: Display name.
- * - $file->summary: Short summary.
- * - $file->documentation: HTML formatted comments.
- * - $file->code: HTML formatted source code.
- * - $file->objects: Documented objects HTML.
- * - $file->see: Related api objects.
+ * Available variables in the $object object:
+ * - $object->title: Display name.
+ * - $object->summary: Short summary.
+ * - $object->documentation: HTML formatted comments.
+ * - $object->code: HTML formatted source code.
+ * - $object->objects: Documented objects HTML.
+ * - $object->see: Related api objects.
  */
 ?>
-<?php if (!empty($file->version)) { ?>
-<p><?php print t('Version') ?> <?php print $file->version ?></p>
+
+<?php print $alternatives; ?>
+
+<?php if (!empty($object->version)) { ?>
+<p><?php print t('Version') ?> <?php print $object->version ?></p>
 <?php } ?>
 
 <?php print $documentation ?>
@@ -33,3 +36,10 @@
 <?php } ?>
 
 <?php print $objects; ?>
+
+<?php print theme('ctools_collapsible', t('View source'), $code, $collapsed = TRUE) ?>
+
+<?php if (!empty($related_topics)) { ?>
+  <h3><?php print t('Related topics') ?></h3>
+  <?php print $related_topics ?>
+<?php } ?>

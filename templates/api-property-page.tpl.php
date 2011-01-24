@@ -33,6 +33,9 @@
  * @see api_preprocess_api_property().
  */
 ?>
+
+<?php print $alternatives; ?>
+
 <?php print $documentation ?>
 
 <?php if (!empty($var)) { ?>

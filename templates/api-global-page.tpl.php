@@ -32,6 +32,9 @@
  * @see api_preprocess_api_global_page().
  */
 ?>
+
+<?php print $alternatives; ?>
+
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>

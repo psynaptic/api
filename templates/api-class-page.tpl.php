@@ -31,6 +31,9 @@
  * @see api_preprocess_api_class_page().
  */
 ?>
+
+<?php print $alternatives; ?>
+
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>
@@ -51,7 +54,7 @@
 <?php print $objects; ?>
 
 <?php print $defined; ?>
-<?php print theme('ctools_collapsible', t('View code'), $code, $collapsed = TRUE) ?>
+<?php print theme('ctools_collapsible', t('View source'), $code, $collapsed = TRUE) ?>
 
 <?php if (!empty($related_topics)) { ?>
   <h3><?php print t('Related topics') ?></h3>
