@@ -119,6 +119,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     $branch = $branches[$branch_id];
   }
   else {
+    $branch->branch_id = 0;
     $branch->type = $branch_id;
     $branch->project = '';
     $branch->branch_name = '';
