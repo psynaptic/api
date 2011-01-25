@@ -81,7 +81,7 @@ Function api_parse_text_file($docblock) {
 function api_parse_html_file($docblock) {
   $docblock['code'] = '<pre>' . htmlspecialchars($docblock['source']) . '</pre>';
   $title_match = array();
-  if (preg_match('!<title>(.*)</title>!is', $docblock['source'], $title_match)) {
+  if (preg_match('!<title>([^<]+)</title>!is', $docblock['source'], $title_match)) {
     $docblock['title'] = trim($title_match[1]);
   }
   $documentation_match = array();
