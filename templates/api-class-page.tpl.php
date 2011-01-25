@@ -42,7 +42,7 @@
 <?php } ?>
 
 <?php if (!empty($implements)) { ?>
-  <h3><?php print t('Implmented by') ?></h3>
+  <h3><?php print t('Implemented by') ?></h3>
   <?php print $implements ?>
 <?php } ?>
 
