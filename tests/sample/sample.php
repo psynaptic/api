@@ -51,3 +51,9 @@ function sample_function($parameter, $complex_parameter) {
 /**
  * @} end samples
  */
+
+/**
+ * For testing duplicate function name linking.
+ */
+function duplicate_function() {
+}

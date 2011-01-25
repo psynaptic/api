@@ -16,7 +16,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 17, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 20, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
