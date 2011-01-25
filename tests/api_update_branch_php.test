@@ -19,7 +19,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($count, 17, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
-    $object = api_filename_load('sample.php', $branch);
+    $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
     $this->assertEqual($object->summary, 'A sample file.', t('sample.php has summary %summary.', array('%summary' => $object->summary)));
 
     // Check sample_function()
@@ -56,7 +56,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $this->assertEqual($count, 4, t('Group class_samples has %count members.', array('%count' => $count)));
 
     // Check classes.php
-    $object = api_filename_load('classes.php', $branch);
+    $object = api_filename_load('classes.php', $branch->project, $branch->branch_name);
     $this->assertEqual($object->summary, 'Object-oriented tests.', t('classes.php has summary %summary.', array('%summary' => $object->summary)));
 
     // Check Sample class
