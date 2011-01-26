@@ -74,6 +74,11 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'expected' => '<a href="'. url('api/test/classes.php/class/Sample/6') .'" title="Sample class." class="local">Sample</a>',
         'aggressive_classes' => TRUE,
       ),
+      array(
+        'message' => 'Constant link',
+        'data' => 'SAMPLE_CONSTANT',
+        'expected' => '<a href="'. url('api/test/sample.php/constant/SAMPLE_CONSTANT/6') .'" title="A sample constant." class="local">SAMPLE_CONSTANT</a>',
+      ),
 
       // Should not be linked
       array(
@@ -111,6 +116,11 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'message' => 'Class link',
         'data' => 'Sample',
         'expected' => 'Sample',
+      ),
+      array(
+        'message' => 'Constant link with trailing chatacter',
+        'data' => 'SAMPLE_CONSTANTA',
+        'expected' => 'SAMPLE_CONSTANTA',
       ),
 
       // Should be linked

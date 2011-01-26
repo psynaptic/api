@@ -1967,7 +1967,7 @@ function api_link_documentation($documentation, $branch, $class_did = NULL, $agg
  */
 function api_filter_documentation($text, $branch, $class_did = NULL, $aggressive_classes = FALSE) {
   // Remove escaping from \@.
-  $stages = array('tags', 'link', 'function', 'file');
+  $stages = array('tags', 'link', 'function', 'file', 'constant');
   if ($aggressive_classes) {
     $stages[] = 'class';
   }
@@ -2007,6 +2007,9 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     // Find file names, which are an arbitrary number of strings joined with
     // '.'
     'file' => '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%',
+
+    // Find constants, UPPERCASE_LETTERS_WITH_UNDERSCORES.
+    'constant' => '/\b([A-Z_]+)\b/',
 
     // Find class names, which have a capital letter.
     'class' => '/\b(\w*[A-Z]\w*)\b/',
