@@ -2148,9 +2148,6 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
         default:
           if ($object->class_did != 0) {
             $member_name = preg_replace('/^.*::/', '', $object->title);
-            if ($member_name === 'query') {
-              //print_r($object);
-            }
             if ($object->class_did === $class_did) {
               // The member is from the current class, it is preferred.
               $local_objects[$class_did]['item'][$member_name] = $link;
