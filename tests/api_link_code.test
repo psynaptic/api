@@ -13,6 +13,10 @@ class ApiLinkCodeTest extends ApiTestCase {
   }
   
   function testApiLinkCode() {
+    $branch = $this->getBranch();
+    $interface = api_object_load('SampleInterface', $branch, 'interface', 'classes.php');
+    $class = api_object_load('Sample', $branch, 'class', 'classes.php');
+
     $tests = array(
       // Should be linked
       array(
@@ -24,6 +28,24 @@ class ApiLinkCodeTest extends ApiTestCase {
         'message' => 'Linking to method defined in multiple classes',
         'data' => '<span class="php-function-or-constant">foo</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
+      ),
+      array(
+        'message' => 'Linking to method defined in multiple classes from class',
+        'data' => '<span class="php-function-or-constant">foo</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a></span>',
+        'class_did' => $class->did,
+      ),
+      array(
+        'message' => 'Linking to method defined in multiple classes from interface',
+        'data' => '<span class="php-function-or-constant">foo</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
+        'class_did' => $interface->did,
+      ),
+      array(
+        'message' => 'Linking to method defined in multiple subclasses from interface',
+        'data' => '<span class="php-function-or-constant">baz</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/'. $branch->branch_name . '/baz') .'" title="Multiple implementations exist." class="local">baz</a></span>',
+        'class_did' => $interface->did,
       ),
       array(
         'message' => 'Marked-up class name linking',
@@ -50,7 +72,10 @@ class ApiLinkCodeTest extends ApiTestCase {
     );
 
     foreach ($tests as $test) {
-      $result = api_link_code($test['data'], $this->getBranch());
+      if (!isset($test['class_did'])) {
+        $test['class_did'] = NULL;
+      }
+      $result = api_link_code($test['data'], $this->getBranch(), $test['class_did']);
       $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }

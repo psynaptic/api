@@ -1704,7 +1704,7 @@ function api_page_global($global) {
  */
 function api_page_property($property) {
   $branches = api_get_branches();
-  $branch = $branches[$global->branch_id];
+  $branch = $branches[$property->branch_id];
 
   api_object_title_and_breadcrumb($branch, $property);
 
@@ -2120,7 +2120,7 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   static $local_objects = array(), $php_functions;
 
   if (!isset($local_objects[$class_did])) {
-    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d ORDER BY ad.class_did = %d", $branch->branch_id, $class_did);
+    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d", $branch->branch_id);
     $local_objects[$class_did] = array(
       'group' => array(),
       'item' => array(),
@@ -2146,10 +2146,36 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
           break;
 
         default:
-          if ($object->class_did != 0 && ($object->is_root || $object->class_did === $class_did)) {
-            // The latter is preferred, and happens by that query's ORDER BY.
-            $local_objects[$class_did]['item'][preg_replace('/^.*::/', '', $object->object_name)] = $link;
+          if ($object->class_did != 0) {
+            $member_name = preg_replace('/^.*::/', '', $object->title);
+            if ($member_name === 'query') {
+              //print_r($object);
+            }
+            if ($object->class_did === $class_did) {
+              // The member is from the current class, it is preferred.
+              $local_objects[$class_did]['item'][$member_name] = $link;
+              $local_objects[$class_did]['item'][$member_name]['preferred'] = TRUE;
+            }
+            if ($object->is_root && (!isset($local_objects[$class_did]['item'][$member_name]) || !isset($local_objects[$class_did]['item'][$member_name]['preferred']))) {
+              if (isset($local_objects[$class_did]['item'][$member_name])) {
+                // If more than one root, link to search.
+                $local_objects[$class_did]['item'][$member_name] = array(
+                  'url' => 'api/search/' . $branch->branch_name . '/' . $member_name,
+                  'options' => array(
+                    'attributes' => array(
+                      'title' => t('Multiple implementations exist.'),
+                      'class' => 'local',
+                    ),
+                  ),
+                );
+              }
+              else {
+                // Otherwise, use the top of the tree.
+                $local_objects[$class_did]['item'][$member_name] = $link;
+              }
+            }
           }
+
           if (isset($local_objects[$class_did]['item'][$object->object_name])) {
             // Link to search results for multiple options.
             $local_objects[$class_did]['item'][$object->object_name] = array(

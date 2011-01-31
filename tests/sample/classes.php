@@ -35,6 +35,12 @@ class Sample implements SampleInterface {
    */
   public function foo() {
   }
+
+  /**
+   * Only implemented in children.
+   */
+  public function baz() {
+  }
 }
 
 /**
@@ -69,6 +75,11 @@ interface SampleInterfaceTwo {
 }
 
 $random_assignment_not_to_be_parsed = NULL;
+
+class Sample2 implements SampleInterface {
+  public function baz() {
+  }
+}
 
 /**
  * @} end samples

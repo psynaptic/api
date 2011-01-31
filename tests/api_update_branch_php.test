@@ -16,7 +16,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 20, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 23, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
@@ -53,7 +53,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $class_samples_group = api_object_load('class_samples', $branch, 'group', 'classes.php');
     $this->assertEqual($class_samples_group->summary, 'A sample group of classes. Should not include members.', t('Group class_samples has summary %summary.', array('%summary' => $class_samples_group->summary)));
     $count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} WHERE branch_id = %d AND to_did = %d AND object_type = 'group'", $branch->branch_id, $class_samples_group->did));
-    $this->assertEqual($count, 4, t('Group class_samples has %count members.', array('%count' => $count)));
+    $this->assertEqual($count, 5, t('Group class_samples has %count members.', array('%count' => $count)));
 
     // Check classes.php
     $object = api_filename_load('classes.php', $branch->project, $branch->branch_name);
@@ -110,7 +110,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     while ($row = db_fetch_object($result)) {
       $dids[$row->did] = TRUE;
     }
-    $this->assertEqual(count($dids), 3, t('Found %count members of Sample.', array('%count' => count($dids))));
+    $this->assertEqual(count($dids), 4, t('Found %count members of Sample.', array('%count' => count($dids))));
     $this->assertEqual($dids[$sample_foo->did], TRUE, t('Sample::foo is a member of Sample.'));
     $this->assertEqual($dids[$sample_constant->did], TRUE, t('Sample::constant is a member of Sample.'));
     $this->assertEqual($dids[$sample_property->did], TRUE, t('Sample::property is a member of Sample.'));
@@ -120,7 +120,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     while ($row = db_fetch_object($result)) {
       $dids[$row->did] = TRUE;
     }
-    $this->assertEqual(count($dids), 4, t('Found %count members of SubSample.', array('%count' => count($dids))));
+    $this->assertEqual(count($dids), 5, t('Found %count members of SubSample.', array('%count' => count($dids))));
     $this->assertEqual($dids[$sample_foo->did], TRUE, t('Sample::foo is a member of SubSample.'));
     $this->assertEqual($dids[$sample_constant->did], TRUE, t('Sample::constant is a member of SubSample.'));
     $this->assertEqual($dids[$sample_property->did], TRUE, t('Sample::property is a member of SubSample.'));
