@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-branch-default.tpl.php

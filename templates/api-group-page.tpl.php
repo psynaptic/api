@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-group-page.tpl.php

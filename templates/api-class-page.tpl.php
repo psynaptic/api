@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-class-page.tpl.php

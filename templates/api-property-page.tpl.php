@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-property-page.tpl.php

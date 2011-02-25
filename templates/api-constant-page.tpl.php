@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-constant-page.tpl.php

@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file api-global-page.tpl.php

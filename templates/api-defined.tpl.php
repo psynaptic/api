@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file api-defined.tpl.php
  * Theme implementation to show which object an api object is defined in.
