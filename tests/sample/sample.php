@@ -61,3 +61,8 @@ function sample_function($parameter, $complex_parameter) {
  */
 function duplicate_function() {
 }
+
+/**
+ * For testing duplicate constant linking.
+ */
+define('DUPLICATE_CONSTANT');

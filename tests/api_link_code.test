@@ -56,6 +56,11 @@ class ApiLinkCodeTest extends ApiTestCase {
         'data' => '<span class="php-function-or-constant">duplicate_function</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/6/duplicate_function') .'" title="Multiple implementations exist." class="local">duplicate_function</a></span>',
       ),
+      array(
+        'message' => 'Duplicate constant linking',
+        'data' => '<span class="php-function-or-constant">DUPLICATE_CONSTANT</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/6/DUPLICATE_CONSTANT') .'" title="Multiple implementations exist." class="local">DUPLICATE_CONSTANT</a></span>',
+      ),
 
       // Should not be linked
       array(
