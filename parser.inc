@@ -947,6 +947,7 @@ function api_update_branch_files($branch) {
     'engine' => 'api_parse_php_file',
     'theme' => 'api_parse_php_file',
     'profile' => 'api_parse_php_file',
+    'test' => 'api_parse_php_file',
 
     'txt' => 'api_parse_text_file',
 
