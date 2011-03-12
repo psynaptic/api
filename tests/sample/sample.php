@@ -26,6 +26,8 @@ define('SAMPLE_CONSTANT');
 /**
  * A sample function.
  *
+ * @see duplicate_function()
+ *
  * Use for sample-related purposes.
  *
  * @param $parameter
@@ -44,6 +46,8 @@ define('SAMPLE_CONSTANT');
  *   Something about the return value.
  *
  *   A second paragraph about the return value.
+ *
+ * @see SAMPLE_CONSTANT
  */
 function sample_function($parameter, $complex_parameter) {
 }

@@ -25,6 +25,13 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
     $this->assertEqual($object->summary, 'A sample function.', t('sample_function() has summary %summary.', array('%summary' => $object->summary)));
 
+    // Check that documentation includes text after first \@see directive
+    $this->assertTrue(strpos($object->documentation, 'Use for sample-related purposes.') !== FALSE, t('sample_function() documentation includes text after \@see directive.'));
+
+    // Check @see directives
+    $this->assertTrue(strpos($object->see, 'duplicate_function') !== FALSE, t('sample_function() includes duplicate_function in "See also" section.'));
+    $this->assertTrue(strpos($object->see, 'SAMPLE_CONSTANT') !== FALSE, t('sample_function() includes SAMPLE_CONSTANT in "See also" section.'));
+
     // Check multi-paragraph @param
     $this->assertTrue(strpos($object->parameters, 'A second paragraph about') !== FALSE, t('sample_function() parameters contains second paragraph.'));
 

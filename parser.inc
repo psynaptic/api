@@ -347,7 +347,7 @@ function api_save_documentation($docblocks) {
       // Find @see lines.
       $offset = 0;
       $docblock['see'] = '';
-      while (preg_match('/' . API_RE_TAG_START . 'see\s(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
+      while (preg_match('/' . API_RE_TAG_START . 'see\s(.*?)\n/s', substr($docblock['content'], $offset), $match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($match[0][0], '', $docblock['content']);
         $docblock['see'] .= "\n\n". $match[1][0];
         $offset = $match[0][1];
