@@ -61,6 +61,13 @@ class ApiLinkCodeTest extends ApiTestCase {
         'data' => '<span class="php-function-or-constant">DUPLICATE_CONSTANT</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/6/DUPLICATE_CONSTANT') .'" title="Multiple implementations exist." class="local">DUPLICATE_CONSTANT</a></span>',
       ),
+      array(
+        'message' => 'Linking to a PHP function',
+        'data' => '<span class="php-function-or-constant">date_sunrise</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/6/DUPLICATE_CONSTANT') .'" title="Multiple implementations exist." class="local">DUPLICATE_CONSTANT</a></span>',
+        'expected' => '<span class="php-function-or-constant"><a href="http://php.net/date_sunrise" title="mixed date_sunrise(mixed time [, int format [, float latitude [, float longitude [, float zenith [, float gmt_offset]]]]]) 
+     Returns time of sunrise for a given day and location" class="php-manual">date_sunrise</a></span>',
+      ),
 
       // Should not be linked
       array(
