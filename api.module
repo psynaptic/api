@@ -1723,7 +1723,7 @@ function api_page_property($property) {
  */
 function api_page_class($class) {
   $branches = api_get_branches();
-  $branch = $branches[$global->branch_id];
+  $branch = $branches[$class->branch_id];
 
   api_object_title_and_breadcrumb($branch, $class);
 
@@ -1796,7 +1796,7 @@ function api_class_hierarchy($class) {
  */
 function api_page_file($file) {
   $branches = api_get_branches();
-  $branch = $branches[$global->branch_id];
+  $branch = $branches[$file->branch_id];
 
   api_object_title_and_breadcrumb($branch, $file);
 
@@ -1853,7 +1853,7 @@ function _api_add_comments($documentation_object) {
  */
 function api_page_group($group) {
   $branches = api_get_branches();
-  $branch = $branches[$global->branch_id];
+  $branch = $branches[$group->branch_id];
 
   api_object_title_and_breadcrumb($branch, $group);
 
