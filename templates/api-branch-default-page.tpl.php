@@ -26,5 +26,5 @@
 <?php } ?>
 
 <?php if (user_access('administer API reference')) { ?>
-  <p class="api-no-mainpage"><em><?php print t('A main page for this branch has not been indexed. A documentation comment with <code>@mainpage {title}</code> needs to exist, or has not been indexed yet. For Drupal core, this is available in the <a href="http://cvs.drupal.org/viewvc.py/drupal/contributions/docs/developer/">developer documentation</a> in the contributions repository.'); ?></em></p>
+  <p class="api-no-mainpage"><em><?php print t('A main page for this branch has not been indexed. A documentation comment with <code>@mainpage {title}</code> needs to exist, or has not been indexed yet. For Drupal core, this is available in the <a href="http://drupal.org/project/documentation/git-instructions">documentation project</a> in the <code>developer</code> subdirectory.'); ?></em></p>
 <?php } ?>
