@@ -27,6 +27,10 @@ function api_drush_command() {
         'branch_or_file' => 'Optional branch name or file path.',
       ),
     ),
+    'api-list-branches' => array(
+      'callback' => 'api_drush_list_branches',
+      'description' => 'List API branches.',
+    ),
   );
 }
 
@@ -55,3 +59,28 @@ function api_drush_reparse($branch_or_file = NULL) {
   drush_log(dt('Marked @number files for reparsing.', array('@number' => db_affected_rows())), 'ok');
 }
 
+/**
+ * List all branches.
+ */
+function api_drush_list_branches() {
+  $branches = api_get_branches();
+  drush_log(dt('API Branches:'), 'ok');
+  $rows = array(array(dt('ID'), dt('Project'), dt('Title'), dt('Name'), dt('Type'), dt('Location'), dt('Status')));
+  foreach ($branches as $branch) {
+    if (isset($branch->directories)) {
+      $location = $branch->directories;
+    } else {
+      $location = isset($branch->summary) ? $branch->summary : '';
+    }
+    $rows[] = array(
+      $branch->branch_id,
+      $branch->project,
+      $branch->title,
+      $branch->branch_name,
+      $branch->type,
+      $location,
+      $branch->status ? dt('Enabled') : dt('Disabled'),
+    );
+  }
+  drush_print_table($rows, TRUE);
+}
