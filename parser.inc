@@ -5,12 +5,12 @@
  * The PHP documentation parser that generates content for api.module.
  */
 
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.parser');
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.reader');
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.writer');
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.editor');
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.list');
-module_load_include('inc', 'grammar_parser', 'engine/grammar_parser.object');
+module_load_include('inc', 'grammar_parser', 'engine/parser');
+module_load_include('inc', 'grammar_parser', 'engine/reader');
+module_load_include('inc', 'grammar_parser', 'engine/writer');
+module_load_include('inc', 'grammar_parser', 'engine/editor');
+module_load_include('inc', 'grammar_parser', 'engine/list');
+module_load_include('inc', 'grammar_parser', 'engine/object');
 
 /**
  * Reads in a file and calls a callback function to parse and save it.
