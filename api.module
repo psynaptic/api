@@ -1672,7 +1672,7 @@ function api_page_constant($constant) {
   $documentation = api_link_documentation($constant->documentation, $branch, $constant->class_did);
   $code = api_link_code($constant->code, $branch, $constant->class_did);
   $related_topics = api_related_topics($constant->did, $branch);
-  $see = api_link_documentation($function->see, $branch, $constant->class_did, TRUE);
+  $see = api_link_documentation($constant->see, $branch, $constant->class_did, TRUE);
 
   $output = theme('api_constant_page', $branch, $constant, $documentation, $code, $related_topics, $see);
   $output .= _api_add_comments($constant);
