@@ -1397,7 +1397,10 @@ function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   else {
     $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   }
-  return api_render_listing($result, NULL, FALSE, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $object_type . 's') : '');
+  // Use the correct plural form to construct the URL.
+  // @todo Create a unit test for this to ensure there's no regression.
+  $plural_type = ($object_type == 'class' ? 'classes' : $object_type . 's');
+  return api_render_listing($result, NULL, FALSE, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $plural_type) : '');
 }
 
 /**
