@@ -28,7 +28,7 @@
  * - $object->code: Escaped source code.
  * - $object->see: HTML index of additional references.
  *
- * @see api_preprocess_api_global_page().
+ * @see api_preprocess_api_object_page().
  */
 ?>
 

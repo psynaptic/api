@@ -29,7 +29,7 @@
  * - $object->see: HTML index of additional references.
  * - $object->var: Type of property.
  *
- * @see api_preprocess_api_property().
+ * @see api_preprocess_api_object_page().
  */
 ?>
 

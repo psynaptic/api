@@ -31,7 +31,7 @@
  * - $object->see: HTML index of additional references.
  * - $object->throws: Paragraph describing possible exceptions.
  *
- * @see api_preprocess_api_function_page().
+ * @see api_preprocess_api_object_page().
  */
 ?>
 <?php print $alternatives; ?>
