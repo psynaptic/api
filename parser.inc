@@ -192,7 +192,7 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         $docblock['title'] = $class_prefix . $editor->statementOperandToText($statement);
         $docblock['start_line'] = $current->line;
         $docblock['content'] = $editor->commentToString($statement->comment);
-        unset($statement->comment);
+        $statement->comment = '';
         $docblock['code'] = api_format_php("<?php\n". $statement->toString() ."\n?".">");
         if ($statement->type == T_FUNCTION) {
           $docblock['signature'] = $editor->functionGetSignature($statement);
