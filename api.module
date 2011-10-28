@@ -1515,6 +1515,7 @@ function api_object_title_and_breadcrumb($branch, $object) {
   $breadcrumb = array(
     l(t('Home'), ''),
     l(t('API reference'), 'api/' . $branch->project),
+    l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name),
   );
   if ($object->object_type !== 'file') {
     $breadcrumb[] = l(basename($object->file_name), api_url($object, TRUE));
