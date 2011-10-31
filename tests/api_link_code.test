@@ -63,10 +63,8 @@ class ApiLinkCodeTest extends ApiTestCase {
       ),
       array(
         'message' => 'Linking to a PHP function',
-        'data' => '<span class="php-function-or-constant">date_sunrise</span>',
-        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/6/DUPLICATE_CONSTANT') .'" title="Multiple implementations exist." class="local">DUPLICATE_CONSTANT</a></span>',
-        'expected' => '<span class="php-function-or-constant"><a href="http://php.net/date_sunrise" title="mixed date_sunrise(mixed time [, int format [, float latitude [, float longitude [, float zenith [, float gmt_offset]]]]]) 
-     Returns time of sunrise for a given day and location" class="php-manual">date_sunrise</a></span>',
+        'data' => '<span class="php-function-or-constant">strpos</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="http://php.net/strpos" title="int strpos(string $haystack, mixed $needle [, int $offset = &#039;&#039;]) Find position of first occurrence of a string" class="php-manual">strpos</a></span>',
       ),
 
       // Should not be linked
@@ -87,7 +85,11 @@ class ApiLinkCodeTest extends ApiTestCase {
         $test['class_did'] = NULL;
       }
       $result = api_link_code($test['data'], $this->getBranch(), $test['class_did']);
-      $this->assertEqual($result, $test['expected'], $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
+      // Compare result and expected with slightly liberal matching -- all
+      // whitespace is considered equal for HTML.
+      $result = preg_replace('|\s+|', ' ', $result);
+      $expected = preg_replace('|\s+|', ' ', $test['expected']);
+      $this->assertEqual($result, $expected, $test['message'] . ' Got: <code>' . check_plain($result) . '</code>');
     }
   }
 }

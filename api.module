@@ -2133,7 +2133,8 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
         'url' => api_url($object),
         'options' => array(
           'attributes' => array(
-            'title' => $object->summary,
+            // l() will recode these entities.
+            'title' => api_entity_decode($object->summary),
             'class' => 'local',
           ),
         ),
@@ -2215,11 +2216,23 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   }
   elseif (isset($php_functions[$name])) {
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
-    return $prepend . l($text, $link, array('attributes' => array('title' => $php_functions[$name], 'class' => 'php-manual'))) . $append;
+    return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($php_functions[$name]), 'class' => 'php-manual'))) . $append;
   }
   else {
     return $prepend . $text . $append;
   }
+}
+
+/**
+ * Returns text with HTML entities decoded.
+ */
+function api_entity_decode($text) {
+  $text = html_entity_decode($text);
+  // html_entity_decode does not decode numeric entities, and there are
+  // many cases of &#39; (quote) in here.
+  $text = str_replace('&#039;', "'", $text);
+  $text = str_replace('&#39;', "'", $text);
+  return $text;
 }
 
 /**
