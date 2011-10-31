@@ -23,10 +23,6 @@
 
 <?php print $alternatives; ?>
 
-<?php if (!empty($object->version)) { ?>
-<p><?php print t('Version') ?> <?php print $object->version ?></p>
-<?php } ?>
-
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>

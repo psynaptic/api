@@ -121,6 +121,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     $branch->branch_id = 0;
     $branch->type = $branch_id;
     $branch->project = '';
+    $branch->project_name = '';
     $branch->branch_name = '';
     $branch->title = '';
     $branch->directories = '';
@@ -138,6 +139,13 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#description' => t('Used as both a unique identifier for the project, and as the URL prefix for documentation for this project (path: api/[project]). You can add a branch to an existing project by entering the existing project name here. You can make this branch be part of a new project by entering a new project name here, and then add additional branches if desired.'),
     '#required' => TRUE,
   );
+  $form['project_title'] = array(
+    '#title' => t('Project title'),
+    '#type' => 'textfield',
+    '#default_value' => $branch->project_title,
+    '#description' => t('Used as the header for item versions.'),
+    '#required' => TRUE,
+  );
   $form['branch_name'] = array(
     '#title' => t('Branch'),
     '#type' => 'textfield',
@@ -149,7 +157,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#title' => t('Branch title'),
     '#type' => 'textfield',
     '#default_value' => $branch->title,
-    '#description' => t('Used as the tab title for branch tabs, if you have more than one branch within your project. The title of the first branch within the project is also used as the link text in the Other Projects link sections (these links appear at the bottom of API pages such as the functions list and the home page for each project, if you have more than one project).'),
+    '#description' => t('Used as the version identifier for item versions. The title of the first branch within the project is also used as the link text in the Other Projects link sections (these links appear at the bottom of API pages such as the functions list and the home page for each project, if you have more than one project).'),
     '#required' => TRUE,
   );
   $form['status'] = array(
@@ -277,6 +285,7 @@ function api_check_directories($element, &$form_state) {
 function api_branch_edit_form_submit($form, &$form_state) {
   $branch = $form['#branch'];
   $branch->project = $form_state['values']['project'];
+  $branch->project_title = $form_state['values']['project_title'];
   $branch->branch_name = $form_state['values']['branch_name'];
   $branch->title = $form_state['values']['title'];
   $branch->status = $form_state['values']['status'];

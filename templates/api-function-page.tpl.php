@@ -5,10 +5,17 @@
  * Theme implementation to display a function overview.
  *
  * Available variables:
+ * - $signatures: Function signatures for this and other branches.
  * - $documentation: Documentation from the comment header of the function.
+ * - $parameters: Function parameter documentation.
+ * - $return: Function return value documentation.
+ * - $throws: Documentation of thown exceptions.
+ * - $see: See also documentation.
+ * - $related_topics: Related topics documentation.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
+ * - $code: Source code for the function.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
  *
@@ -34,12 +41,8 @@
  * @see api_preprocess_api_object_page().
  */
 ?>
-<?php print $alternatives; ?>
 
 <table id="api-function-signature">
-  <thead>
-    <tr><th class="branch"><?php print t('Versions') ?></th><th></th></tr>
-  </thead>
   <tbody>
     <?php foreach ($signatures as $branch => $signature) { ?>
       <?php if ($signature['active']) { ?>

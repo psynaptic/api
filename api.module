@@ -85,7 +85,7 @@ function api_get_branches($_reset = FALSE) {
   static $branches;
 
   if (!isset($branches) || $_reset) {
-    $result = db_query("SELECT branch_id, project, branch_name, title, type, data, status, weight FROM {api_branch} ORDER BY weight");
+    $result = db_query("SELECT branch_id, project, project_title, branch_name, title, type, data, status, weight FROM {api_branch} ORDER BY weight");
     $branches = array();
     while ($branch = db_fetch_object($result)) {
       drupal_unpack($branch);
@@ -252,7 +252,7 @@ function api_menu() {
   );
 
   // Autocomplete callback.
-  // This returns ALL possibilities for a branch name.
+  // This returns ALL possibilities for a search term.
   $items['api/autocomplete/%'] = array(
     'page callback' => 'api_autocomplete',
     'page arguments' => array(2, TRUE),
@@ -938,7 +938,11 @@ function api_theme() {
  * Theme preprocess function for API object pages.
  */
 function api_preprocess_api_object_page(&$variables) {
-  $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
+  // Note: branch is not defined for File pages, so don't try to create the
+  // 'defined' section of the page.
+  if (isset($variables['branch'])) {
+    $variables['defined'] = theme('api_defined', $variables['branch'], $variables['object']);
+  }
 
   // Find alternative versions in different files and branches.
   $branches = api_get_branches();
@@ -946,21 +950,27 @@ function api_preprocess_api_object_page(&$variables) {
     '#prefix' => '<ol id="api-alternatives">',
     '#suffix' => '</ol>',
   );
-  $result = db_query("SELECT ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_documentation} ad WHERE ad.object_type = '%s' AND ad.object_name = '%s'", $variables['object']->object_type, $variables['object']->object_name);
+  // Try to find objects of the same type with the same object name. But for
+  // files, the object name includes the path, so the matching needs to go on
+  // the title instead of the object_name.
+  if ($variables['object']->object_type == 'file') {
+    $result = db_query("SELECT ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_documentation} ad WHERE ad.object_type = '%s' AND ad.title = '%s'", $variables['object']->object_type, $variables['object']->title);
+  }
+  else {
+    $result = db_query("SELECT ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_documentation} ad WHERE ad.object_type = '%s' AND ad.object_name = '%s'", $variables['object']->object_type, $variables['object']->object_name);
+  }
+
   while ($alternative = db_fetch_object($result)) {
     // Group by project.
     if (!isset($alternatives[$branches[$alternative->branch_id]->project])) {
       $alternatives[$branches[$alternative->branch_id]->project] = array(
-        '#prefix' => '<li><strong>' . $branches[$alternative->branch_id]->project . '</strong><ol>',
+        '#prefix' => '<li><strong>' . $branches[$alternative->branch_id]->project_title . '</strong><ol>',
         '#suffix' => '</ol></li>',
       );
     }
 
     // Construct link label.
-    $label = $branches[$alternative->branch_id]->branch_name;
-    if ($alternative->file_name !== $variables['object']->file_name) {
-      $label .= ' ' . basename($alternative->file_name);
-    }
+    $label = $branches[$alternative->branch_id]->branch_name . ' ' . basename($alternative->file_name);
 
     $alternatives[$branches[$alternative->branch_id]->project][] = array(
       '#prefix' => '<li>',
@@ -1263,13 +1273,13 @@ function api_search_listing($branch_name) {
   $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
   if ((int) $count === 1) {
     // Exact match.
-    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
+    $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, b.project_title, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
     $branches = api_get_branches();
     drupal_goto(api_url($item));
   }
   else {
     // Wildcard search.
-    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.object_type, ad.title", 50, 0, NULL, $branch_name, str_replace(array('_', '%'), array('\_', '\%'), $search_text));
+    $result = pager_query("SELECT b.branch_id, b.branch_name, b.project, b.project_title, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title LIKE '%%%s%%' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY ad.object_type, ad.title", 50, 0, NULL, $branch_name, str_replace(array('_', '%'), array('\_', '\%'), $search_text));
     return api_render_listing($result, t('No search results found.'), TRUE, TRUE) . theme('pager', NULL, 50, 0);
   }
 }
@@ -1525,6 +1535,7 @@ function api_object_title_and_breadcrumb($branch, $object) {
     $class = api_object_load((int) $object->class_did, $branches[$object->branch_id], array('interface', 'class'), $object->file_name);
     $breadcrumb[] = l($class->object_name, api_url($class));
   }
+
   drupal_set_breadcrumb($breadcrumb);
 }
 
@@ -1542,12 +1553,6 @@ function api_page_function($function) {
   $n = 0;
   $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' AND d.class_did = %d ORDER BY b.weight", $function->title, $function->class_did);
   while ($signature = db_fetch_object($result)) {
-    if ($signature->signature == $last_signature) {
-      // Collapse unchanged signatures to one line.
-      $signature_info[$n - 1]['max object'] = $signature;
-      $signature_info[$n - 1]['active'] = $signature_info[$n - 1]['active'] || $signature->branch_id == $function->branch_id;
-    }
-    else {
       $tokens = token_get_all('<?php '. $signature->signature);
       // Remove <?php
       array_shift($tokens);
@@ -1570,7 +1575,7 @@ function api_page_function($function) {
       $signature_info[$n] = array(
         'object' => $signature,
         'max object' => $signature, // Keep track of the most-recent branch
-        'active' => $signature->branch_id === $function->branch_id,
+        'active' => ($signature->branch_id === $function->branch_id && $signature->file_name == $function->file_name),
         'arguments' => array(),
         'other' => array(),
       );
@@ -1598,7 +1603,6 @@ function api_page_function($function) {
       }
       $last_signature = $signature->signature;
       $n += 1;
-    }
   }
   foreach ($signature_info as $n => $info) {
     $new = array();
@@ -1609,7 +1613,8 @@ function api_page_function($function) {
     if (isset($signature_info[$n + 1])) {
       $old = array_diff($info['arguments'], $signature_info[$n + 1]['arguments']);
     }
-    $branch_label = $branches[$info['object']->branch_id]->branch_name;
+    $branch_label = $branches[$info['object']->branch_id]->branch_name .
+      ' ' . basename($info['object']->file_name);
     if ($info['object']->branch_id !== $info['max object']->branch_id) {
       $branch_label .= ' – '. $branches[$info['max object']->branch_id]->branch_name;
     }

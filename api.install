@@ -48,6 +48,7 @@ function api_schema() {
         'not null' => TRUE,
       ),
       'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
+      'project_title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
       'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
     ),
     'primary key' => array('branch_id'),
@@ -653,6 +654,20 @@ function api_update_35() {
     'default' => 0,
   ));
   db_add_index($return, 'api_documentation', 'object_type', array('object_type'));
+
+  return $return;
+}
+
+/**
+ * Add project_title field to branches.
+ */
+function api_update_36() {
+  $return = array();
+
+  db_add_field($return, 'api_branch', 'project_title', array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => '')
+  );
+  // Set it equal to the existing 'project' field.
+  $return[] = update_sql("UPDATE {api_branch} b SET b.project_title = b.project");
 
   return $return;
 }
