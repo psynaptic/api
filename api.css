@@ -1,4 +1,3 @@
-
 /* Expandable regions */
 html.js div.api-expandable div.content {
   display: none;
@@ -57,7 +56,7 @@ html.js div.api-expandable div.content {
 #api-function-signature td code {
   background: #fff;
 }
-#api-function-signature {
+#api-function-signature td.signature {
   font-size: 1.2em;
 }
 #api-function-signature .branch {
