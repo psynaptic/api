@@ -50,15 +50,10 @@
           <td class="branch"><?php print $branch ?></td>
           <td class="signature"><code><?php print $signature['signature'] ?></code></td>
         </tr>
-      <?php } else if ($signature['status']) { ?>
-        <tr>
-          <td class="branch"><?php print l($branch, $signature['url']) ?></td>
-          <td class="signature"><code><?php print l($signature['signature'], $signature['url'], array('html' => TRUE)) ?></code></td>
-        </tr>
       <?php } else { ?>
         <tr>
-          <td class="branch"><?php print $branch ?></td>
-          <td class="signature"><code><?php print $signature['signature'] ?></code></td>
+        <td class="branch"><?php print l($branch, $signature['url'], array('html' => TRUE)); ?></td>
+          <td class="signature"><code><?php print l($signature['signature'], $signature['url'], array('html' => TRUE)) ?></code></td>
         </tr>
       <?php } ?>
     <?php } ?>
