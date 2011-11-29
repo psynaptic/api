@@ -1553,8 +1553,8 @@ function api_page_function($function) {
   $n = 0;
   $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' AND d.class_did = %d ORDER BY b.weight", $function->title, $function->class_did);
   while ($signature = db_fetch_object($result)) {
-      $branch = $branches[$signature->branch_id];
-      if (!$branch->status) {
+      $signature_branch = $branches[$signature->branch_id];
+      if (!$signature_branch->status) {
         continue;
       }
 
@@ -1573,7 +1573,7 @@ function api_page_function($function) {
         array_shift($tokens);
       }
       if ($signature->class_did !== '0') {
-        $class = api_object_load((int) $signature->class_did, $branch, array('interface', 'class'), $signature->file_name);
+        $class = api_object_load((int) $signature->class_did, $signature_branch, array('interface', 'class'), $signature->file_name);
         $name .= l($class->object_name, api_url($class)) . '::';
       }
       $name .= $tokens[0][1];
