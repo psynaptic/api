@@ -3,7 +3,7 @@
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
 class ApiLinkDocumentationTest extends ApiTestCase {
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('api_link_documentation()'),
       'description' => t('Test the api_link_documentation() function.'),
