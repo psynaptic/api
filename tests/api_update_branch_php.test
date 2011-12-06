@@ -44,6 +44,35 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Check multi-paragraph @return
     $this->assertTrue(strpos($object->return_value, 'second paragraph about the return') !== FALSE, t('sample_function() return contains second paragraph.'));
 
+    // Check list formatting.
+    $list1 = "<p>This is a sample list:</p>" .
+      "<ul><li>One item." .
+      "</li><li>Another item." .
+      "<ul><li>A sub-item. This one goes for multiple lines, just to make" .
+      "sure that that works. It should. And here&#039;s a colon: just to" .
+      "make sure that isn&#039;t wonky." .
+      "</li><li>Another sub-item." .
+      "</li></ul></li><li>A third item." .
+      "</li></ul>";
+
+    $list2 = "<p>This list uses our key format:</p>" .
+      "<ul><li><strong>key1</strong>: The usual format, no quotes." .
+      "</li><li><strong>&#039;key2&#039;</strong>: Sometimes we have quotes." .
+      "</li><li><strong>&quot;key3 multiple&quot;</strong>: Sometimes double quotes and multiple words." .
+      "</li></ul>";
+
+    // Test the list HTML with no whitespace, and then spot check some of the
+    // list text to make sure the spaces are there. Trying to get all the
+    // white space in the list HTML to match exactly is pointless.
+    $no_spaces_doc = preg_replace('|\s+|', '', $object->documentation);
+    $list1 = preg_replace('|\s+|', '', $list1);
+    $list2 = preg_replace('|\s+|', '', $list2);
+
+    $this->assertTrue(strpos($no_spaces_doc, $list1) !== FALSE, t('Nested list is formatted correctly'));
+    $this->assertTrue(strpos($no_spaces_doc, $list2) !== FALSE, t('List with keys is formatted correctly'));
+    $this->assertTrue(strpos($object->documentation, "A sub-item. This one goes for multiple lines, just to make") !== FALSE, t('List item text is verbatim'));
+    $this->assertTrue(strpos($object->documentation, "key3 multiple") !== FALSE, t('List item key is verbatim'));
+
     // Check $sample_global
     $object = api_object_load('sample_global', $branch, 'global', 'sample.php');
     $this->assertEqual($object->summary, 'A sample global.', t('$sample_global has summary %summary.', array('%summary' => $object->summary)));

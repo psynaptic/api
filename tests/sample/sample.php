@@ -30,6 +30,21 @@ define('SAMPLE_CONSTANT');
  *
  * Use for sample-related purposes.
  *
+ * This is a sample list:
+ * - One item.
+ * - Another item.
+ *   - A sub-item. This one goes for multiple lines, just to make
+ *     sure that that works. It should. And here's a colon: just to
+ *     make sure that isn't wonky.
+ *   - Another sub-item.
+ * - A third item.
+ * This is not part of the list.
+ *
+ * This list uses our key format:
+ * - key1: The usual format, no quotes.
+ * - 'key2': Sometimes we have quotes.
+ * - "key3 multiple": Sometimes double quotes and multiple words.
+ *
  * @param $parameter
  *   A generic parameter.
  * @param $complex_parameter

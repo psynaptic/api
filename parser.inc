@@ -563,6 +563,7 @@ function api_format_documentation_lists($documentation) {
     preg_match('!^( *)([*-] )?(.*)$!', $line, $matches);
     $indent = strlen($matches[1]);
     $bullet_exists = $matches[2];
+    $is_start = FALSE;
 
     if ($indent < $bullet_indents[0]) {
       // First close off any lists that have completed.
@@ -576,6 +577,7 @@ function api_format_documentation_lists($documentation) {
       if ($bullet_exists) {
         // A new bullet at the same indent means a new list item.
         $output .= '</li><li>';
+        $is_start = TRUE;
       }
       else {
         // If the indent is the same, but there is no bullet, that also
@@ -589,8 +591,15 @@ function api_format_documentation_lists($documentation) {
       // A new list at a lower level.
       array_unshift($bullet_indents, $indent);
       $output .= '<ul><li>';
+      $is_start = TRUE;
     }
 
+    // At the start of a bullet, if there is a ":", put everything before the :
+    // in bold.
+    if ($is_start && (($p = strpos($matches[3], ':')) > 0)) {
+      $matches[3] = '<strong>' . substr($matches[3], 0, $p) . '</strong>' .
+        substr($matches[3], $p);
+    }
     $output .= $matches[3] ."\n";
   }
 
