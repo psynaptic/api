@@ -1941,7 +1941,7 @@ function api_cron() {
  *   Code with function names formatted as links.
  */
 function api_link_code($code, $branch, $class_did = NULL) {
-  return _api_link_documentation($code, $branch, $class_did, array('code function'));
+  return _api_link_documentation($code, $branch, $class_did, array('code function', 'code string'));
 }
 
 /**
@@ -2017,6 +2017,11 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     // Find function names in marked-up code.
     'code function' => '!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>!',
 
+    // Find potential function names (callback strings) in marked-up code.
+    // These are all strings that are legal function names, where the function
+    // name is put into something like a hook_menu() page callback as a string.
+    'code string' => '!<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!',
+
     // Find file names, which are an arbitrary number of strings joined with
     // '.'
     'file' => '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%',
@@ -2032,6 +2037,8 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
   $callback_match = 'api_link_name';
   $prepend = '';
   $append = '';
+  $prepend_if_not_found = NULL;
+  $use_php = TRUE;
 
   switch ($stage) {
     case 'tags':
@@ -2050,6 +2057,13 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       $prepend = '<span class="php-function-or-constant">';
       $append = '</span>';
       break;
+
+    case 'code string':
+      $prepend = '<span class="php-function-or-constant">\'';
+      $append = '\'</span>';
+      $prepend_if_not_found = '<span class="php-string">\'';
+      $use_php = FALSE;
+      break;
   }
 
   if (count($stages) > 0) {
@@ -2059,7 +2073,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     $callback = NULL;
   }
 
-  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append, $class_did), $callback, array($branch, $class_did, $stages));
+  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append, $class_did, NULL, NULL, $use_php, $prepend_if_not_found), $callback, array($branch, $class_did, $stages));
 }
 
 /**
@@ -2123,13 +2137,24 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  *   Text to prepend on the link.
  * @param $append
  *   Text to append on the link.
+ * @param $class_did
+ *   Documentation ID of the class this is part of (if any).
  * @param $text
  *   Link text. If omitted, uses $name.
+ * @param $is_link
+ *   TRUE if this was inside a @link.
+ * @param $use_php
+ *   TRUE if links to PHP functions should be made; FALSE if only Drupal
+ *   objects.
+ * @param $prepend_if_not_found
+ *   Text to prepend if object is not found (defaults to $prepend).
+ * @param $append_if_not_found
+ *   Text to append if object is not found (defaults to $append).
  *
  * @return
  *   The text as a link to the object page.
  */
-function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE) {
+function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE, $use_php = TRUE, $prepend_if_not_found = NULL, $append_if_not_found = NULL) {
   static $local_objects = array(), $php_functions;
 
   if (!isset($local_objects[$class_did])) {
@@ -2224,12 +2249,27 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   elseif (isset($local_objects[$class_did]['item'][$name])) {
     return $prepend . l($text, $local_objects[$class_did]['item'][$name]['url'], $local_objects[$class_did]['item'][$name]['options']) . $append;
   }
-  elseif (isset($php_functions[$name])) {
+  elseif ($use_php && isset($php_functions[$name])) {
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
     return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($php_functions[$name]), 'class' => 'php-manual'))) . $append;
   }
   else {
-    return $prepend . $text . $append;
+    $ret = '';
+    if (isset($prepend_if_not_found)) {
+      $ret .= $prepend_if_not_found;
+    }
+    else {
+      $ret .= $prepend;
+    }
+    $ret .= $text;
+    if (isset($append_if_not_found)) {
+      $ret .= $append_if_not_found;
+    }
+    else {
+      $ret .= $append;
+    }
+
+    return $ret;
   }
 }
 

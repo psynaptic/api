@@ -10,7 +10,7 @@ class ApiLinkCodeTest extends ApiTestCase {
       'group' => 'API Module',
     );
   }
-  
+
   function testApiLinkCode() {
     $branch = $this->getBranch();
     $interface = api_object_load('SampleInterface', $branch, 'interface', 'classes.php');
@@ -66,6 +66,11 @@ class ApiLinkCodeTest extends ApiTestCase {
         'data' => '<span class="php-function-or-constant">strpos</span>',
         'expected' => '<span class="php-function-or-constant"><a href="http://php.net/strpos" title="int strpos(string $haystack, mixed $needle [, int $offset = &#039;&#039;]) Find position of first occurrence of a string" class="php-manual">strpos</a></span>',
       ),
+      array(
+        'message' => 'String that is function name linking',
+        'data' => '<span class="php-string">\'sample_function\'</span>',
+        'expected' => '<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>\'</span>',
+      ),
 
       // Should not be linked
       array(
@@ -77,6 +82,11 @@ class ApiLinkCodeTest extends ApiTestCase {
         'message' => 'Function name linking with (',
         'data' => 'sample_function(',
         'expected' => 'sample_function(',
+      ),
+      array(
+        'message' => 'String that is not a function name',
+        'data' => '<span class="php-string">\'not_an_actual_function\'</span>',
+        'expected' => '<span class="php-string">\'not_an_actual_function\'</span>',
       ),
     );
 
