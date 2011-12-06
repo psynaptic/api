@@ -68,6 +68,18 @@ function sample_function($parameter, $complex_parameter) {
 }
 
 /**
+ * Function that has classes for parameter and return value.
+ *
+ * @param SubSample $parameter
+ *   This parameter should link to the class.
+ *
+ * @return SampleInterface
+ *   This return value should link to the interface.
+ */
+function sample_class_function($parameter) {
+}
+
+/**
  * @} end samples
  */
 

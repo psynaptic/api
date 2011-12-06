@@ -1646,8 +1646,8 @@ function api_page_function($function) {
   }
 
   $documentation = api_link_documentation($function->documentation, $branch, $function->class_did);
-  $parameters = api_link_documentation($function->parameters, $branch, $function->class_did);
-  $return = api_link_documentation($function->return_value, $branch, $function->class_did);
+  $parameters = api_link_documentation($function->parameters, $branch, $function->class_did, TRUE);
+  $return = api_link_documentation($function->return_value, $branch, $function->class_did, TRUE);
   $see = api_link_documentation($function->see, $branch, $function->class_did, TRUE);
   $throws = api_link_documentation($function->throws, $branch, $function->class_did, TRUE);
   $code = api_link_code($function->code, $branch, $function->class_did);

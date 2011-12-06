@@ -10,12 +10,12 @@ class apiUpdateBranchPhp extends ApiTestCase {
       'group' => 'API Module',
     );
   }
-  
+
   function testApiUpdateBranchPhp() {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 25, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 26, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
@@ -85,7 +85,7 @@ class apiUpdateBranchPhp extends ApiTestCase {
     $samples_group = api_object_load('samples', $branch, 'group', 'sample.php');
     $this->assertEqual($samples_group->summary, 'A sample group.', t('Group samples has summary %summary.', array('%summary' => $samples_group->summary)));
     $count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} WHERE branch_id = %d AND to_did = %d AND object_type = 'group'", $branch->branch_id, $samples_group->did));
-    $this->assertEqual($count, 3, t('Group samples has %count members', array('%count' => $count)));
+    $this->assertEqual($count, 4, t('Group samples has %count members', array('%count' => $count)));
 
     // Check group class_samples
     $class_samples_group = api_object_load('class_samples', $branch, 'group', 'classes.php');
