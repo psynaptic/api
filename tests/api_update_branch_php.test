@@ -41,6 +41,9 @@ class apiUpdateBranchPhp extends ApiTestCase {
     // Check multi-paragraph @param with @link
     $this->assertTrue(strpos($object->parameters, 'this is a link') !== FALSE, t('sample_function() parameters contains link.'));
 
+    // Check for formatting on parameter.
+    $this->assertTrue(strpos($object->parameters, '<strong>$parameter</strong>:') !== FALSE, t('sample_function() parameter has strong/colon formatting'));
+
     // Check multi-paragraph @return
     $this->assertTrue(strpos($object->return_value, 'second paragraph about the return') !== FALSE, t('sample_function() return contains second paragraph.'));
 

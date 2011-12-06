@@ -327,13 +327,22 @@ function api_save_documentation($docblocks) {
     if (!empty($docblock['content'])) {
       // Find parameter definitions.
       $offset = 0;
-      $docblock['parameters'] = '';
+      $params = '';
       while (preg_match('/' . API_RE_TAG_START . 'param\s(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', substr($docblock['content'], $offset), $param_match, PREG_OFFSET_CAPTURE)) {
         $docblock['content'] = str_replace($param_match[0][0], '', $docblock['content']);
-        $docblock['parameters'] .= "\n\n". $param_match[1][0];
+        // Add some formatting to the parameter -- strong tag for everything
+        // that was on the @param line, and a colon after. Note that tags
+        // are stripped out below, so we use [strong] and then fix it later.
+        $this_param = $param_match[1][0];
+        $this_param = preg_replace('|^([^\n]+)|', '[strong]$1[/strong]:', $this_param);
+        $params .= "\n\n". $this_param;
         $offset = $param_match[0][1];
       }
-      $docblock['parameters'] = api_format_documentation($docblock['parameters']);
+      // Format and then replace our fake tags with real ones.
+      $params = api_format_documentation($params);
+      $params = str_replace('[strong]', '<strong>', $params);
+      $params = str_replace('[/strong]', '</strong>', $params);
+      $docblock['parameters'] = $params;
 
       // Find return value definitions.
       $docblock['return_value'] = '';
