@@ -299,6 +299,9 @@ function api_update_15() {
   return $return;
 }
 
+/**
+ * Deletes all documentation to force a reindex.
+ */
 function api_update_16() {
   $return = array();
 
@@ -530,6 +533,9 @@ function api_update_29() {
   return $return;
 }
 
+/**
+ * Adds the api_overrides table.
+ */
 function api_update_30() {
   $return = array();
 
@@ -548,6 +554,9 @@ function api_update_30() {
   return $return;
 }
 
+/**
+ * Adds 'var' and 'throws' fields to the api_documentation table.
+ */
 function api_update_31() {
   $return = array();
 
@@ -565,6 +574,9 @@ function api_update_31() {
   return $return;
 }
 
+/**
+ * Adds member_name field to the api_documentation table.
+ */
 function api_update_32() {
   $return = array();
 
@@ -579,6 +591,9 @@ function api_update_32() {
   return $return;
 }
 
+/**
+ * Adds documented_did field to the api_overrides table.
+ */
 function api_update_33() {
   $return = array();
 
@@ -592,7 +607,7 @@ function api_update_33() {
 }
 
 /**
- * Add {api_members}
+ * Add {api_members} table.
  */
 function api_update_34() {
   $return = array();
