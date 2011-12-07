@@ -2,16 +2,22 @@
 
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
-class apiUpdateBranchPhp extends ApiTestCase {
+/**
+ * Tests branch and object creation.
+ */
+class apiBranchCreation extends ApiTestCase {
   public static function getInfo() {
     return array(
-      'name' => t('api_update_branch_php()'),
-      'description' => t('Test the api_update_branch_php() function.'),
+      'name' => t('Branch and object creation'),
+      'description' => t('Tests that the branches and API documentation objects are created correctly.'),
       'group' => 'API Module',
     );
   }
 
-  function testApiUpdateBranchPhp() {
+  /**
+   * Tests that branch and API objects are created correctly.
+   */
+  function testBranchObjects() {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));

@@ -2,6 +2,9 @@
 
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
+/**
+ * Tests the api_link_code() function.
+ */
 class ApiLinkCodeTest extends ApiTestCase {
   public static function getInfo() {
     return array(
@@ -11,6 +14,9 @@ class ApiLinkCodeTest extends ApiTestCase {
     );
   }
 
+  /**
+   * Tests the api_link_code() function.
+   */
   function testApiLinkCode() {
     $branch = $this->getBranch();
     $interface = api_object_load('SampleInterface', $branch, 'interface', 'classes.php');

@@ -2,15 +2,21 @@
 
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
+/**
+ * Tests that legacy redirects are correct.
+ */
 class ApiLegacyTest extends ApiTestCase {
   public static function getInfo() {
     return array(
       'name' => t('legacy.inc'),
-      'description' => t('Test legacy.inc redirects.'),
+      'description' => t('Test legacy.inc redirect functions.'),
       'group' => 'API Module',
     );
   }
-  
+
+  /**
+   * Tests that legacy URL redirects are correct.
+   */
   function testApiLegacy() {
     $tests = array(
       // Function

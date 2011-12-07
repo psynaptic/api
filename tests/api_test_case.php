@@ -1,8 +1,20 @@
 <?php
 
+/**
+ * Provides a base class for testing the API module.
+ *
+ * Sets up a branch with the sample files, and parses this branch and the
+ * default PHP function branch. Note that the branch is set up using the
+ * api_save_branch() function directly, not using the admin interface.
+ */
 class ApiTestCase extends DrupalWebTestCase {
   private $default_branch;
 
+  /**
+   * Overrides DrupalWebTestCase::setUp().
+   *
+   * Sets up the sample branch and updates this and the default PHP branch.
+   */
   function setUp() {
     $this->default_branch = variable_get('api_default_branch', NULL);
     variable_del('api_default_branch');
@@ -33,12 +45,20 @@ class ApiTestCase extends DrupalWebTestCase {
     api_get_branches(TRUE);
   }
 
+  /**
+   * Overrides DrupalWebTestCase::tearDown().
+   *
+   * Ensures that the default branch doesn't get overridden by tests.
+   */
   function tearDown() {
     parent::tearDown();
     // Aparently SimpleTest is leaky sometimes.
     variable_set('api_default_branch', $this->default_branch);
   }
 
+  /**
+   * Returns the branch set up by this base testing class.
+   */
   function getBranch() {
     $branches = api_get_branches();
     return reset($branches);
