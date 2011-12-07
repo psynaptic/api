@@ -1,0 +1,358 @@
+<?php
+
+/**
+ * Tests web pages and administrative interfaces for the API module.
+ */
+class ApiWebPagesTestCase extends DrupalWebTestCase {
+  private $default_branch;
+  private $super_user;
+  private $branch_info;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Web pages and administrative interface'),
+      'description' => t('Tests web pages and administrative interface for the API module.'),
+      'group' => 'API Module',
+    );
+  }
+
+  /**
+   * Overrides DrupalWebTestCase::setUp().
+   *
+   * Sets up the sample branch, using the administrative interface, and updates
+   * this and the default PHP branch.
+   */
+  public function setUp() {
+    // Save the default branch for teardown.
+    $this->default_branch = variable_get('api_default_branch', NULL);
+    variable_del('api_default_branch');
+    parent::setUp('job_queue', 'grammar_parser', 'api');
+
+    // Set up a super-user.
+    $this->super_user = $this->drupalCreateUser(array(
+        'access API reference',
+        'administer API reference',
+        'access content',
+        'access administration pages',
+      ));
+    $this->drupalLogin($this->super_user);
+
+    // Create a "file" branch with the sample code, from the admin interface.
+    $this->branch_info = array(
+      'project' => 'test',
+      'branch_name' => '6',
+      'project_title' => 'Project 6',
+      'title' => 'Testing 6',
+      'status' => 1,
+      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/files',
+      $this->branch_info,
+      t('Save branch')
+    );
+
+    // Verify that it appears on the branch list, along with the PHP branch.
+    // (Form save should have brought us back to the branch list.)
+    $this->assertText('test', 'Test project name appears');
+    $this->assertText('Testing 6', 'Test branch title appears');
+
+    $this->assertText('php', 'PHP project name appears');
+    $this->assertText('PHP functions', 'PHP branch title appears');
+
+    // Find the ID that was assigned to this branch.
+    $branches = api_get_branches(TRUE);
+    $this_id = 0;
+    foreach ($branches as $branch) {
+      if ($branch->title == 'Testing 6') {
+        $this_id = $branch->branch_id;
+        break;
+      }
+    }
+
+    // Make this the default branch.
+    $this->drupalPost('admin/settings/api/branches/list',
+      array(
+        'default_branch' => $this_id,
+      ),
+      t('Save changes')
+    );
+
+    // Parse the code.
+    include_once drupal_get_path('module', 'api') .'/parser.inc';
+    api_update_all_branches();
+    while (job_queue_dequeue()) { }
+    api_shutdown();
+
+    api_get_branches(TRUE);
+  }
+
+  /**
+   * Overrides DrupalWebTestCase::tearDown().
+   *
+   * Ensures that the default branch doesn't get overridden by tests.
+   */
+  function tearDown() {
+    parent::tearDown();
+    // Aparently SimpleTest is leaky sometimes.
+    variable_set('api_default_branch', $this->default_branch);
+  }
+
+  /**
+   * Tests that listing pages have the right information.
+   */
+  function testListingPages() {
+    // Test the Functions page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
+    $this->assertLink('duplicate_function', 0, 'duplicate_function is on functions list page');
+    $this->assertLink('sample_function', 0, 'sample_function is on functions list page');
+    $this->assertLink('sample_class_function', 0, 'sample_class_function is on functions list page');
+    $this->assertText('For testing duplicate', 'duplicate_function description is on functions list page');
+    $this->assertText('A sample function', 'sample_function description is on functions list page');
+    $this->assertLink('sample.php', 0, 'sample.php file name is on functions list page');
+    $this->assertLink('duplicates.php', 0,  'duplicates.php file name is on functions list page');
+
+    // Verify file/function links.
+    $this->clickLink('sample_function');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/function/sample_function') !== FALSE, 'sample_function link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'sample.php link went to the right place');
+
+    // Test the Constants page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
+    $this->assertLink('DUPLICATE_CONSTANT', 0, 'DUPLICATE_CONSTANT is on constants list page');
+    $this->assertLink('SAMPLE_CONSTANT', 0, 'SAMPLE_CONSTANT is on constants list page');
+    $this->assertText('For testing duplicate constant linking', 'DUPLICATE_CONSTANT description is on constants list page');
+    $this->assertText('A sample constant', 'SAMPLE_CONSTANT description is on constants list page');
+    $this->assertLink('sample.php', 0, 'sample.php file name is on constants list page');
+    $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on constants list page');
+
+    // Verify constant/function links.
+    $this->clickLink('SAMPLE_CONSTANT');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/constant/SAMPLE_CONSTANT') !== FALSE, 'SAMPLE_CONSTANT link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'sample.php link went to the right place');
+
+    // Test the Classes page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->assertLink('Sample', 0, 'Sample is on classes list page');
+    $this->assertLink('Sample2', 0, 'Sample2 is on classes list page');
+    $this->assertLink('SubSample', 0, 'SubSample is on classes list page');
+    $this->assertText('Sample class.', 'Sample class description is on classes list page');
+    $this->assertLink('classes.php', 0, 'classes.php file name is on classes list page');
+
+    // Verify file/class links.
+    $this->clickLink('Sample');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/class/Sample') !== FALSE, 'Sample link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->clickLink('classes.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php') !== FALSE, 'classes.php link went to the right place');
+
+    // Test the Files page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
+    $this->assertLink('sample.php', 0, 'sample.php file name is on files list page');
+    $this->assertLink('classes.php', 0, 'classes.php file name is on files list page');
+    $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on files list page');
+    $this->assertText('A sample file', 'sample.php file description is on files list page');
+    $this->assertText('Object-oriented tests', 'classes.php file description is on files list page');
+
+    // Verify file link.
+    $this->clickLink('classes.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php') !== FALSE, 'classes.php link went to the right place');
+
+    // Test the Globals page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
+    $this->assertLink('$sample_global', 0, '$sample_global is on the globals list page');
+    $this->assertText('A sample global.', '$sample_global description is on the globals list page');
+    $this->assertLink('sample.php', 0, 'sample.php file name is on globals list page');
+
+    // Verify global/file links.
+    $this->clickLink('$sample_global');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/global/sample_global') !== FALSE, 'sample_global link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'samples.php link went to the right place');
+
+    // Test the Topics page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/groups');
+    $this->assertLink('Class Samples', 0, 'Class Samples topic is on the topics page');
+    $this->assertText('A sample group of classes. Should not include members', 'Class Samples description is on the topics page');
+    $this->assertLink('Samples', 0, 'Samples topic is on the topics page');
+    $this->assertText('A sample group', 'Samples description is on the topics page');
+
+    // Verify topic link.
+    $this->clickLink('Samples');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Samples link went to the right place');
+  }
+
+  /**
+   * Tests that constant pages have the right information.
+   */
+  function testConstantPage() {
+    // Visit a constant page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
+
+    // Check the text on the page.
+    $this->assertTrue(strpos($this->xpath('//title'), 'DUPLICATE_CONSTANT') !== FALSE, 'Constant page title includes constant name');
+    $this->assertText('For testing duplicate constant linking.', 'Description is present on constant page');
+    $this->assertText("define('DUPLICATE_CONSTANT')", 'Code is present on constant page');
+    $this->assertLink('sample.php', 0, 'Link to file is present on constant page');
+    $this->assertLink($this->branch_info['branch_name'] . ' duplicates.php', 0, 'Link to other version is present on constant page');
+    $this->assertText($this->branch_info['project_title'], 'Project title is on constant page');
+
+    // Click the links on the page and verify.
+    $this->clickLink($this->branch_info['branch_name'] . ' duplicates.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/duplicates.php/constant/DUPLICATE_CONSTANT') !== FALSE, 'Other version link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
+
+  }
+
+  /**
+   * Tests that function pages have the right information.
+   */
+  function testFunctionPage() {
+    // Visit a function page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
+
+    // Check the text on the page.
+    $this->assertTrue(strpos($this->xpath('//title'), 'duplicate_function') !== FALSE, 'Function page title includes function name');
+    $this->assertText('For testing duplicate function name linking.', 'Description is present on function page');
+    $this->assertText("function duplicate_function() {", 'Code is present on function page');
+    $this->assertLink('sample.php', 0, 'Link to file is present on function page');
+    $this->assertLink($this->branch_info['branch_name'] . ' duplicates.php', 0, 'Link to other version is present on function page');
+    $this->assertLink('duplicate_function()', 0, 'Second link to other version is present on function page');
+
+    // Click the links on the page and verify.
+    $this->clickLink($this->branch_info['branch_name'] . ' duplicates.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/duplicates.php/function/duplicate_function') !== FALSE, 'Other version link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
+
+    // Now try the function page with more complicated documentation.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
+
+    // Note that the unit tests verify a lot of other stuff, such as the
+    // presence of text when loading a function, so we'll just look for some of
+    // the text on the page.
+    $this->assertText('Use for sample-related purposes', 'Extended description appears on the function page');
+    $this->assertText('A generic parameter', 'Parameter description appears on teh function page');
+    $this->assertText('Something about the return value', 'Return value description appears on the function page');
+    $this->assertLink('this is a link for the parameter', 0, 'Link appears on the function page');
+    $this->assertLink('duplicate_function', 0, 'See also link appears on the function page');
+    $this->assertLink('Samples', 0, 'Topic link appears on the function page');
+    $this->assertText('A sample group.', 'Topic description appears on the function page');
+
+    // Verify list and parameter formatting -- again the unit tests take care of
+    // some of this.
+    $strong_lists = $this->xpath('//li/strong');
+    $this->assertTrue(in_array('key1', $strong_lists), 'key1 is highlighted in a list on function page');
+    $strong_pars = $this->xpath('//p/strong');
+    $this->assertTrue(in_array('$parameter', $strong_pars), 'parameter is highlighted on function page');
+
+    // Now try the function page with class parameters -- test the links.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_class_function');
+    $this->assertLink('SubSample', 0, 'Parameter type is linked');
+    $this->assertLink('SampleInterface', 0, 'Return value type is linked');
+    $this->clickLink('SubSample');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/class/SubSample') !== FALSE, 'Class parameter link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_class_function');
+    $this->clickLink('SampleInterface');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface return link went to the right place');
+  }
+
+  /**
+   * Tests that global pages have the right information.
+   */
+  function testGlobalPage() {
+    // Visit a global page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/global/sample_global');
+
+    // Check the text on the page.
+    $this->assertTrue(strpos($this->xpath('//title'), '$sample_global') !== FALSE, 'Global page title includes global name');
+    $this->assertText('A sample global.', 'Description is present on global page');
+    $this->assertLink('sample.php', 0, 'Link to file is present on global page');
+    $this->assertText($this->branch_info['project_title'], 'Project title is on global page');
+    $this->assertLink('Samples', 0, 'Topic link appears on the global page');
+    $this->assertText('A sample group.', 'Topic description appears on the global page');
+
+    // Click the links on the page and verify.
+    $this->clickLink('sample.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/global/sample_global');
+    $this->clickLink('Samples');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Topic link went to the right place');
+
+  }
+
+  /**
+   * Tests that class pages have the right information.
+   */
+  function testClassPage() {
+    // Visit a class page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+
+    // Check the text on the page.
+    $this->assertTrue(strpos($this->xpath('//title'), 'Sample') !== FALSE, 'Class page title includes class name');
+    $this->assertText('Sample class.', 'Description is present on class page');
+    $this->assertLink('classes.php', 0, 'Link to file is present on class page');
+    $this->assertText($this->branch_info['project_title'], 'Project title is on class page');
+    $this->assertLink('Class Samples', 0, 'Topic link appears on the class page');
+    $this->assertText('A sample group of classes.', 'Topic description appears on the class page');
+    $this->assertLink('SampleInterface', 0, 'Link to interface appears on class page');
+    $this->assertLink('SubSample', 0, 'Link to subclass appears on class page');
+    $this->assertLink('Sample::$property', 0, 'Link to property appears on class page');
+    $this->assertText('A property.', 'Property description appears on class page');
+    $this->assertLink('Sample::baz', 0, 'Link to method appears on class page');
+    $this->assertText('Only implemented in children.', 'Method description appears on class page');
+    $this->assertLink('Sample::foo', 0, 'Link to second method appears on class page');
+    $this->assertText('Metasyntactic member function.', 'Second method description appears on class page');
+    $this->assertLink('Sample::constant', 0, 'Link to constant appears on class page');
+    $this->assertText('A class constant.', 'Constant description appears on class page');
+
+    // Click the links on the page and verify.
+    $this->clickLink('classes.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php') !== FALSE, 'File link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->clickLink('Class Samples');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/group/class_samples') !== FALSE, 'Topic link went to the right place');
+
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->clickLink('SampleInterface');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface link went to the right place');
+    // While we're here, check some text...
+    $this->assertLink('Sample', 0, 'Link to sample class appears on interface page');
+    $this->assertLink('Sample2', 0, 'Link to sample2 class appears on interface page');
+
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->clickLink('Sample::$property');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::$property')) !== FALSE, 'Property link went to the right place');
+    // While here, check text...
+    $this->assertLink('SampleInterface', 'Link to type appears on property page');
+    $this->assertText('A property', 'Description appears on property page');
+    $this->assertText('variable value', 'Code appears on property page');
+
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->clickLink('Sample::baz');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::baz')) !== FALSE, 'Method link went to the right place');
+    // While here, check text...
+    $this->assertText('public function', 'Code appears on the method page');
+    $this->assertText('Only implemented in children', 'Description appears on method page');
+
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->clickLink('Sample::constant');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::constant')) !== FALSE, 'Constant link went to the right place');
+    // While here, check text...
+    $this->assertText('constant value', 'Code appears on the constant page');
+    $this->assertText('A class constant', 'Description appears on constant page');
+
+
+
+  }
+
+
+}
