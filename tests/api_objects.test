@@ -9,7 +9,7 @@ class apiBranchCreation extends ApiTestCase {
   public static function getInfo() {
     return array(
       'name' => t('Branch and object creation'),
-      'description' => t('Tests that the branches and API documentation objects are created correctly.'),
+      'description' => t('Test that the branches and API documentation objects are created correctly.'),
       'group' => 'API Module',
     );
   }
