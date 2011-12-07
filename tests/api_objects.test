@@ -5,7 +5,7 @@ include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 /**
  * Tests branch and object creation.
  */
-class apiBranchCreation extends ApiTestCase {
+class ApiBranchCreation extends ApiTestCase {
   public static function getInfo() {
     return array(
       'name' => t('Branch and object creation'),
