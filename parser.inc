@@ -22,7 +22,7 @@ module_load_include('inc', 'grammar_parser', 'engine/object');
  * @param $file_path
  *   Full path to the file to read in.
  * @param $branch
- *   Branch to assign the file contents to.
+ *   Object representing the branch to assign the file contents to.
  * @param $file_name
  *   File name to store in the database for this file.
  */
@@ -467,6 +467,12 @@ function api_save_documentation($docblocks) {
  *
  * First escapes all HTML tags. Then processes links and code blocks, and
  * converts newlines into paragraphs.
+ *
+ * @param $documentation
+ *   Documentation string to format.
+ *
+ * @return
+ *   Formatted documentation.
  */
 function api_format_documentation($documentation) {
   // Don't do processing on empty text (so we don't end up with empty paragraphs).
@@ -497,6 +503,12 @@ function api_format_documentation($documentation) {
  * Converts newlines into paragraphs.
  *
  * Like _filter_autop(), but does not add <br /> tags.
+ *
+ * @param $text
+ *   Text to convert.
+ *
+ * @return
+ *   Converted text.
  */
 function api_autop($text) {
   // All block level tags
@@ -551,7 +563,7 @@ function api_autop($text) {
 }
 
 /**
- * Regular expression callback for @code in api_format_documentation().
+ * Regular expression callback for \@code tags in api_format_documentation().
  */
 function api_format_embedded_php($matches) {
   return "\n\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">") ."\n\n";
@@ -562,6 +574,12 @@ function api_format_embedded_php($matches) {
  *
  * Parses a block of text for lists that uses hyphens or asterisks as bullets,
  * and format the lists as proper HTML lists.
+ *
+ * @param $documentation
+ *   Documentation string to format.
+ *
+ * @return
+ *   $documentation with lists formatted.
  */
 function api_format_documentation_lists($documentation) {
   $lines = explode("\n", $documentation);
@@ -623,6 +641,14 @@ function api_format_documentation_lists($documentation) {
 
 /**
  * Retrieves a summary from a documentation block.
+ *
+ * @param $documentation
+ *   Documentation block to find the summary of. Should be pre-formatted into
+ *   paragraphs.
+ *
+ * @return
+ *   First paragraph of the documentation block, stripped of tags, and
+ *   truncated to 255 characers.
  */
 function api_documentation_summary($documentation) {
   $pos = strpos($documentation, '</p>');
@@ -751,7 +777,7 @@ function api_format_php($code) {
  * referenced object has been parsed.
  *
  * @param $branch
- *   Branch the reference is in.
+ *   Object representing the branch the reference is in.
  * @param $to_type
  *   Type of object being referenced.
  * @param $to_name
@@ -894,6 +920,21 @@ function api_shutdown() {
   cache_clear_all();
 }
 
+/**
+ * Determines whether an object contains any documentation.
+ *
+ * @param $object
+ *   An object to test to see if it contains documentation.
+ *
+ * @return
+ *   TRUE if the object has any of the following non-empty properties:
+ *   - documentation
+ *   - parameters
+ *   - return_value
+ *   - see
+ *   - throws
+ *   - var
+ */
 function api_has_documentation($object) {
   foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
     if (!empty($object->$member)) {
@@ -922,6 +963,9 @@ function api_update_all_branches() {
  *
  * Queries the branch URL to get an updated list of functions, and saves each
  * function in the database.
+ *
+ * @param $branch
+ *   Object representing a PHP branch to update.
  *
  * @see api_update_all_branches()
  */
@@ -953,6 +997,9 @@ function api_update_branch_php($branch) {
  * list of files. Removes documentation from files that no longer exist, adds
  * documentation from new files, and updates documentation for any files that
  * have changed.
+ *
+ * @param $branch
+ *   Object representing a files branch to update.
  *
  * @see api_update_all_branches()
  */
