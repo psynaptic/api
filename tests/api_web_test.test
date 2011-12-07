@@ -310,7 +310,7 @@ class ApiWebPagesTestCase extends DrupalWebTestCase {
     $this->assertLink('Sample::baz', 0, 'Link to method appears on class page');
     $this->assertText('Only implemented in children.', 'Method description appears on class page');
     $this->assertLink('Sample::foo', 0, 'Link to second method appears on class page');
-    $this->assertText('Metasyntactic member function.', 'Second method description appears on class page');
+    $this->assertText('Metasyntatic member function.', 'Second method description appears on class page');
     $this->assertLink('Sample::constant', 0, 'Link to constant appears on class page');
     $this->assertText('A class constant.', 'Constant description appears on class page');
 
@@ -330,27 +330,28 @@ class ApiWebPagesTestCase extends DrupalWebTestCase {
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
     $this->clickLink('Sample::$property');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::$property')) !== FALSE, 'Property link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/property/Sample') !== FALSE, 'Property link went to the right place');
     // While here, check text...
-    $this->assertLink('SampleInterface', 'Link to type appears on property page');
+    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::$property') !== FALSE, 'Property page title includes property name');
+    $this->assertLink('SampleInterface', 0, 'Link to type appears on property page');
     $this->assertText('A property', 'Description appears on property page');
     $this->assertText('variable value', 'Code appears on property page');
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
     $this->clickLink('Sample::baz');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::baz')) !== FALSE, 'Method link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/function/Sample') !== FALSE, 'Method link went to the right place');
     // While here, check text...
+    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::baz') !== FALSE, 'Method page title includes method name');
     $this->assertText('public function', 'Code appears on the method page');
     $this->assertText('Only implemented in children', 'Description appears on method page');
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
     $this->clickLink('Sample::constant');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . urlencode('/classes.php/property/Sample::constant')) !== FALSE, 'Constant link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/constant/Sample') !== FALSE, 'Constant link went to the right place');
     // While here, check text...
+    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::constant') !== FALSE, 'Constant page title includes constant name');
     $this->assertText('constant value', 'Code appears on the constant page');
     $this->assertText('A class constant', 'Description appears on constant page');
-
-
 
   }
 
