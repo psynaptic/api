@@ -2,6 +2,10 @@
 
 /**
  * @file
+ * Administrative pages for the API module.
+ */
+
+/**
  * Generates the main admin page for the API module.
  *
  * Menu callback for path admin/settings/api.
@@ -55,6 +59,12 @@ function api_page_admin_form() {
 
 /**
  * Themes the table of defined branches for api_admin_form().
+ *
+ * @param $element
+ *   The form element to theme.
+ *
+ * @return
+ *   HTML table of the branches.
  */
 function theme_api_branch_table($element) {
   $header = array(
@@ -106,6 +116,10 @@ function api_admin_new_branch_page() {
 
 /**
  * Generates the edit form for a branch.
+ *
+ *
+ * @param $branch_id
+ *   ID of the branch to edit, or NULL to add a new branch.
  *
  * @see api_branch_edit_form_files()
  * @see api_branch_edit_form_php()
@@ -188,6 +202,9 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
 /**
  * Generates the form for editing file data for branches.
  *
+ * @param $branch
+ *   Object representing the branch to edit.
+ *
  * This is called from api_branch_edit_form_files() if the branch type is
  * "files".
  */
@@ -213,6 +230,9 @@ function api_branch_edit_form_files(&$form, $branch) {
 
 /**
  * Generates the form for editing PHP function data for branches.
+ *
+ * @param $branch
+ *   Object representing the branch to edit.
  *
  * This is called from api_branch_edit_form_files() if the branch type is
  * "php".
@@ -301,6 +321,12 @@ function api_branch_edit_form_submit($form, &$form_state) {
 
 /**
  * Trims whitespace, and removes trailing directory separators and blank lines.
+ *
+ * @param $list
+ *   Array of directories.
+ *
+ * @return
+ *   String with cleaned-up directories, separated by newlines.
  */
 function api_clean_directory_list($list) {
   $array = explode("\n", $list);
@@ -315,6 +341,9 @@ function api_clean_directory_list($list) {
 
 /**
  * Generates the confirmation form for deleting a branch.
+ *
+ * @param $branch_id
+ *   ID of the branch to delete.
  *
  * @see api_branch_delete_form_submit()
  */
