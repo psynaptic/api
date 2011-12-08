@@ -483,7 +483,7 @@ function api_menu() {
 
   // Redirect 1.1 links.
   // Objects
-  $items['api/function/%api_legacy_1_2_object'] = 
+  $items['api/function/%api_legacy_1_2_object'] =
   $items['api/function/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('function', 3),
     'page callback' => 'drupal_goto',
@@ -491,7 +491,7 @@ function api_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/constant/%api_legacy_1_2_object'] = 
+  $items['api/constant/%api_legacy_1_2_object'] =
   $items['api/constant/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('constant', 3),
     'page callback' => 'drupal_goto',
@@ -499,7 +499,7 @@ function api_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/global/%api_legacy_1_2_object'] = 
+  $items['api/global/%api_legacy_1_2_object'] =
   $items['api/global/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('global', 3),
     'page callback' => 'drupal_goto',
@@ -507,7 +507,7 @@ function api_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['api/group/%api_legacy_1_2_object'] = 
+  $items['api/group/%api_legacy_1_2_object'] =
   $items['api/group/%api_legacy_1_2_object/%'] = array(
     'load arguments' => array('group', 3),
     'page callback' => 'drupal_goto',
@@ -600,6 +600,17 @@ function api_menu() {
 
 /**
  * Find object for old URLs and return link.
+ *
+ * @param $object_name
+ *   Name of the object to find the URL of.
+ * @param $object_type
+ *   Type of object ('function', 'constant', etc.).
+ * @param $branch_name
+ *   Name of the branch to find the object in (across projects).
+ *
+ * @return
+ *   First matching URL for this combination of object name, type, and branch
+ *   name, or NULL if none is found.
  */
 function api_legacy_1_2_object_load($object_name, $object_type, $branch_name) {
   foreach (api_get_branches_by_name($branch_name) as $branch) {
@@ -612,6 +623,14 @@ function api_legacy_1_2_object_load($object_name, $object_type, $branch_name) {
 
 /**
  * Redirect old listings.
+ *
+ * @param $branch_name
+ *   Name of the branch to redirect.
+ * @param $type
+ *   Type of listing page ('functions', etc.), or NULL for the home page.
+ *
+ * @return
+ *   URL to redirect this listing to, in the default project.
  */
 function api_legacy_1_2_listing_load($branch_name, $type = NULL) {
   $branches = api_get_branches();
@@ -628,7 +647,13 @@ function api_legacy_1_2_listing_load($branch_name, $type = NULL) {
 }
 
 /**
- * Useful for old URLs which do not include project.
+ * Finds all branches matching a branch name, across projects.
+ *
+ * @param $branch_name
+ *   Branch name to match. If empty, defaults to the default branch.
+ *
+ * @return
+ *   Array of all branch objects with this name.
  */
 function api_get_branches_by_name($branch_name) {
   $branches = api_get_branches();
@@ -653,7 +678,11 @@ function api_get_branches_by_name($branch_name) {
  * @param $project
  *   The project name matching {api_branch}.project.
  * @param $branch_name
- *   The branch name matching {api_branch}.project.
+ *   The branch name matching {api_branch}.branch_name. If not set, uses the
+ *   default branch name.
+ *
+ * @return
+ *   Object representing the branch.
  */
 function api_get_branch_by_name($project, $branch_name) {
   $branches = api_get_branches();
@@ -672,19 +701,22 @@ function api_get_branch_by_name($project, $branch_name) {
 }
 
 /**
- * Load an API item. For API item menu callbacks.
+ * Menu object load callback for %api_item in menu paths.
  *
  * @param $object_name
- *   The object name matrching {api_documentation}.object_name.
+ *   The object name matching {api_documentation}.object_name.
  * @param $project
  *   The project name matching {api_branch}.project.
  * @param $branch_name
- *   The branch name matching {api_branch}.project.
+ *   The branch name matching {api_branch}.branch_name.
  * @param $file_name
  *   File the object must be in, with '--' for path separators.
  * @param $type
  *   API item type; one of function, constant, global, property, class,
  *   interface, or group.
+ *
+ * @return
+ *   Loaded documentation object.
  */
 function api_item_load($object_name, $project, $branch_name, $file_name, $type) {
   // Check type
@@ -705,7 +737,15 @@ function api_item_load($object_name, $project, $branch_name, $file_name, $type) 
 /**
  * Menu object load callback for %api_filename in menu paths.
  *
- * Loads information about an API file.
+ * @param $file_name
+ *   Name of the file.
+ * @param $project
+ *   Name of the project.
+ * @param $branch_name
+ *   Name of the branch.
+ *
+ * @return
+ *   Object representing the file's documentation.
  */
 function api_filename_load($file_name, $project, $branch_name) {
   $branch = api_get_branch_by_name($project, $branch_name);
@@ -717,16 +757,19 @@ function api_filename_load($file_name, $project, $branch_name) {
 }
 
 /**
- * Menu object load callback for %api_object in menu paths.
- *
- * Loads an object from its name, type, and branch.
+ * Loads a documentation object.
  *
  * @param $object_name_or_did
- *   The string object name or int did to load.
+ *   The string object name or documentation ID to load.
  * @param $branch
  *   Branch object.
  * @param $object_type
- *   A string type, or array of strings. class, interface, function, etc.
+ *   A string type, or array of strings: class, interface, function, etc.
+ * @param $file_name
+ *   Name of the file the object is in (if needed).
+ *
+ * @return
+ *   Object with information about the matching documentation object.
  */
 function api_object_load($object_name_or_did, $branch, $object_type, $file_name = NULL) {
   static $cache;
@@ -1137,8 +1180,6 @@ function api_hide_l($text) {
  *
  * @param $branch
  *   A branch object, with branch_name, title, and directories variables.
- * @param $old_branch_name
- *   To replace a branch, provide the old branch name.
  */
 function api_save_branch($branch) {
   $branch->data = serialize($branch->data);
@@ -1174,7 +1215,7 @@ function api_branch_sort($a, $b) {
 }
 
 /**
- * Returns the currently active branch.
+ * Returns the currently active branch object.
  */
 function api_get_active_branch() {
   static $branch;
@@ -1215,7 +1256,7 @@ function api_get_active_branch() {
  * Form builder for API search form.
  *
  * @param $branch
- *   Branch to build the search form for.
+ *   Object representing the branch to build the search form for.
  *
  * @see api_search_form_submit()
  */
@@ -1399,7 +1440,17 @@ function api_page_branch($branch) {
 }
 
 /**
- * Page callback for displaying documentation for an object.
+ * Displays a listing of an object type.
+ *
+ * @param $branch
+ *   Object representing branch to generate the listing for.
+ * @param $object_type
+ *   Type of object to list ('file', 'group', etc.).
+ * @param $switch_links
+ *   TRUE to include links to switch projects; FALSE to not include these.
+ *
+ * @return
+ *   HTML for the listing page.
  */
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   // todo #770784 alternatives with no object share theme stuff?
@@ -1417,6 +1468,14 @@ function api_page_listing($branch, $object_type, $switch_links = TRUE) {
 
 /**
  * Returns links to switch projects.
+ *
+ * @param $current_branch
+ *   Current branch object (its project will be excluded from links).
+ * @param $url
+ *   URL suffix (such as 'classes', 'functions', etc.).
+ *
+ * @return
+ *   HTML-formatted "Other projects" section, with links to other projects.
  */
 function api_switch_project($current_branch, $url = '') {
   $links = array();
@@ -1521,6 +1580,11 @@ function api_page_function_dump($branch_name) {
 
 /**
  * Sets the page title and breadcrumb for an object display page.
+ *
+ * @param $branch
+ *   Object representing the branch.
+ * @param $object
+ *   Object representing the documentation item on the current page.
  */
 function api_object_title_and_breadcrumb($branch, $object) {
   drupal_set_title($object->title);
@@ -1543,6 +1607,9 @@ function api_object_title_and_breadcrumb($branch, $object) {
 
 /**
  * Page callback that displays documentation for a function.
+ *
+ * @param $function
+ *   Documentation object representing the function to display.
  */
 function api_page_function($function) {
   $branches = api_get_branches();
@@ -1678,6 +1745,9 @@ function api_page_function($function) {
 
 /**
  * Page callback that displays documentation for a constant.
+ *
+ * @param $constant
+ *   Documentation object representing the constant to display.
  */
 function api_page_constant($constant) {
   $branches = api_get_branches();
@@ -1697,6 +1767,9 @@ function api_page_constant($constant) {
 
 /**
  * Page callback that displays documentation for a global.
+ *
+ * @param $global
+ *   Documentation object representing the global to display.
  */
 function api_page_global($global) {
   $branches = api_get_branches();
@@ -1716,6 +1789,9 @@ function api_page_global($global) {
 
 /**
  * Page callback that displays documentation for a property.
+ *
+ * @param $property
+ *   Documentation object representing the property to display.
  */
 function api_page_property($property) {
   $branches = api_get_branches();
@@ -1736,6 +1812,9 @@ function api_page_property($property) {
 
 /**
  * Page callback that displays documentation for a class.
+ *
+ * @param $class
+ *   Documentation object representing the class to display.
  */
 function api_page_class($class) {
   $branches = api_get_branches();
@@ -1779,6 +1858,7 @@ function api_page_class($class) {
  * @param $class
  *   Class object with at least did, branch_id, file_name, object_type, and
  *   object_name.
+ *
  * @return
  *   HTML string.
  */
@@ -1809,6 +1889,9 @@ function api_class_hierarchy($class) {
 
 /**
  * Page callback that displays documentation for a file.
+ *
+ * @param $file
+ *   Documentation object representing the file to display.
  */
 function api_page_file($file) {
   $branches = api_get_branches();
@@ -1866,6 +1949,9 @@ function _api_add_comments($documentation_object) {
 
 /**
  * Page callback that displays documentation for a group.
+ *
+ * @param $group
+ *   Documentation object representing the group (topic) to display.
  */
 function api_page_group($group) {
   $branches = api_get_branches();
@@ -1938,6 +2024,8 @@ function api_cron() {
  *   PHP code to scan for function names.
  * @param $branch
  *   Branch to make the links in.
+ * @param $class_did
+ *   Documentation ID of the class the code is in (if any).
  *
  * @return
  *   Code with function names formatted as links.
@@ -1953,8 +2041,11 @@ function api_link_code($code, $branch, $class_did = NULL) {
  *   Documentation to scan for function names.
  * @param $branch
  *   Branch to make the links in.
+ * @param $class_did
+ *   Documentation ID of the class the documentation is in (if any).
  * @param $aggressive_classes
- *   Try linking every word with a capital letter to a class or interface.
+ *   Try linking every word with a capital letter to a class or interface, if
+ *   TRUE.
  *
  * @return
  *   Documentation with function names formatted as links.
@@ -1974,8 +2065,11 @@ function api_link_documentation($documentation, $branch, $class_did = NULL, $agg
  *   Text to filter.
  * @param $branch
  *   Branch object to use for links.
+ * @param $class_did
+ *   Documentation ID of the class the documentation is in (if any).
  * @param $aggressive_classes
- *   Try linking every word with a capital letter to a class or interface.
+ *   Try linking every word with a capital letter to a class or interface, if
+ *   TRUE.
  *
  * @return
  *   Text with function names turned into links.
@@ -1996,6 +2090,8 @@ function api_filter_documentation($text, $branch, $class_did = NULL, $aggressive
  *   PHP code to scan for function names.
  * @param $branch
  *   Branch to make the links in.
+ * @param $class_did
+ *   Documentation ID of the class the documentation is in (if any).
  * @stages
  *   Array of stages to process.
  *
@@ -2079,8 +2175,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
 }
 
 /**
- * Splits a string using a regular expression and processes the text using
- * callbacks.
+ * Splits a string using a regular expression and processes using callbacks.
  *
  * @param $pattern
  *   The regular expression to match for splitting.
@@ -2298,6 +2393,8 @@ function api_entity_decode($text) {
  *   Text to prepend on the link.
  * @param $append
  *   Text to append on the link.
+ * @param $class_did
+ *   Documentation ID of the class the link is in (if any).
  *
  * @return
  *   The text as a link.

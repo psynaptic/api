@@ -10,7 +10,7 @@
  *
  * api/file/{directory}/{file.php}[/{branch}] -> api/{project}/{directory}--{file.php}/{branch}
  *
- * @param menu_tail
+ * @param ...
  *   One or more menu parts that follows the old style api/file/ path.
  */
 function api_file_redirect() {
