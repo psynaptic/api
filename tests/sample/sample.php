@@ -21,7 +21,7 @@ global $sample_global;
 /**
  * A sample constant.
  */
-define('SAMPLE_CONSTANT');
+define('SAMPLE_CONSTANT', 7);
 
 /**
  * A sample function.
@@ -68,6 +68,10 @@ function sample_function($parameter, $complex_parameter) {
 }
 
 /**
+ * @} end samples
+ */
+
+/**
  * Function that has classes for parameter and return value.
  *
  * @param SubSample $parameter
@@ -75,13 +79,11 @@ function sample_function($parameter, $complex_parameter) {
  *
  * @return SampleInterface
  *   This return value should link to the interface.
+ *
+ * @ingroup samples
  */
 function sample_class_function($parameter) {
 }
-
-/**
- * @} end samples
- */
 
 /**
  * For testing duplicate function name linking.
@@ -92,4 +94,116 @@ function duplicate_function() {
 /**
  * For testing duplicate constant linking.
  */
-define('DUPLICATE_CONSTANT');
+define('DUPLICATE_CONSTANT', 12);
+
+/**
+ * Respond to sample updates.
+ *
+ * This hook is for testing hook linking.
+ */
+function hook_sample_name() {
+}
+
+/**
+ * Alter samples.
+ *
+ * This hook is for testing alter hook linking.
+ */
+function hook_another_sample_alter() {
+}
+
+/**
+ * Returns HTML for a sample.
+ *
+ * This theme function is for testing linking in theme().
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - foo: The foo object that is being formatted.
+ *   - show_bar: TRUE to show the bar component, FALSE to omit it.
+ */
+function theme_sample_one($variables) {
+}
+
+/**
+ * Returns HTML for another sample.
+ *
+ * This theme function is for testing linking in theme(). It should not be
+ * linked, because of the sample-two.tpl.php file, which has higher priority.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - foo: The foo object that is being formatted.
+ *   - show_bar: TRUE to show the bar component, FALSE to omit it.
+ */
+function theme_sample_two($variables) {
+}
+
+/**
+ * Returns HTML for yet another sample.
+ *
+ * This theme function is for testing linking in theme().
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - foo: The foo object that is being formatted.
+ *   - show_bar: TRUE to show the bar component, FALSE to omit it.
+ */
+function theme_sample_four($variables) {
+}
+
+/**
+ * Does something interesting, to test in-code linking.
+ */
+function sample_in_code_links() {
+  // Should link to function.
+  $foo = sample_function();
+  // Should link to theme function.
+  $bar = theme('sample_one', $foo);
+  // Should link to theme template, not function, though both exist.
+  $baz = theme('sample_two', $foo);
+  // Should link to theme template.
+  $boo = theme('sample_three');
+  // Should link to the sample_four theme function.
+  $bop = theme('sample_four__option', $foo);
+
+  // Should link to hook.
+  $x = module_invoke_all('sample_name', $foo, $baz);
+  $stuff = '';
+  // Should link to hook.
+  foreach (module_implements('sample_name') as $module) {
+    // Should link to hook. Note that the variable name has to be $module for
+    // this link to work.
+    module_invoke($module, 'sample_name', $baz);
+  }
+
+  // Should link to alter hook.
+  $xx = drupal_alter('another_sample', $foo);
+
+  // Should link to search for this function.
+  $z = duplicate_function();
+
+  // Should link to class.
+  $j = new SubSample();
+
+  // Should link to constant.
+  $k = SAMPLE_CONSTANT;
+  // Should link to search for this constant.
+  $l = DUPLICATE_CONSTANT;
+
+  $menu = array(
+    'title' => 'foo',
+    // Should link to sample_function.
+    'page callback' => 'sample_function',
+  );
+
+  // Functions that don't exist, so should not be linked, but
+  // should still be visible.
+  $a = nonexistent_function($a, $b);
+  $b = module_invoke_all('nonexistent_hook', $foo);
+  $c = theme('nonexistent_theme_hook', $foo);
+  foreach (module_implements('nonexistent_hook') as $module) {
+    module_invoke($module, 'nonexistent_hook', $foo);
+  }
+  $d = drupal_alter('nonexistent_alter_name', $foo);
+}
