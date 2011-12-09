@@ -217,7 +217,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     // Check the text on the page.
     $this->assertTrue(strpos($this->xpath('//title'), 'DUPLICATE_CONSTANT') !== FALSE, 'Constant page title includes constant name');
     $this->assertText('For testing duplicate constant linking.', 'Description is present on constant page');
-    $this->assertText("define('DUPLICATE_CONSTANT')", 'Code is present on constant page');
+    $this->assertText("define('DUPLICATE_CONSTANT'", 'Code is present on constant page');
     $this->assertLink('sample.php', 0, 'Link to file is present on constant page');
     $this->assertLink($this->branch_info['branch_name'] . ' duplicates.php', 0, 'Link to other version is present on constant page');
     $this->assertText($this->branch_info['project_title'], 'Project title is on constant page');
