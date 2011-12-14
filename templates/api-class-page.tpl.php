@@ -52,6 +52,7 @@
 
 <?php print $objects; ?>
 
+<h3><?php print t('File'); ?></h3>
 <?php print $defined; ?>
 <?php print theme('ctools_collapsible', t('View source'), $code, $collapsed = TRUE) ?>
 

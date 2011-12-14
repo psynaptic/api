@@ -41,7 +41,10 @@
 <?php print $see ?>
 <?php } ?>
 
-<?php print $defined; ?>
+<h3><?php print t('File'); ?></h3>
+ <?php print $defined; ?>
+
+<h3><?php print t('Code'); ?></h3>
 <?php print $code; ?>
 
 <?php if (!empty($related_topics)) { ?>

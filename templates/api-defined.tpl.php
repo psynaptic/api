@@ -21,6 +21,13 @@
  * - $object->summary: Short summary.
  * - $object->documentation: HTML formatted comments.
  * - $object->code: HTML formatted source code.
+ * - $object->start_line: The line number where the definition for this object
+ *   starts in the containing file.
  */
 ?>
-<p class="api-defined"><?php print t('!file, line @start_line', array('!file' => api_file_link($object), '@start_line' => $object->start_line)); ?></p>
+<p class="api-defined">
+<dl>
+  <dt><?php print t('!file, line @start_line', array('!file' => api_file_link($object), '@start_line' => (($startline = $object->start_line) == NULL ? 0 : $startline) ) ); ?></dt>
+  <dd><?php print t('!summary', array('!summary' => ( ($file_info = api_filename_load($object->file_name, $branch->project, $branch->branch_name)) == NULL ? '' : $file_info->summary)) ); ?></dd>
+</dl>
+</p>
