@@ -192,7 +192,7 @@ function sample_in_code_links() {
   $l = DUPLICATE_CONSTANT;
 
   $menu = array(
-    'title' => 'foo',
+    'title' => 'A title goes here.',
     // Should link to sample_function.
     'page callback' => 'sample_function',
   );

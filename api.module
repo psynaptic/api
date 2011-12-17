@@ -2031,7 +2031,7 @@ function api_cron() {
  *   Code with function names formatted as links.
  */
 function api_link_code($code, $branch, $class_did = NULL) {
-  return _api_link_documentation($code, $branch, $class_did, array('code function', 'code string'));
+  return _api_link_documentation($code, $branch, $class_did, array('code hook name', 'code alter hook name', 'code theme hook name', 'code function', 'code string'));
 }
 
 /**
@@ -2112,6 +2112,19 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     // '('.
     'function' => '!(?<=^|\s)([a-zA-Z0-9_:]+)\(!',
 
+    // Find potential hook names in marked-up code inside a module_implements(),
+    // module_invoke(), or module_invoke_all() call. Note that module_invoke()
+    // must have $module as its first argument for this regular expression to
+    // match. This is due to a restriction in PCRE lookbehinds.
+    'code hook name' => '!(?<=module_invoke_all</span>\(|module_implements</span>\(|module_invoke</span>\(<span\ class="php-variable">\$module</span>, )<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!',
+
+    // Find potential alter hook names in marked-up code inside a drupal_alter()
+    // call.
+    'code alter hook name' => '!(?<=drupal_alter</span>\()<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!',
+
+    // Find potential theme hook names in marked-up code inside a theme() call.
+    'code theme hook name' => '!(?<=theme</span>\()<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!',
+
     // Find function names in marked-up code.
     'code function' => '!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>!',
 
@@ -2137,6 +2150,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
   $append = '';
   $prepend_if_not_found = NULL;
   $use_php = TRUE;
+  $type = '';
 
   switch ($stage) {
     case 'tags':
@@ -2162,6 +2176,30 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       $prepend_if_not_found = '<span class="php-string">\'';
       $use_php = FALSE;
       break;
+
+    case 'code hook name':
+      $prepend = '<span class="php-function-or-constant">\'';
+      $append = '\'</span>';
+      $prepend_if_not_found = '<span class="php-string">\'';
+      $use_php = FALSE;
+      $type = 'hook';
+      break;
+
+    case 'code alter hook name':
+      $prepend = '<span class="php-function-or-constant">\'';
+      $append = '\'</span>';
+      $prepend_if_not_found = '<span class="php-string">\'';
+      $use_php = FALSE;
+      $type = 'alter hook';
+      break;
+
+    case 'code theme hook name':
+      $prepend = '<span class="php-function-or-constant">\'';
+      $append = '\'</span>';
+      $prepend_if_not_found = '<span class="php-string">\'';
+      $use_php = FALSE;
+      $type = 'theme';
+      break;
   }
 
   if (count($stages) > 0) {
@@ -2171,7 +2209,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     $callback = NULL;
   }
 
-  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append, $class_did, NULL, NULL, $use_php, $prepend_if_not_found), $callback, array($branch, $class_did, $stages));
+  return api_split($patterns[$stage], $documentation, $callback_match, array($branch, $prepend, $append, $class_did, NULL, NULL, $use_php, $prepend_if_not_found, NULL, $type), $callback, array($branch, $class_did, $stages));
 }
 
 /**
@@ -2247,11 +2285,17 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  *   Text to prepend if object is not found (defaults to $prepend).
  * @param $append_if_not_found
  *   Text to append if object is not found (defaults to $append).
+ * @param $type
+ *   The type of information $name represents. Possible values:
+ *   - '': (default) $name is a normal object name.
+ *   - 'hook': $name is a hook name.
+ *   - 'alter hook': $name is an alter hook name.
+ *   - 'theme': $name is a theme hook name.
  *
  * @return
  *   The text as a link to the object page.
  */
-function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE, $use_php = TRUE, $prepend_if_not_found = NULL, $append_if_not_found = NULL) {
+function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE, $use_php = TRUE, $prepend_if_not_found = NULL, $append_if_not_found = NULL, $type = '') {
   static $local_objects = array(), $php_functions;
 
   if (!isset($local_objects[$class_did])) {
@@ -2343,6 +2387,33 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   if ($is_link && isset($local_objects[$class_did]['group'][$name])) {
     return $prepend . l($text, $local_objects[$class_did]['group'][$name]['url'], $local_objects[$class_did]['group'][$name]['options']) . $append;
   }
+  elseif ($type == 'hook') {
+    if (isset($local_objects[$class_did]['item']['hook_' . $name])) {
+      return $prepend . l($text, $local_objects[$class_did]['item']['hook_' . $name]['url'], $local_objects[$class_did]['item']['hook_' . $name]['options']) . $append;
+    }
+  }
+  elseif ($type == 'alter hook') {
+    if (isset($local_objects[$class_did]['item']['hook_' . $name . '_alter'])) {
+      return $prepend . l($text, $local_objects[$class_did]['item']['hook_' . $name . '_alter']['url'], $local_objects[$class_did]['item']['hook_' . $name . '_alter']['options']) . $append;
+    }
+  }
+  elseif ($type == 'theme') {
+    // Iteratively strip everything after the last '__' delimiter, until an
+    // implementation is found.
+    $hook_elements = explode('__', $name);
+    while (count($hook_elements) > 0) {
+      $hook = implode('__', $hook_elements);
+      $template_name = str_replace('_', '-', $hook) . '.tpl.php';
+      $function_name = 'theme_' . $hook;
+      if (isset($local_objects[$class_did]['item'][$template_name])) {
+        return $prepend . l($text, $local_objects[$class_did]['item'][$template_name]['url'], $local_objects[$class_did]['item'][$template_name]['options']) . $append;
+      }
+      elseif (isset($local_objects[$class_did]['item'][$function_name])) {
+        return $prepend . l($text, $local_objects[$class_did]['item'][$function_name]['url'], $local_objects[$class_did]['item'][$function_name]['options']) . $append;
+      }
+      array_pop($hook_elements);
+    }
+  }
   elseif (isset($local_objects[$class_did]['item'][$name])) {
     return $prepend . l($text, $local_objects[$class_did]['item'][$name]['url'], $local_objects[$class_did]['item'][$name]['options']) . $append;
   }
@@ -2350,24 +2421,17 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
     return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($php_functions[$name]), 'class' => 'php-manual'))) . $append;
   }
-  else {
-    $ret = '';
-    if (isset($prepend_if_not_found)) {
-      $ret .= $prepend_if_not_found;
-    }
-    else {
-      $ret .= $prepend;
-    }
-    $ret .= $text;
-    if (isset($append_if_not_found)) {
-      $ret .= $append_if_not_found;
-    }
-    else {
-      $ret .= $append;
-    }
 
-    return $ret;
+  // Fallback: if we get here, no matching documentation link has been found, so
+  // nothing has been returned yet. Return the non-linked text.
+  if (isset($prepend_if_not_found)) {
+    $prepend = $prepend_if_not_found;
   }
+  if (isset($append_if_not_found)) {
+    $append = $append_if_not_found;
+  }
+  return $prepend . $text . $append;
+
 }
 
 /**

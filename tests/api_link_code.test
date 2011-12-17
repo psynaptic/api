@@ -77,6 +77,46 @@ class ApiLinkCodeTest extends ApiTestCase {
         'data' => '<span class="php-string">\'sample_function\'</span>',
         'expected' => '<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a>\'</span>',
       ),
+      array(
+        'message' => 'String that is theme hook linking to function',
+        'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'sample_one\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/theme_sample_one/6') .'" title="Returns HTML for a sample." class="local">sample_one</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is theme hook linking to template',
+        'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'sample_three\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample-three.tpl.php/6') .'" title="Displays yet another sample." class="local">sample_three</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is theme hook linking to template when function also exists',
+        'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'sample_two\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample-two.tpl.php/6') .'" title="Displays a sample." class="local">sample_two</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is theme hook with base linking to function',
+        'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'sample_four__option\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/theme_sample_four/6') .'" title="Returns HTML for yet another sample." class="local">sample_four__option</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is hook linking to function in module_invoke_all()',
+        'data' => '<span class="php-function-or-constant">module_invoke_all</span>(<span class="php-string">\'sample_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_invoke_all</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/hook_sample_name/6') .'" title="Respond to sample updates." class="local">sample_name</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is hook linking to function in module_implements()',
+        'data' => '<span class="php-function-or-constant">module_implements</span>(<span class="php-string">\'sample_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_implements</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/hook_sample_name/6') .'" title="Respond to sample updates." class="local">sample_name</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is hook linking to function in module_invoke()',
+        'data' => '<span class="php-function-or-constant">module_invoke</span>(<span class="php-variable">$module</span>, <span class="php-string">\'sample_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_invoke</span>(<span class="php-variable">$module</span>, <span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/hook_sample_name/6') .'" title="Respond to sample updates." class="local">sample_name</a>\'</span>',
+      ),
+      array(
+        'message' => 'String that is alter hook linking to function in drupal_alter()',
+        'data' => '<span class="php-function-or-constant">drupal_alter</span>(<span class="php-string">\'another_sample\'</span>',
+        'expected' => '<span class="php-function-or-constant">drupal_alter</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample.php/function/hook_another_sample_alter/6') .'" title="Alter samples." class="local">another_sample</a>\'</span>',
+      ),
 
       // Should not be linked
       array(
@@ -93,6 +133,31 @@ class ApiLinkCodeTest extends ApiTestCase {
         'message' => 'String that is not a function name',
         'data' => '<span class="php-string">\'not_an_actual_function\'</span>',
         'expected' => '<span class="php-string">\'not_an_actual_function\'</span>',
+      ),
+      array(
+        'message' => 'String that is nonexestent theme hook',
+        'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'not_a_theme_hook_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-string">\'not_a_theme_hook_name\'</span>',
+      ),
+      array(
+        'message' => 'String that is nonexistent hook in module_invoke_all()',
+        'data' => '<span class="php-function-or-constant">module_invoke_all</span>(<span class="php-string">\'not_a_sample_hook_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_invoke_all</span>(<span class="php-string">\'not_a_sample_hook_name\'</span>',
+      ),
+      array(
+        'message' => 'String that is nonexestent hook in module_implements()',
+        'data' => '<span class="php-function-or-constant">module_implements</span>(<span class="php-string">\'not_a_sample_hook_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_implements</span>(<span class="php-string">\'not_a_sample_hook_name\'</span>',
+      ),
+      array(
+        'message' => 'String that is nonexistent hook in module_invoke()',
+        'data' => '<span class="php-function-or-constant">module_invoke</span>(<span class="php-variable">$module</span>, <span class="php-string">\'not_a_hook_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">module_invoke</span>(<span class="php-variable">$module</span>, <span class="php-string">\'not_a_hook_name\'</span>',
+      ),
+      array(
+        'message' => 'String that is nonexestent alter hook in drupal_alter()',
+        'data' => '<span class="php-function-or-constant">drupal_alter</span>(<span class="php-string">\'not_a_hook_name\'</span>',
+        'expected' => '<span class="php-function-or-constant">drupal_alter</span>(<span class="php-string">\'not_a_hook_name\'</span>',
       ),
     );
 
