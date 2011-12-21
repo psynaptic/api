@@ -1067,7 +1067,8 @@ function api_update_branch_files($branch) {
  *
  * @return
  *   Associative array of files, where the keys are the full paths to the
- *   files and the values are the file names.
+ *   files and the values are the file names. File names exclude the part of
+ *   the full path that is shared by all directories in the scan list.
  */
 function api_scan_directories($directories, $excluded_directories) {
   $directory_array = explode("\n", $directories);
