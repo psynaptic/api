@@ -36,10 +36,18 @@ function api_page_admin_form() {
         '#value' => $branch->project,
       );
       $form['branches'][$branch->branch_id]['title'] = array(
-        '#value' => l($branch->title, 'admin/settings/api/branches/'. $branch->branch_id),
+        '#value' => $branch->title,
       );
       $form['branches'][$branch->branch_id]['branch_name'] = array(
         '#value' => $branch->branch_name,
+      );
+      $ops = array();
+      $ops[] = l(t('edit'), 'admin/settings/api/branches/'. $branch->branch_id);
+      if ($branch->type == 'files') {
+        $ops[] = l(t('reparse'), 'admin/settings/api/reparse/'. $branch->branch_id);
+      }
+      $form['branches'][$branch->branch_id]['operations'] = array(
+        '#value' =>  implode(' ', $ops),
       );
     }
   }
@@ -69,9 +77,10 @@ function api_page_admin_form() {
 function theme_api_branch_table($element) {
   $header = array(
     t('Default'),
-    t('Project'),
+    t('Project identifier'),
     t('Branch title'),
-    t('Branch name'),
+    t('Branch identifier'),
+    t('Operations'),
   );
   $rows = array();
   foreach (element_children($element) as $key) {
@@ -149,7 +158,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
   );
 
   $form['project'] = array(
-    '#title' => t('Project'),
+    '#title' => t('Project identifier'),
     '#type' => 'textfield',
     '#default_value' => $branch->project,
     '#description' => t('Used as both a unique identifier for the project, and as the URL prefix for documentation for this project (path: api/[project]). You can add a branch to an existing project by entering the existing project name here. You can make this branch be part of a new project by entering a new project name here, and then add additional branches if desired.'),
@@ -163,7 +172,7 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     '#required' => TRUE,
   );
   $form['branch_name'] = array(
-    '#title' => t('Branch'),
+    '#title' => t('Branch identifier'),
     '#type' => 'textfield',
     '#default_value' => $branch->branch_name,
     '#description' => t('Identifier for this branch within this project. Used as the URL suffix for documentation pages for this branch. Also displayed as the version name, in the Versions section at the top of function pages and similar pages (variables, constants, etc.).'),
@@ -417,4 +426,26 @@ function api_comments_settings_form_submit($form, &$form_state) {
     }
   }
   drupal_set_message(t('Saved API comment settings.'));
+}
+
+/**
+ * Page callback: Marks a branch for reparsing.
+ *
+ * Path: admin/settings/api/reparse/%
+ *
+ * @param $branch_id
+ *   ID of the branch to mark for reparsing.
+ *
+ * @see api_menu()
+ */
+function api_admin_reparse($branch_id) {
+  $num = api_mark_for_reparse($branch_id);
+  $type = ($num > 0) ? 'status' : 'error';
+  $branches = api_get_branches();
+  if (isset($branches[$branch_id])) {
+    $branch_id = $branches[$branch_id]->branch_name;
+  }
+
+  drupal_set_message(t('@num files in branch @branch set to reparse, starting at next cron run', array('@num' => $num, '@branch' => $branch_id)), $type);
+  drupal_goto('admin/settings/api/branches');
 }

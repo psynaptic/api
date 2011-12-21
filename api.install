@@ -688,6 +688,17 @@ function api_update_36() {
 }
 
 /**
+ * Forces refresh of everything, because parser has changed.
+ */
+function api_update_6100() {
+  drupal_load('module', 'api');
+  $num = api_mark_for_reparse();
+  $return[] = array('success' => TRUE, 'query' => "$num files set to reparse, starting at next cron run");
+
+  return $return;
+}
+
+/**
  * Remove variables on uninstall.
  */
 function api_uninstall() {

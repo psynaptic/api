@@ -44,14 +44,6 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
       t('Save branch')
     );
 
-    // Verify that it appears on the branch list, along with the PHP branch.
-    // (Form save should have brought us back to the branch list.)
-    $this->assertText('test', 'Test project name appears');
-    $this->assertText('Testing 6', 'Test branch title appears');
-
-    $this->assertText('php', 'PHP project name appears');
-    $this->assertText('PHP functions', 'PHP branch title appears');
-
     // Find the ID that was assigned to this branch.
     $branches = api_get_branches(TRUE);
     $this_id = 0;
@@ -496,4 +488,77 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface return link went to the right place');
   }
 
+}
+
+/**
+ * Tests the API module admin pages.
+ */
+class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
+  public static function getInfo() {
+    return array(
+      'name' => t('Admin pages'),
+      'description' => t('Tests admin pages for the API module.'),
+      'group' => 'API Module',
+    );
+  }
+
+  /**
+   * Tests that admin pages work correctly.
+   *
+   * Note that some admin pages are tested during ApiWebPagesBaseTest::setUp().
+   */
+  function testAdminPages() {
+    // Verify the branches overview page.
+    $this->drupalGet('admin/settings/api/branches');
+
+    $this->assertText($this->branch_info['project'], 'Test project identifier appears');
+    $this->assertText($this->branch_info['title'], 'Test branch title appears');
+    $this->assertText('php', 'PHP project name appears');
+    $this->assertText('PHP functions', 'PHP branch title appears');
+
+    $this->assertLink('edit', 0, 'Edit link appears');
+    $this->clickLink('edit');
+    $this->assertTrue(strpos($this->url, 'admin/settings/api/branches/2') !== FALSE, 'Edit link went to the right place');
+    $this->assertRaw($this->branch_info['project'], 'Project name appears on edit page');
+    $this->assertRaw($this->branch_info['branch_name'], 'Branch name appears on edit page');
+    $this->assertRaw($this->branch_info['project_title'], 'Project title appears on edit page');
+    $this->assertRaw($this->branch_info['title'], 'Branch title appears on edit page');
+    $this->assertRaw($this->branch_info['data[directories]'], 'Data directory appears on edit page');
+
+    $tmp_branch_info = array(
+      'project' => 'temp',
+      'branch_name' => 'foo',
+      'project_title' => 'Project 6 bar',
+      'title' => 'Testing 6 baz',
+    );
+
+    $this->drupalPost(NULL, $tmp_branch_info, t('Save branch'));
+
+    // This should take us back to the admin listing. Verify the new info is
+    // there.
+    $this->assertText($tmp_branch_info['project'], 'Test project identifier appears');
+    $this->assertText($tmp_branch_info['title'], 'Test branch title appears');
+
+    // Now edit again, verify saved info is there, and set back.
+    $this->clickLink('edit');
+    $this->assertRaw($tmp_branch_info['project'], 'Project name appears on edit page');
+    $this->assertRaw($tmp_branch_info['branch_name'], 'Branch name appears on edit page');
+    $this->assertRaw($tmp_branch_info['project_title'], 'Project title appears on edit page');
+    $this->assertRaw($tmp_branch_info['title'], 'Branch title appears on edit page');
+
+    $this->drupalPost(NULL, $this->branch_info, t('Save branch'));
+
+    // Now we should be back on the listing page. Test the reparse link.
+    $this->assertTrue($this->howManyToParse() == 0, 'No files are marked to parse before clicking link');
+    $this->clickLink('reparse');
+    $this->assertText('5 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
+    $this->assertTrue($this->howManyToParse() == 5, '5 files are marked to parse after clicking reparse link');
+  }
+
+  /**
+   * Returns the number of files that have been marked as needing to be parsed.
+   */
+  function howManyToParse() {
+    return db_result(db_query('SELECT COUNT(*) from {api_file} WHERE modified < 100'));
+  }
 }
