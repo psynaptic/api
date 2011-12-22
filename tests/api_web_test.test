@@ -137,7 +137,10 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('Sample', 0, 'Sample is on classes list page');
     $this->assertLink('Sample2', 0, 'Sample2 is on classes list page');
     $this->assertLink('SubSample', 0, 'SubSample is on classes list page');
+    $this->assertLink('SampleInterface', 0, 'SampleInterface is on classes list page');
+    $this->assertLink('SampleInterfaceTwo', 0, 'SampleInterfaceTwo is on classes list page');
     $this->assertText('Sample class.', 'Sample class description is on classes list page');
+    $this->assertText('Sample interface.', 'Sample interface description is on classes list page');
     $this->assertLink('classes.php', 0, 'classes.php file name is on classes list page');
     $this->assertNoText('baz', 'Member name is not on classes page');
 
@@ -147,6 +150,9 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
     $this->clickLink('classes.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php') !== FALSE, 'classes.php link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->clickLink('SampleInterface');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'SampleInterface link went to the right place');
 
     // Test the Files page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
