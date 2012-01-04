@@ -245,7 +245,17 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('duplicate_function()', 0, 'Second link to other version is present on function page');
     $this->assertNoText('baz', 'Member name is not on function page');
 
-    // Click the links on the page and verify.
+    // Test the links made with @link on this function.
+    $this->assertLink('Subscribers', 0, 'Link to Subscribers is on function page');
+    $this->clickLink('Subscribers');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Subscribers link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
+    $this->assertLink('newsletter issues', 0, 'Link to newsletter issues is on function page');
+    $this->clickLink('newsletter issues');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/group/class_samples') !== FALSE, 'Newsletter link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
+
+    // Click the automatically-generated links on the page and verify.
     $this->clickLink($this->branch_info['branch_name'] . ' duplicates.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/duplicates.php/function/duplicate_function') !== FALSE, 'Other version link went to the right place');
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');

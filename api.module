@@ -2138,7 +2138,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     'tags' => '/(<[^>]+?'.'>)/',
 
     // Find @link
-    'link' => '/' . API_RE_TAG_START . 'link\s+(.*)\s+' . API_RE_TAG_START . 'endlink/',
+    'link' => '/' . API_RE_TAG_START . 'link\s+(.*)\s+' . API_RE_TAG_START . 'endlink/U',
 
     // Find function names, which are preceded by white space and followed by
     // '('.

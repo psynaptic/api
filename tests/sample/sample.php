@@ -87,6 +87,16 @@ function sample_class_function($parameter) {
 
 /**
  * For testing duplicate function name linking.
+ *
+ * Also, here is some test documentation for multiple links in one paragraph.
+ * This comes from the Simplenews project, modified to make links to groups
+ * that we have here.
+ *
+ * @link samples Subscribers @endlink subscribe to @link class_samples
+ * newsletters (categories) @endlink. That connection is called
+ * a @link samples subscription @endlink. Nodes of enabled content types
+ * are @link class_samples newsletter issues @endlink. These are then sent to
+ * the subscribers of the newsletter the issue is attached to.
  */
 function duplicate_function() {
 }

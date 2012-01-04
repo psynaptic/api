@@ -43,6 +43,11 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'expected' => '<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">A sample function.</a>',
       ),
       array(
+        'message' => 'Multiple @link',
+        'data' => "@link sample_function A sample function. @endlink and @link samples A topic. @endlink",
+        'expected' => '<a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">A sample function.</a> and <a href="' . url('api/test/sample.php/group/samples/6') . '" title="A sample group." class="local">A topic.</a>',
+      ),
+      array(
         'message' => 'Method name linking',
         'data' => 'Sample::foo(',
         'expected' => '<a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">Sample::foo</a>(',
