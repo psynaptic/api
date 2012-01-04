@@ -279,11 +279,11 @@ function api_menu() {
   );
 
   // todo #770784 destroy
-  foreach (api_get_branch_names() as $branch) {
-    $items['api/search/'. $branch .'/%menu_tail'] = array(
-      'title' => $branch,
+  foreach (api_get_branches() as $branch) {
+    $items['api/search/'. $branch->branch_name .'/%menu_tail'] = array(
+      'title' => $branch->title,
       'page callback' => 'api_search_listing',
-      'page arguments' => array($branch, 3),
+      'page arguments' => array($branch->branch_name, 3),
       'access arguments' => array('access API reference'),
       'type' => MENU_LOCAL_TASK,
     );
@@ -1036,6 +1036,36 @@ function api_preprocess_api_object_page(&$variables) {
 }
 
 /**
+ * Sets or returns the HTML page title.
+ *
+ * @param $title
+ *   If provided, sets the page title to this string.
+ *
+ * @return
+ *   The previously-set page title, or NULL if it has not been set during
+ *   this page load.
+ */
+function api_set_html_page_title($title = NULL) {
+  static $page_title = NULL;
+
+  if (isset($title)) {
+    $page_title = $title;
+  }
+
+  return $page_title;
+}
+
+/**
+ * Preprocess pages: sets the page title if it's an API module page.
+ */
+function api_preprocess_page(&$variables) {
+  $title = api_set_html_page_title();
+  if ($title) {
+    $variables['head_title'] = $title;
+  }
+}
+
+/**
  * Implementation of hook_init().
  *
  * Adds CSS and JavaScript for the search auto-complete. Adds OpenSearch
@@ -1334,7 +1364,25 @@ function api_search_listing($branch_name) {
   $search_text = func_get_args();
   array_shift($search_text);
   $search_text = implode('/', $search_text);
-  drupal_set_title(t('Search for %search', array('%search' => $search_text)));
+  $title = t('Search for %search', array('%search' => $search_text));
+  drupal_set_title($title);
+  $branches = api_get_branches_by_name($branch_name);
+  if (isset($branches[0])) {
+    $branch = $branches[0];
+    $breadcrumb = array(
+      l(t('Home'), '<front>'),
+      l(t('API reference'), 'api/' . $branch->project),
+      l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name),
+    );
+    drupal_set_breadcrumb($breadcrumb);
+    $plain_title = t('Search for @search', array('@search' => $search_text));
+    $page_title = array(
+      check_plain($plain_title),
+      check_plain($branch->title),
+      check_plain(variable_get('site_name', 'Drupal')),
+    );
+    api_set_html_page_title(implode(' | ', $page_title));
+  }
 
   $count = db_result(db_query("SELECT count(*) FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
   if ((int) $count === 1) {
@@ -1478,7 +1526,22 @@ function api_page_branch($branch) {
 function api_page_listing($branch, $object_type, $switch_links = TRUE) {
   // todo #770784 alternatives with no object share theme stuff?
 
-  // Use the correct plural form to construct the URL.
+  // Set the HTML page title and breadcrumb.
+  $breadcrumb = array(
+    l(t('Home'), '<front>'),
+    l(t('API reference'), 'api/' . $branch->project),
+    l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name),
+  );
+  drupal_set_breadcrumb($breadcrumb);
+  $title = drupal_get_title();
+  $page_title = array(
+    check_plain($title),
+    check_plain($branch->title),
+    check_plain(variable_get('site_name', 'Drupal')),
+  );
+  api_set_html_page_title(implode(' | ', $page_title));
+
+  // Use the correct plural form to construct the URLs for the other branches.
   // @todo Create a unit test for this to ensure there's no regression.
   $plural_type = $object_type . 's';
   $show_headings = FALSE;
@@ -1621,20 +1684,31 @@ function api_page_function_dump($branch_name) {
 function api_object_title_and_breadcrumb($branch, $object) {
   drupal_set_title($object->title);
   $breadcrumb = array(
-    l(t('Home'), ''),
+    l(t('Home'), '<front>'),
     l(t('API reference'), 'api/' . $branch->project),
     l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name),
   );
+  $page_title = array(
+    check_plain(variable_get('site_name', 'Drupal')),
+    check_plain($branch->title),
+  );
+
   if ($object->object_type !== 'file') {
     $breadcrumb[] = l(basename($object->file_name), api_url($object, TRUE));
+    $page_title[] = check_plain(basename($object->file_name));
   }
   if (!empty($object->class_did)) {
     $branches = api_get_branches();
     $class = api_object_load((int) $object->class_did, $branches[$object->branch_id], array('interface', 'class'), $object->file_name);
     $breadcrumb[] = l($class->object_name, api_url($class));
+    // Note that this is not needed in the page title, since the object name
+    // includes the class.
   }
 
+  $page_title[] = check_plain($object->title);
+
   drupal_set_breadcrumb($breadcrumb);
+  api_set_html_page_title(implode(' | ', array_reverse($page_title)));
 }
 
 /**
