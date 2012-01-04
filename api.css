@@ -81,13 +81,16 @@ html.js div.api-expandable div.content {
 }
 
 /* Search block- make the text field the correct width */
-#api-search-form #edit-search-wrapper {
+#api-search-form #edit-search-wrapper,
+#api-search-form-1 #edit-search-1-wrapper {
   display: inline;
 }
-#api-search-form #edit-search {
+#api-search-form #edit-search,
+#api-search-form-1 #edit-search-1 {
   width: 115px;
 }
-#api-search-form #autocomplete {
+#api-search-form #autocomplete,
+#api-search-form-1 #autocomplete-1 {
   width: 250px !important;
 }
 

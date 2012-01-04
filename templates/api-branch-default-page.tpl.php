@@ -21,7 +21,9 @@
   <h3><?php print l(t('Globals'), 'api/' . $branch->project . '/globals/' . $branch->branch_name); ?></h3>
   <h3><?php print l(t('Constants'), 'api/' . $branch->project . '/constants/' . $branch->branch_name); ?></h3>
   <h3><?php print l(t('Functions'), 'api/' . $branch->project . '/functions/' . $branch->branch_name); ?></h3>
-  <h3><?php print l('API Search', 'api/search/' . $branch->branch_name); ?></h3>
+  <h3><?php print l(t('Classes and Interfaces'), 'api/' . $branch->project . '/classes/' . $branch->branch_name); ?></h3>
+  <h3><?php print t('API search'); ?></h3>
+   <?php print drupal_get_form('api_search_form', $branch); ?>
   <?php print api_switch_project($branch); ?>
 <?php } ?>
 
