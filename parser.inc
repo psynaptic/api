@@ -216,7 +216,9 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
     switch ($type) {
       case T_INTERFACE:
       case T_CLASS:
-        api_documentation_loop($statement->body, array_merge($default_block, array('class' => $docblock['object_name'])), $docblocks);
+        if (!empty($statement->body)) {
+          api_documentation_loop($statement->body, array_merge($default_block, array('class' => $docblock['object_name'])), $docblocks);
+        }
         break;
     }
     $current = $current->next;
