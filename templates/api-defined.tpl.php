@@ -9,6 +9,8 @@
  * - $object: Object with information about the constant.
  * - $is_admin: True or false.
  * - $logged_in: True or false.
+ * - $file_link: Themed link to the file the object is in.
+ * - $file_summary: Summary line for the file the object is in.
  *
  * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
@@ -27,7 +29,7 @@
 ?>
 <p class="api-defined">
 <dl>
-  <dt><?php print t('!file, line @start_line', array('!file' => api_file_link($object), '@start_line' => (($startline = $object->start_line) == NULL ? 0 : $startline) ) ); ?></dt>
-  <dd><?php print t('!summary', array('!summary' => ( ($file_info = api_filename_load($object->file_name, $branch->project, $branch->branch_name)) == NULL ? '' : $file_info->summary)) ); ?></dd>
+  <dt><?php print t('!file, line @start_line', array('!file' => $file_link, '@start_line' => (($startline = $object->start_line) == NULL ? 0 : $startline) ) ); ?></dt>
+  <dd><?php print $file_summary; ?></dd>
 </dl>
 </p>

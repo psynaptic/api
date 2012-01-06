@@ -8,10 +8,11 @@
 /**
  * Legacy function for file redirect.
  *
- * api/file/{directory}/{file.php}[/{branch}] -> api/{project}/{directory}--{file.php}/{branch}
+ * api/file/{directory}/{file.php}[/{branch}] ->
+ * api/{project}/{directory}{separator}{file.php}/{branch}
  *
  * @param ...
- *   One or more menu parts that follows the old style api/file/ path.
+ *   One or more menu parts that follow(s) the old style api/file/ path.
  */
 function api_file_redirect() {
   $branches = api_get_branches();

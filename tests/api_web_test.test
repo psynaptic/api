@@ -76,7 +76,7 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
    *
    * Ensures that the default branch doesn't get overridden by tests.
    */
-  function tearDown() {
+  public function tearDown() {
     DrupalWebTestCase::tearDown();
     // Aparently SimpleTest is leaky sometimes.
     variable_set('api_default_branch', $this->default_branch);
@@ -108,6 +108,8 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample function', 'sample_function description is on functions list page');
     $this->assertLink('sample.php', 0, 'sample.php file name is on functions list page');
     $this->assertLink('duplicates.php', 0,  'duplicates.php file name is on functions list page');
+    $this->assertLink('sample_insubdir_function', 0,  'subdir function is on functions list page');
+    $this->assertLink('sample-subdir.php', 0,  'sample-subdir.php file name is on functions list page');
 
     // Verify file/function links.
     $this->clickLink('sample_function');
@@ -115,6 +117,13 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'sample.php link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
+    $this->clickLink('sample_insubdir_function');
+    $this->assertText('Used for sample and testing URLs', 'Subdir link went to right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
 
     // Test the Constants page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
@@ -124,6 +133,8 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample constant', 'SAMPLE_CONSTANT description is on constants list page');
     $this->assertLink('sample.php', 0, 'sample.php file name is on constants list page');
     $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on constants list page');
+    $this->assertLink('SAMPLE_CONSTANT_IN_SUB_DIR', 0,  'subdir constant is on constants list page');
+    $this->assertLink('sample-subdir.php', 0,  'sample-subdir.php file name is on constants list page');
 
     // Verify constant/function links.
     $this->clickLink('SAMPLE_CONSTANT');
@@ -131,6 +142,13 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'sample.php link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
+    $this->clickLink('SAMPLE_CONSTANT_IN_SUB_DIR');
+    $this->assertText('A sample constant', 'Constant link went to right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
 
     // Test the Classes page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
@@ -139,9 +157,11 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('SubSample', 0, 'SubSample is on classes list page');
     $this->assertLink('SampleInterface', 0, 'SampleInterface is on classes list page');
     $this->assertLink('SampleInterfaceTwo', 0, 'SampleInterfaceTwo is on classes list page');
+    $this->assertLink('SampleInSubDir', 0, 'Subdir sample is on classes list page');
     $this->assertText('Sample class.', 'Sample class description is on classes list page');
     $this->assertText('Sample interface.', 'Sample interface description is on classes list page');
     $this->assertLink('classes.php', 0, 'classes.php file name is on classes list page');
+    $this->assertLink('classes-subdir.php', 0, 'classes-subdir.php file name is on classes list page');
     $this->assertNoText('baz', 'Member name is not on classes page');
 
     // Verify file/class links.
@@ -153,24 +173,43 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
     $this->clickLink('SampleInterface');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'SampleInterface link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->clickLink('Sample2InSubDir');
+    $this->assertText('implements foo2', 'Sample2 link went to right place');
+    $this->assertText('Sample2InSubDir implements', 'Sample2 link went to right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->clickLink('classes-subdir.php');
+    $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
+    $this->assertText('Another Sample interface in a subdirectory', 'Classes file link went to right place');
 
     // Test the Files page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
     $this->assertLink('sample.php', 0, 'sample.php file name is on files list page');
     $this->assertLink('classes.php', 0, 'classes.php file name is on files list page');
     $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on files list page');
+    $this->assertLink('sample--doubledash.tpl.php', 0, 'double-dash file name is on files list page');
+    $this->assertLink('classes-subdir.php', 0, 'sub-directory file name is on files list page');
     $this->assertText('A sample file', 'sample.php file description is on files list page');
     $this->assertText('Object-oriented tests', 'classes.php file description is on files list page');
 
-    // Verify file link.
+    // Verify file links.
     $this->clickLink('classes.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php') !== FALSE, 'classes.php link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
+    $this->clickLink('sample--doubledash.tpl.php');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample--doubledash.tpl.php') !== FALSE, 'double-dash link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
+    $this->clickLink('classes-subdir.php');
+    $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
+    $this->assertText('Another Sample interface in a subdirectory', 'Classes file link went to right place');
 
     // Test the Globals page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
     $this->assertLink('$sample_global', 0, '$sample_global is on the globals list page');
+    $this->assertLink('$sample_in_sub_dir_global', 0, '$sample_in_sub_dir_global is on the globals list page');
     $this->assertText('A sample global.', '$sample_global description is on the globals list page');
     $this->assertLink('sample.php', 0, 'sample.php file name is on globals list page');
+    $this->assertLink('sample-subdir.php', 0, 'sample-subdir.php file name is on globals list page');
 
     // Verify global/file links.
     $this->clickLink('$sample_global');
@@ -178,6 +217,13 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'samples.php link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
+    $this->clickLink('$sample_in_sub_dir_global');
+    $this->assertText('A sample global in a subdirectory', 'Global link went to the right place');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/globals');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
 
     // Test the Topics page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/groups');
@@ -227,6 +273,15 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
 
+    // Visit a constant in a subdirectory and verify.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!sample-subdir.php/constant/SAMPLE_CONSTANT_IN_SUB_DIR');
+    $this->assertText('A sample constant', 'Constant description appears on subdirectory constant page');
+    $this->assertText('SAMPLE_CONSTANT_IN_SUB_DIR', 'Constant name appears on subdirectory constant page');
+    $this->assertText('subdirectory/', 'Subdirectory name appears on subdirectory constant page');
+    $this->assertLink('sample-subdir.php', 0, 'sample-subdir.php file name is on subdirectory constant page');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
   }
 
   /**
@@ -292,6 +347,16 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_class_function');
     $this->clickLink('SampleInterface');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface return link went to the right place');
+
+    // Visit a function in a subdirectory and verify.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!sample-subdir.php/function/sample_insubdir_function');
+    $this->assertText('Another sample function; in a sub-directory.', 'Function description appears on subdirectory function page');
+    $this->assertText('sample_insubdir_function', 'Function name appears on subdirectory function page');
+    $this->assertText('subdirectory/', 'Subdirectory name appears on subdirectory function page');
+    $this->assertLink('sample-subdir.php', 0, 'sample-subdir.php file name is on subdirectory function page');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
   }
 
   /**
@@ -316,6 +381,15 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Samples');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Topic link went to the right place');
 
+    // Visit a global in a subdirectory and verify.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!sample-subdir.php/global/sample_in_sub_dir_global');
+    $this->assertText('A sample global in a subdirectory', 'Global description appears on subdirectory global page');
+    $this->assertText('$sample_in_sub_dir_global', 'Global name appears on subdirectory global page');
+    $this->assertText('subdirectory/', 'Subdirectory name appears on subdirectory global page');
+    $this->assertLink('sample-subdir.php', 0, 'sample-subdir.php file name is on subdirectory global page');
+    $this->clickLink('sample-subdir.php');
+    $this->assertText('A sample global in a subdirectory', 'Sample file link went to right place');
+    $this->assertText('A sample file in a subdirectory', 'Sample file link went to right place');
   }
 }
 
@@ -395,6 +469,16 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTrue(strpos($this->xpath('//title'), 'Sample::constant') !== FALSE, 'Constant page title includes constant name');
     $this->assertText('constant value', 'Code appears on the constant page');
     $this->assertText('A class constant', 'Description appears on constant page');
+
+    // Visit a class in a subdirectory and verify.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SampleInSubDir');
+    $this->assertText('Sample class in a subdirectory.', 'Class description appears on subdirectory class page');
+    $this->assertText('SampleInSubDir', 'Class name appears on subdirectory class page');
+    $this->assertText('subdirectory/', 'Subdirectory name appears on subdirectory class page');
+    $this->assertLink('classes-subdir.php', 0, 'classes-subdir.php file name is on subdirectory class page');
+    $this->clickLink('classes-subdir.php');
+    $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
+    $this->assertText('Another Sample interface in a subdirectory.', 'Classes file link went to right place');
 
   }
 
@@ -483,7 +567,6 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/global/sample_global') !== FALSE, 'sample_global link went to the right place');
 
     // Now try the classes file.
-
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php');
     $this->assertText('Object-oriented tests', 'Sample file file description appears on the page');
     $this->assertTrue(strpos($this->xpath('//title'), 'classes.php') !== FALSE, 'File page title includes file name');
@@ -501,7 +584,19 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/class/Sample') !== FALSE, 'Sample link went to the right place');
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php');
     $this->clickLink('SampleInterface');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface return link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/interface/SampleInterface') !== FALSE, 'Interface link went to the right place');
+
+    // Now try a file in a subdirectory.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!sample-subdir.php');
+    $this->assertText('A sample file in a subdirectory.', 'File description appears on subdirectory file page');
+    $this->assertText('sample-subdir.', 'File name appears on subdirectory file page');
+    $this->assertLink('sample_insubdir_function', 0, 'Function link appears on subdirectory file page');
+    $this->clickLink('sample_insubdir_function');
+    $this->assertText('Used for sample and testing URLs', 'Subdir link went to right place');
+
+    // Now try a file with -- in the name.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample--doubledash.tpl.php');
+    $this->assertText('Displays a sample with a doubledash.', 'File description appears on double-dash page');
   }
 
 }
@@ -567,8 +662,8 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
     // Now we should be back on the listing page. Test the reparse link.
     $this->assertTrue($this->howManyToParse() == 0, 'No files are marked to parse before clicking link');
     $this->clickLink('reparse');
-    $this->assertText('5 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
-    $this->assertTrue($this->howManyToParse() == 5, '5 files are marked to parse after clicking reparse link');
+    $this->assertText('8 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
+    $this->assertTrue($this->howManyToParse() == 8, '8 files are marked to parse after clicking reparse link');
   }
 
   /**

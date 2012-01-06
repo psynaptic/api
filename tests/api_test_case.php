@@ -42,7 +42,11 @@ class ApiTestCase extends DrupalWebTestCase {
     while (job_queue_dequeue()) { }
     api_shutdown();
 
+    cache_clear_all('variables', 'cache');
+    variable_init();
     api_get_branches(TRUE);
+    menu_rebuild();
+    $this->assertEqual(variable_get('api_default_branch', 99), $branch->branch_id, 'Variable for default branch is set correctly');
   }
 
   /**

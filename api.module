@@ -33,6 +33,21 @@ define('API_RE_FILENAME', '([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)');
 define('API_RE_TAG_START', '(?<!\\\)@');
 
 /**
+ * File path separator.
+ */
+define('API_FILEPATH_SEPARATOR', '/');
+
+/**
+ * File path separator replacement.
+ */
+define('API_FILEPATH_SEPARATOR_REPLACEMENT', '!');
+
+/**
+ * File path separator replacement for API v 1.3.
+ */
+define('API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT', '--');
+
+/**
  * Implementation of hook_help().
  */
 function api_help($path, $arg) {
@@ -609,7 +624,7 @@ function api_menu() {
 }
 
 /**
- * Find object for old URLs and return link.
+ * Finds objects for old URLs and returns the link.
  *
  * @param $object_name
  *   Name of the object to find the URL of.
@@ -625,14 +640,14 @@ function api_menu() {
 function api_legacy_1_2_object_load($object_name, $object_type, $branch_name) {
   foreach (api_get_branches_by_name($branch_name) as $branch) {
     $object = api_object_load($object_name, $branch, $object_type);
-    if (!empty($object)) {
+    if (isset($object)) {
       return api_url($object);
     }
   }
 }
 
 /**
- * Redirect old listings.
+ * Returns the current path to listing pages accessed with old URLs.
  *
  * @param $branch_name
  *   Name of the branch to redirect.
@@ -683,7 +698,7 @@ function api_get_branches_by_name($branch_name) {
 }
 
 /**
- * Load a branch with a project & name.
+ * Loads a branch given a project and branch name.
  *
  * @param $project
  *   The project name matching {api_branch}.project.
@@ -713,6 +728,13 @@ function api_get_branch_by_name($project, $branch_name) {
 /**
  * Menu object load callback for %api_item in menu paths.
  *
+ * We convert all API_FILEPATH_SEPARATOR_REPLACEMENTs back to
+ * API_FILEPATH_SEPARATORs to maintain the original file path information.
+ * (When a URL is created for a documentation object, all
+ * API_FILEPATH_SEPARATORs in the original file path are
+ * replaced with API_FILEPATH_SEPARATOR_REPLACEMENTs so that
+ * API_FILEPATH_SEPARATORs won't be interpreted as part the of URL.
+ *
  * @param $object_name
  *   The object name matching {api_documentation}.object_name.
  * @param $project
@@ -720,50 +742,94 @@ function api_get_branch_by_name($project, $branch_name) {
  * @param $branch_name
  *   The branch name matching {api_branch}.branch_name.
  * @param $file_name
- *   File the object must be in, with '--' for path separators.
+ *   The name of the file the object must be in, with API_FILEPATH_SEPARATOR
+ *   for path separators.
  * @param $type
  *   API item type; one of function, constant, global, property, class,
  *   interface, or group.
  *
  * @return
- *   Loaded documentation object.
+ *   Loaded documentation object, or FALSE if not found (returning FALSE will
+ *   cause the Drupal menu system to recognize it's a 404 error).
  */
 function api_item_load($object_name, $project, $branch_name, $file_name, $type) {
   // Check type
   if (!in_array($type, array('function', 'constant', 'global', 'property', 'class', 'interface', 'group'))) {
-    return NULL;
+    return FALSE;
   }
 
   // Load branch
   $branch = api_get_branch_by_name($project, $branch_name);
   if (is_null($branch)) {
-    return NULL;
+    return FALSE;
   }
 
   // Load object
-  return api_object_load($object_name, $branch, $type, str_replace('--', '/', $file_name));
+  $back_to_orig_filename = str_replace(API_FILEPATH_SEPARATOR_REPLACEMENT, API_FILEPATH_SEPARATOR, $file_name);
+  $doc_object = api_object_load($object_name, $branch, $type, $back_to_orig_filename);
+
+  if (empty($doc_object) && (strpos($file_name, API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT) !== FALSE)) {
+    // May be an API 1.3 style path. See if we can load a valid object with the
+    // old replacement pattern.
+    $doc_object = api_object_load($object_name, $branch, $type, str_replace(API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT, API_FILEPATH_SEPARATOR, $file_name) );
+    // If we could, redirect to the current URL.
+    if (!empty($doc_object)) {
+      drupal_goto(api_url($doc_object));
+    }
+  }
+
+  if (empty($doc_object)) {
+    return FALSE;
+  }
+
+  return $doc_object;
 }
 
 /**
  * Menu object load callback for %api_filename in menu paths.
  *
+ * API v 1.3 replaced all '/'s in the file path with '--' for the URL generated
+ * for the file. We need to handle a URL with '--'
+ * (= API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT) and redirect it to the current,
+ * correct URL.
+ * We now convert all '/'s (= API_FILEPATH_SEPARATOR) to
+ * API_FILEPATH_SEPARATOR_REPLACEMENT when a URL is created for a documentatio
+ * object. Here we need to go back to the original filename and path.
+ *
  * @param $file_name
- *   Name of the file.
+ *   Name of the file to load.
  * @param $project
- *   Name of the project.
+ *   Name of the project the file is in.
  * @param $branch_name
- *   Name of the branch.
+ *   Name of the branch the file is in.
  *
  * @return
- *   Object representing the file's documentation.
+ *   Loaded documentation object, or FALSE if not found (returning FALSE will
+ *   cause the Drupal menu system to recognize it's a 404 error).
  */
 function api_filename_load($file_name, $project, $branch_name) {
   $branch = api_get_branch_by_name($project, $branch_name);
   if (is_null($branch)) {
-    return NULL;
+    return FALSE;
   }
 
-  return api_object_load(str_replace('--', '/', $file_name), $branch, 'file');
+  $doc_object = api_object_load(str_replace(API_FILEPATH_SEPARATOR_REPLACEMENT, API_FILEPATH_SEPARATOR, $file_name), $branch, 'file');
+
+  if (empty($doc_object) && (strpos($file_name, API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT) !== FALSE)) {
+    // May be an API 1.3 style path. See if we can load a valid object with the
+    // old replacement pattern.
+    $doc_object = api_object_load(str_replace(API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT, API_FILEPATH_SEPARATOR, $file_name), $branch, 'file');
+    // If we could, redirect to the current URL.
+    if (!empty($doc_object)) {
+      drupal_goto(api_url($doc_object));
+    }
+  }
+
+  if (empty($doc_object)) {
+    return FALSE;
+  }
+
+  return $doc_object;
 }
 
 /**
@@ -779,7 +845,8 @@ function api_filename_load($file_name, $project, $branch_name) {
  *   Name of the file the object is in (if needed).
  *
  * @return
- *   Object with information about the matching documentation object.
+ *   Object with information about the matching documentation, or NULL if it
+ *   does not exist.
  */
 function api_object_load($object_name_or_did, $branch, $object_type, $file_name = NULL) {
   static $cache;
@@ -788,48 +855,61 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
     $object_type = array($object_type);
   }
   $key = $object_name_or_did .':'. implode('-', $object_type) .':'. $branch->branch_id;
-  if (!isset($cache[$key])) {
-    // Prepare the query
-    $tables = array('{api_documentation} ad', 'LEFT JOIN {api_overrides} ao ON ao.did = ad.did');
-    $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did', 'ad.var', 'ad.throws', 'ao.overrides_did', 'ao.root_did', 'ad.member_name', 'ao.documented_did');
-    $where = "WHERE ad.object_type IN (" . db_placeholders($object_type, 'text') . ") AND ad.branch_id = %d";
-    $arguments = $object_type;
-    $arguments[] = $branch->branch_id;
-    if (is_int($object_name_or_did)) {
-      $where .= " AND ad.did = %d";
-      $arguments[] = $object_name_or_did;
-    }
-    else {
-      $where .= " AND ad.object_name = '%s'";
-      $arguments[] = $object_name_or_did;
-    }
 
-    if (!is_null($file_name)) {
-      $where .= " AND ad.file_name = '%s'";
-      $arguments[] = $file_name;
-    }
-
-    if (in_array('function', $object_type)) {
-      $tables[] = 'LEFT JOIN {api_function} af ON af.did = ad.did';
-      $fields[] = 'af.*';
-    }
-    elseif (in_array('file', $object_type)) {
-      $tables[] = 'LEFT JOIN {api_file} af ON af.did = ad.did';
-      $fields[] = 'af.*';
-    }
-    // Now build it
-    $cache[$key] = db_fetch_object(db_query_range('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments, 0, 1));
-
-    // Grab documentation from documented parent.
-    if (!empty($cache[$key]->documented_did) && $cache[$key]->documented_did !== $cache[$key]->did) {
-      $documented_object = api_object_load((int) $cache[$key]->documented_did, $branch, $object_type);
-      foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
-        $cache[$key]->$member = $documented_object->$member;
-      }
-    }
+  // See if we have this cached.
+  if (isset($cache[$key])) {
+    return $cache[$key];
   }
 
-  return $cache[$key];
+  // We don't have a cached value. Prepare the query.
+  $tables = array('{api_documentation} ad', 'LEFT JOIN {api_overrides} ao ON ao.did = ad.did');
+  $fields = array('ad.did', 'ad.branch_id', 'ad.object_name', 'ad.object_type', 'ad.title', 'ad.file_name', 'ad.summary', 'ad.documentation', 'ad.code', 'ad.start_line', 'ad.see', 'ad.class_did', 'ad.var', 'ad.throws', 'ao.overrides_did', 'ao.root_did', 'ad.member_name', 'ao.documented_did');
+  $where = "WHERE ad.object_type IN (" . db_placeholders($object_type, 'text') . ") AND ad.branch_id = %d";
+  $arguments = $object_type;
+  $arguments[] = $branch->branch_id;
+  if (is_int($object_name_or_did)) {
+    $where .= " AND ad.did = %d";
+    $arguments[] = $object_name_or_did;
+  }
+  else {
+    $where .= " AND ad.object_name = '%s'";
+    $arguments[] = $object_name_or_did;
+  }
+
+  if (!is_null($file_name)) {
+    $where .= " AND ad.file_name = '%s'";
+    $arguments[] = $file_name;
+  }
+
+  if (in_array('function', $object_type)) {
+    $tables[] = 'LEFT JOIN {api_function} af ON af.did = ad.did';
+    $fields[] = 'af.*';
+  }
+  elseif (in_array('file', $object_type)) {
+    $tables[] = 'LEFT JOIN {api_file} af ON af.did = ad.did';
+    $fields[] = 'af.*';
+  }
+
+  // Now build the object. Don't store a NULL or FALSE result in the cache in
+  // case we need to try again with a different filename or other argument.
+  $result_object =  db_fetch_object(db_query_range('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments, 0, 1));
+
+  if (isset($result_object) && $result_object) {
+    // Grab documentation from documented parent.
+    if (!empty($result_object->documented_did) && $result_object->documented_did !== $result_object->did) {
+      $documented_object = api_object_load((int) $result_object->documented_did, $branch, $object_type);
+      if (isset($documented_object)) {
+        foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
+          $result_object->$member = $documented_object->$member;
+        }
+      }
+    }
+    // Store in the cache.
+    $cache[$key] = $result_object;
+    return $result_object;
+  }
+
+  return NULL;
 }
 
 /**
@@ -988,7 +1068,7 @@ function api_theme() {
 }
 
 /**
- * Theme preprocess function for API object pages.
+ * Theme preprocess function for all API object pages.
  */
 function api_preprocess_api_object_page(&$variables) {
   // Note: branch is not defined for File pages, so don't try to create the
@@ -1033,6 +1113,21 @@ function api_preprocess_api_object_page(&$variables) {
     );
   }
   $variables['alternatives'] = drupal_render($alternatives);
+}
+
+/**
+ * Preprocess theme('api_defined').
+ *
+ * Sets up variables for the file link and summary line.
+ */
+function template_preprocess_api_defined(&$variables) {
+  $object = $variables['object'];
+  $branch = $variables['branch'];
+  $variables['file_link'] = api_file_link($object);
+  $file_info = api_filename_load($object->file_name, $branch->project, $branch->branch_name);
+  if (isset($file_info)) {
+    $variables['file_summary'] = $file_info->summary;
+  }
 }
 
 /**
@@ -1179,6 +1274,9 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
 /**
  * Constructs a link to an API object page.
  *
+ * Construct a URL for an object, replacing any API_FILEPATH_SEPARATOR in a
+ * file path with API_FILEPATH_SEPARATOR_REPLACEMENT.
+ *
  * @param $object
  *   An API object with object_type, object_name, and file_name properties.
  * @param $file
@@ -1191,13 +1289,16 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
 function api_url($object, $file = FALSE) {
   $branches = api_get_branches();
   if ($file) {
-    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $branches[$object->branch_id]->branch_name;
+    $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->file_name);
+    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $branches[$object->branch_id]->branch_name;
   }
   elseif ($object->object_type === 'file') {
-    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->object_name) . '/' . $branches[$object->branch_id]->branch_name;
+    $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->object_name);
+    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $branches[$object->branch_id]->branch_name;
   }
   else {
-    return 'api/' . $branches[$object->branch_id]->project . '/' . str_replace('/', '--', $object->file_name) . '/' . $object->object_type . '/' . $object->object_name . '/' . $branches[$object->branch_id]->branch_name;
+    $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->file_name);
+    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $object->object_type . '/' . $object->object_name . '/' . $branches[$object->branch_id]->branch_name;
   }
 }
 
@@ -1417,6 +1518,7 @@ function api_autocomplete($branch_name, $page = TRUE) {
     $objects[] = $object->title;
   }
 
+  $objects = array_unique($objects);
   if ($page) {
     drupal_json($objects);
   }
@@ -1442,6 +1544,8 @@ function api_opensearch($branch_name) {
 
   $short_name = t('Drupal API @branch', array('@branch' => $branch_name));
   $description = t('Drupal @branch API documentation', array('@branch' => $branch_name));
+  // We need to use a theme function, so initialize the theme system.
+  init_theme();
   if ($image = theme_get_setting('favicon')) {
     // Get rid of base_path that theme_get_setting() added.
     $image = substr($image, strlen(base_path()));
@@ -1491,7 +1595,7 @@ function api_suggest($branch) {
   while ($r = db_fetch_object($result)) {
     $matches[] = $r->title;
   }
-  print drupal_json(array($search, $matches));
+  print drupal_json(array($search, array_unique($matches)));
 }
 
 /**
@@ -1632,7 +1736,9 @@ function api_render_listing($result, $empty_message = NULL, $show_headings = TRU
       $summary = api_link_documentation($object->summary, $branches[$object->branch_id]);
       if (!empty($object->overrides_did)) {
         $overrides = api_object_load((int) $object->overrides_did, $branches[$object->branch_id], array('function', 'property', 'constant'));
-        $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</em>';
+        if (isset($overrides)) {
+          $summary .= ' <em class="api-inheritance-source">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</em>';
+        }
       }
       $row[] = $summary;
       $rows[] = $row;
@@ -1700,7 +1806,9 @@ function api_object_title_and_breadcrumb($branch, $object) {
   if (!empty($object->class_did)) {
     $branches = api_get_branches();
     $class = api_object_load((int) $object->class_did, $branches[$object->branch_id], array('interface', 'class'), $object->file_name);
-    $breadcrumb[] = l($class->object_name, api_url($class));
+    if (isset($class)) {
+      $breadcrumb[] = l($class->object_name, api_url($class));
+    }
     // Note that this is not needed in the page title, since the object name
     // includes the class.
   }
@@ -1749,7 +1857,9 @@ function api_page_function($function) {
       }
       if ($signature->class_did !== '0') {
         $class = api_object_load((int) $signature->class_did, $signature_branch, array('interface', 'class'), $signature->file_name);
-        $name .= l($class->object_name, api_url($class)) . '::';
+        if (isset($class)) {
+          $name .= l($class->object_name, api_url($class)) . '::';
+        }
       }
       $name .= $tokens[0][1];
       $signature_info[$n] = array(
