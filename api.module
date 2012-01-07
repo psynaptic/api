@@ -1968,6 +1968,11 @@ function api_page_function($function) {
     $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d ORDER BY d.title", $hook_name, $function->branch_id);
     $hook_functions = array();
     while ($object = db_fetch_object($result)) {
+      if ($object->did == $function->did) {
+        // Don't list the hook_* itself.
+        continue;
+      }
+
       $hook_functions[] = array(
         'function' => l($object->title, api_url($object)),
         'file' => api_file_link($object),
