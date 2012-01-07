@@ -971,6 +971,7 @@ function api_theme() {
         'code' => NULL,
         'see' => NULL,
         'throws' => NULL,
+        'hook_implementations' => NULL,
       ),
       'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
@@ -1831,6 +1832,8 @@ function api_page_function($function) {
 
   api_object_title_and_breadcrumb($branch, $function);
 
+  // Make the signatures section, which lists all the other function signatures
+  // (branches and duplicate function names) that we can find.
   $last_signature = '';
   $signatures = array();
   $n = 0;
@@ -1930,6 +1933,7 @@ function api_page_function($function) {
     );
   }
 
+  // Build the page sections.
   $documentation = api_link_documentation($function->documentation, $branch, $function->class_did);
   $parameters = api_link_documentation($function->parameters, $branch, $function->class_did, TRUE);
   $return = api_link_documentation($function->return_value, $branch, $function->class_did, TRUE);
@@ -1938,6 +1942,8 @@ function api_page_function($function) {
   $code = api_link_code($function->code, $branch, $function->class_did);
   $related_topics = api_related_topics($function->did, $branch);
 
+  // Build the list of functions that call this one, from the records added
+  // during parsing.
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.to_did = %d", $function->did));
   $call = '';
   if ($call_count > 0) {
@@ -1954,7 +1960,29 @@ function api_page_function($function) {
     $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
   }
 
-  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see, $throws);
+  // Special case: If this is a hook, make a list of functions that appear to
+  // be implementations of this hook.
+  $hook_implementations = '';
+  if (strpos($function->title, 'hook_') === 0) {
+    $hook_name = substr($function->title, 5);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d ORDER BY d.title", $hook_name, $function->branch_id);
+    $hook_functions = array();
+    while ($object = db_fetch_object($result)) {
+      $hook_functions[] = array(
+        'function' => l($object->title, api_url($object)),
+        'file' => api_file_link($object),
+        'description' => api_link_documentation($object->summary, $branch),
+      );
+    }
+
+    if (count($hook_functions) > 0) {
+      $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
+      $hook_implementations = theme('api_expandable', '<h3>'. api_show_l('▸ '. $hook_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $hook_title) .'</h3>'. theme('api_functions', $hook_functions));
+    }
+  }
+
+  // Put it all together and theme the output.
+  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see, $throws, $hook_implementations);
   $output .= _api_add_comments($function);
   return $output;
 }

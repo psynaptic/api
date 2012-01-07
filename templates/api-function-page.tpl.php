@@ -12,6 +12,8 @@
  * - $throws: Documentation of thown exceptions.
  * - $see: See also documentation.
  * - $related_topics: Related topics documentation.
+ * - $call: Themed list of functions that call this function.
+ * - $hook_implementations: Themed list of functions that implement this hook.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
@@ -88,6 +90,8 @@
 <?php } ?>
 
 <?php print $call ?>
+
+<?php print $hook_implementations; ?>
 
 <h3><?php print t('File'); ?></h3>
  <?php print $defined; ?>
