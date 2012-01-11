@@ -60,7 +60,7 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
  */
 Function api_parse_text_file($docblock) {
   $docblock['documentation'] = api_format_documentation($docblock['source']);
-  $docblock['code'] = api_format_php($docblock['source']);
+  $docblock['code'] = api_format_php($docblock['source'], TRUE);
 
   api_save_documentation(array($docblock));
 }
@@ -115,7 +115,7 @@ function api_parse_php_file($docblock) {
   $statements = $reader->getStatements();
   if (!$statements) {
     // This is a text file or template file with no functions, constants, etc.
-    $docblock['code'] = api_format_php($docblock['source']);
+    $docblock['code'] = api_format_php($docblock['source'], TRUE);
     api_save_documentation(array($docblock));
     // Free up memory.
     $reader->reset();
@@ -123,7 +123,7 @@ function api_parse_php_file($docblock) {
   }
 
   // Reserve the first array slot for the file documentation block.
-  $docblock['code'] = api_format_php($docblock['source']);
+  $docblock['code'] = api_format_php($docblock['source'], TRUE);
   $docblocks = array($docblock);
 
   // Set default documenation block array for items other than the file.
@@ -672,11 +672,14 @@ function api_documentation_summary($documentation) {
  *
  * @param $code
  *   PHP code to format.
+ * @param $number
+ *   FALSE to not number the lines (default). TRUE to number the lines, or an
+ *   integer to start numbering at that line number.
  *
  * @return
  *   HTML-formatted code, with spans enclosing various PHP elements.
  */
-function api_format_php($code) {
+function api_format_php($code, $number = FALSE) {
   $output = '';
 
   if (!defined('T_ML_COMMENT')) {
@@ -766,8 +769,18 @@ function api_format_php($code) {
     }
   }
 
-  // Manage whitespace:
-  return '<pre class="php"><code>'. trim($output) .'</code></pre>';
+  $output = '<pre class="php"><code>'. trim($output) .'</code></pre>';
+
+
+  // Add line numbering, if requested.
+  if ($number !== FALSE) {
+    $start = (is_int($number)) ? $number : 1;
+    $count = substr_count($output, "\n");
+    $numbers = range($start, $start + $count);
+    $output = '<table><tr><td class="line-numbers"><pre>' . implode("\n", $numbers) . '</pre></td><td class="code">' . $output . '</td></tr></table>';
+  }
+
+  return $output;
 }
 
 /**
