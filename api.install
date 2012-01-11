@@ -688,14 +688,36 @@ function api_update_36() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed.
+ * Helper function for updates: Forces everything to be reparsed.
+ *
+ * @param $return
+ *   Update function return value array.
+ *
+ * @return
+ *   $return with additional line added to it.
  */
-function api_update_6100() {
+function _api_update_force_all_reparse($return) {
   drupal_load('module', 'api');
   $num = api_mark_for_reparse();
   $return[] = array('success' => TRUE, 'query' => "$num files set to reparse, starting at next cron run");
 
   return $return;
+}
+
+/**
+ * Forces refresh of everything, because parser has changed.
+ */
+function api_update_6100() {
+  $return = array();
+  return _api_update_force_all_reparse($return);
+}
+
+/**
+ * Forces refresh of everything, because parser has changed again.
+ */
+function api_update_6101() {
+  $return = array();
+  return _api_update_force_all_reparse($return);
 }
 
 /**
