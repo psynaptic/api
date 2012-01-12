@@ -47,9 +47,25 @@ function api_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'project_title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'weight' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'project_title' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('branch_id'),
     'unique keys' => array(
@@ -59,15 +75,26 @@ function api_schema() {
       'weight' => array('weight'),
     ),
   );
+
   $schema['api_documentation'] = array(
     'fields' => array(
-      'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'branch_id' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
+      'object_name' => array(
+        'type' => 'varchar',
+        'length' => '127',
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'member_name' => array(
         'description' => 'For class members, the name without Class::',
         'type' => 'varchar',
@@ -75,13 +102,44 @@ function api_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
-      'title' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'file_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
-      'summary' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
-      'documentation' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
-      'code' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
-      'start_line' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'object_type' => array(
+        'type' => 'varchar',
+        'length' => '31',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'file_name' => array(
+        'type' => 'varchar',
+        'length' => '127',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'summary' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'documentation' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'code' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'start_line' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'see' => array(
         'type' => 'text',
         'size' => 'medium',
@@ -113,34 +171,85 @@ function api_schema() {
       'class_did' => array('class_did'),
     ),
   );
+
   $schema['api_file'] = array(
     'fields' => array(
-      'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
-      'modified' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'version' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'found' => array('type' => 'int', 'unsigned' => TRUE, 'size' => 'tiny', 'not null' => TRUE, 'default' => 0),
+      'did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'modified' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'version' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'found' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('did'),
   );
+
   $schema['api_function'] = array(
     'fields' => array(
-      'did' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
-      'signature' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
-      'parameters' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
-      'return_value' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
+      'did' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'signature' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'parameters' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'return_value' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('did'),
   );
+
   $schema['api_reference_storage'] = array(
     'documentation' => 'Keep track of references. For classes/interafaces, from_did extends to_did.',
     'fields' => array(
-      'object_name' => array('type' => 'varchar', 'length' => '127', 'not null' => TRUE, 'default' => ''),
+      'object_name' => array(
+        'type' => 'varchar',
+        'length' => '127',
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'branch_id' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'object_type' => array('type' => 'varchar', 'length' => '31', 'not null' => TRUE, 'default' => ''),
+      'object_type' => array(
+        'type' => 'varchar',
+        'length' => '31',
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'from_did' => array(
         'type' => 'int',
         'unsigned' => TRUE,
@@ -159,6 +268,7 @@ function api_schema() {
       'to_did' => array('to_did'),
     ),
   );
+
   $schema['api_overrides'] = array(
     'description' => 'Keep track of method, property, and class constant parents.',
     'fields' => array(
@@ -191,11 +301,20 @@ function api_schema() {
       'did' => array('did'),
     ),
   );
+
   $schema['api_members'] = array(
     'description' => 'Keep track of class members, including inherited members.',
     'fields' => array(
-      'class_did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'did' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'class_did' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'did' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'indexes' => array(
       'class_did' => array('did'),
