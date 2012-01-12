@@ -2624,10 +2624,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   }
 
   if (is_null($php_functions)) {
-    $result = db_query("SELECT d.object_name, d.summary FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function'");
+    $result = db_query("SELECT d.object_name, d.summary, b.data FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function'");
     $php_functions = array();
     while ($function = db_fetch_object($result)) {
-      $php_functions[$function->object_name] = $function->summary;
+      $php_functions[$function->object_name] = $function;
     }
   }
 
@@ -2669,8 +2669,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     return $prepend . l($text, $local_objects[$class_did]['item'][$name]['url'], $local_objects[$class_did]['item'][$name]['options']) . $append;
   }
   elseif ($use_php && isset($php_functions[$name])) {
-    $link = strtr(variable_get('api_php_funcpath', 'http://php.net/!function'), array('!function' => $name));
-    return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($php_functions[$name]), 'class' => 'php-manual'))) . $append;
+    $info = $php_functions[$name];
+    $data = unserialize($info->data);
+    $link = strtr($data['path'], array('!function' => $name));
+    return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($info->summary), 'class' => 'php-manual'))) . $append;
   }
 
   // Fallback: if we get here, no matching documentation link has been found, so

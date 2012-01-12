@@ -126,7 +126,6 @@ function api_admin_new_branch_page() {
 /**
  * Generates the edit form for a branch.
  *
- *
  * @param $branch_id
  *   ID of the branch to edit, or NULL to add a new branch.
  *
@@ -151,6 +150,8 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     $branch->title = '';
     $branch->directories = '';
     $branch->excluded_directories = '';
+    $branch->summary = '';
+    $branch->path = '';
     $branch->status = TRUE;
   }
   $form = array(
@@ -247,28 +248,31 @@ function api_branch_edit_form_files(&$form, $branch) {
  * "php".
  */
 function api_branch_edit_form_php(&$form, $branch) {
-  $form[] = array('#value' => '<p>' . t('Links to external documentation, such as the PHP manual.') . '</p>');
+  $form[] = array('#weight' => -99, '#value' => '<p>' . t('Links to external documentation, such as the PHP manual.') . '</p>');
 
   $form['data']['summary'] = array(
     '#type' => 'textfield',
     '#title' => t('Function list'),
     '#default_value' => $branch->summary,
     '#required' => TRUE,
-    '#description' => t('The URL of the PHP function summary document.'),
+    '#description' => t('The URL of the PHP function summary list.'),
   );
   $form['data']['path'] = array(
     '#type' => 'textfield',
     '#title' => t('Function URL'),
     '#default_value' => $branch->path,
     '#required' => TRUE,
-    '#description' => t('The URL format used to build the link to php functions.  Use the variable <em>!function</em> in place of the function name.'),
+    '#description' => t('The URL format used to build the link to PHP functions.  Use the variable <em>!function</em> in place of the function name.'),
   );
 
   // PHP manual reference will never be visible in the UI.
+  $form['branch_name']['#description'] = t('Identifier for this branch, unique across PHP functions branches');
   $form['project']['#type'] = 'value';
   $form['project']['#value'] = 'php';
+  $form['project_title']['#type'] = 'value';
+  $form['project_title']['#value'] = 'php';
   $form['title']['#type'] = 'value';
-  $form['title']['#value'] = 'php';
+  $form['title']['#value'] = 'PHP functions';
   $form['status']['#type'] = 'value';
   $form['status']['#value'] = FALSE;
 }

@@ -7,6 +7,7 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
   protected $default_branch;
   protected $super_user;
   protected $branch_info;
+  protected $php_branch_info;
 
   /**
    * Overrides DrupalWebTestCase::setUp().
@@ -44,11 +45,24 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
       t('Save branch')
     );
 
-    // Find the ID that was assigned to this branch.
+    // Create a "php" branch with the sample PHP function list, from the admin
+    // interface.
+    $this->php_branch_info = array(
+      'branch_name' => 'php2',
+      'data[summary]' => url(drupal_get_path('module', 'api') . '/tests/php_sample/funcsummary.txt', array('absolute' => TRUE)),
+      'data[path]' => 'http://example.com/function/!function',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/php',
+      $this->php_branch_info,
+      t('Save branch')
+    );
+
+    // Find the ID that was assigned to the function branch.
     $branches = api_get_branches(TRUE);
     $this_id = 0;
     foreach ($branches as $branch) {
-      if ($branch->title == 'Testing 6') {
+      if ($branch->title == $this->branch_info['title']) {
         $this_id = $branch->branch_id;
         break;
       }
@@ -63,6 +77,8 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
     );
 
     // Parse the code.
+    api_get_branches(TRUE);
+
     include_once drupal_get_path('module', 'api') .'/parser.inc';
     api_update_all_branches();
     while (job_queue_dequeue()) { }
@@ -80,6 +96,28 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
     DrupalWebTestCase::tearDown();
     // Aparently SimpleTest is leaky sometimes.
     variable_set('api_default_branch', $this->default_branch);
+  }
+
+  /**
+   * Asserts that a link exists, with the given URL.
+   *
+   * @param $label
+   *   Label of the link to find.
+   * @param $url
+   *   URL to match.
+   * @param $message_link
+   *   Message to use in link exist assertion.
+   * @param $message_url
+   *   Message to use for URL matching assertion.
+   */
+  protected function assertLinkURL($label, $url, $message_link, $message_url) {
+    // Code follows DrupalWebTestCase::clickLink() and assertLink().
+    $links = $this->xpath('//a[text()="' . $label . '"]');
+    $this->assert(isset($links[0]), $message_link);
+    if (isset($links[0])) {
+      $url_target = $this->getAbsoluteUrl($links[0]['href']);
+      $this->assertEqual($url_target, $url, $message_url);
+    }
   }
 }
 
@@ -325,6 +363,12 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('1 function calls duplicate_function()', 'List of calling functions is present');
     $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
     $this->assertText('Does something interesting, to test', 'Calling function description is present');
+
+    // Also check the links in duplicate_function() to the two PHP branches.
+    $this->assertLinkURL('foo_function', 'http://example.com/function/foo_function', 'foo_function is linked', 'foo_function link goes to right place');
+    $this->assertLinkURL('bar_function', 'http://example.com/function/bar_function', 'bar_function is linked', 'bar_function link goes to right place');
+    $this->assertNoLink('not_a_function', 'not_a_function() is not linked');
+    $this->assertLinkURL('substr', 'http://php.net/substr', 'substr function is linked', 'substr function link goes to the right place');
 
     // Now try the function page with more complicated documentation.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
@@ -635,8 +679,11 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText($this->branch_info['title'], 'Test branch title appears');
     $this->assertText('php', 'PHP project name appears');
     $this->assertText('PHP functions', 'PHP branch title appears');
+    $this->assertText($this->php_branch_info['branch_name'], 'Test PHP branch name appears');
 
     $this->assertLink('edit', 0, 'Edit link appears');
+    $this->assertLink('edit', 1, '2nd edit link appears');
+    $this->assertLink('edit', 2, '3rd edit link appears');
     $this->clickLink('edit');
     $this->assertTrue(strpos($this->url, 'admin/settings/api/branches/2') !== FALSE, 'Edit link went to the right place');
     $this->assertRaw($this->branch_info['project'], 'Project name appears on edit page');

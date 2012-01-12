@@ -231,6 +231,7 @@ function api_enable() {
     $branch = new stdClass();
     $branch->type = 'php';
     $branch->project = 'php';
+    $branch->project_title = 'php';
     $branch->branch_name = 'php';
     $branch->title = 'PHP functions';
     $branch->status = 0;
