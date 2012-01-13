@@ -389,6 +389,7 @@ function api_save_documentation($docblocks) {
 
     $docblock['did'] = db_result(db_query("SELECT did FROM {api_documentation} WHERE object_name = '%s' AND branch_id = %d AND object_type = '%s' AND file_name = '%s'", $docblock['object_name'], $docblocks[0]['branch']->branch_id, $docblock['object_type'], $docblock['file_name']));
     if ($docblock['did'] > 0) {
+      _api_add_text_defaults($docblock, 'api_documentation');
       drupal_write_record('api_documentation', $docblock, 'did');
     }
     else {
@@ -401,6 +402,7 @@ function api_save_documentation($docblocks) {
       node_save($node);
       $docblock['did'] = $node->nid;
       $docblock['branch_id'] = $docblocks[0]['branch']->branch_id;
+      _api_add_text_defaults($docblock, 'api_documentation');
       drupal_write_record('api_documentation', $docblock);
     }
 
@@ -414,6 +416,7 @@ function api_save_documentation($docblocks) {
     switch ($docblock['object_type']) {
       case 'function':
         db_query('DELETE FROM {api_function} WHERE did = %d', $docblock['did']);
+        _api_add_text_defaults($docblock, 'api_function');
         drupal_write_record('api_function', $docblock);
 
         if (!empty($docblock['code'])) {
@@ -867,6 +870,7 @@ function api_shutdown() {
               'summary' => $parent_class->summary,
               'did' => $object->did,
             );
+            _api_add_text_defaults($inherited_summary, 'api_documentation');
             drupal_write_record('api_documentation', $inherited_summary, 'did');
           }
           $override['root_did'] = $parent_class->did;
@@ -1130,4 +1134,36 @@ function api_scan_directories($directories, $excluded_directories) {
     }
   }
   return $source_files;
+}
+
+/**
+ * Adds defaults for TEXT fields to a database record.
+ *
+ * These cannot come from the schema, because TEXT fields have no defaults.
+ *
+ * @param $record
+ *   Record about to be written to the database with drupal_write_record().
+ * @param $table
+ *   Table $record is going into.
+ */
+function _api_add_text_defaults(&$record, $table) {
+  switch ($table) {
+    case 'api_documentation':
+      $record += array(
+        'summary' => '',
+        'documentation' => '',
+        'code' => '',
+        'see' => '',
+        'var' => '',
+        'throws' => '',
+      );
+      break;
+
+    case 'api_function':
+      $record += array(
+        'parameters' => '',
+        'return_value' => '',
+      );
+      break;
+  }
 }
