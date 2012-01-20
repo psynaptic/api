@@ -1185,8 +1185,8 @@ function api_preprocess_page(&$variables) {
  * autodiscovery links. Redirects nodes of type 'api' to the correct URL.
  */
 function api_init() {
-  drupal_add_css(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.css');
-  drupal_add_js(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js');
+  //drupal_add_css(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.css');
+  //drupal_add_js(drupal_get_path('module', 'api') . '/jquery-autocomplete/jquery.autocomplete.js');
   drupal_add_css(drupal_get_path('module', 'api') . '/api.css');
   drupal_add_js(drupal_get_path('module', 'api') . '/api.js');
   $branch = api_get_active_branch();
