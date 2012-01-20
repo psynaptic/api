@@ -10,6 +10,7 @@
  * - $function['description']: Function description.
  */
 ?>
+<h2><?php print $title ?></h2>
 <dl class="api-functions">
 <?php foreach ($functions as $function) { ?>
   <dt><?php print $function['function'] ?> <small>in <?php print $function['file'] ?></small></dt>
