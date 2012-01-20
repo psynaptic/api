@@ -1,3 +1,8 @@
+/* Expandable regions */
+html.js div.api-expandable div.content {
+  display: none;
+}
+
 /* PHP code */
 .php {
   overflow: auto;
