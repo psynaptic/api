@@ -28,6 +28,37 @@
 define('API_RE_FILENAME', '([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)');
 
 /**
+ * Regular expression for matching PHP functions.
+ *
+ * Taken from Drupal 7's DRUPAL_PHP_FUNCTION_PATTERN.
+ */
+define('API_RE_PHP_FUNCTION', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*');
+
+/**
+ * Regular expression for matching PHP functions and methods in text.
+ *
+ * These are patterns like ClassName::methodName(), or just function_name().
+ */
+define('API_RE_PHP_FUNCTION_IN_TEXT', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff:]*');
+
+/**
+ * Regular expression for matching hook names.
+ *
+ * Since the actual PHP function name already has a prefix, these can
+ * technically start with a number, although it's unlikely.
+ */
+define('API_RE_HOOK_NAME', '[a-zA-Z0-9_\x7f-\xff]+');
+
+/**
+ * Regular expression for matching class names in text.
+ *
+ * Although class names can technically be just like function names, we
+ * only want to match class names if they include a capital letter, so as
+ * not to be too overly aggressive.
+ */
+define('API_RE_CLASS_NAME_TEXT', '[a-zA-Z0-9_\x7f-\xff]*[A-Z][a-zA-Z0-9_\x7f-\xff]*');
+
+/**
  * Regular expression for starting inline \@tags.
  */
 define('API_RE_TAG_START', '(?<!\\\)@');
@@ -2380,12 +2411,12 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       // Find function names, which are preceded by white space and followed by
       // '('.
       $append = '(';
-      $pattern = '!(?<=^|\s)([a-zA-Z0-9_:]+)\(!';
+      $pattern = '!(?<=^|\s)(' . API_RE_PHP_FUNCTION_IN_TEXT . ')\(!';
       break;
 
     case 'code function':
       // Find function names in marked-up code.
-      $pattern = '!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>!';
+      $pattern = '!<span class="php-function-or-constant">(' . API_RE_PHP_FUNCTION . ')</span>!';
       $prepend = '<span class="php-function-or-constant">';
       $append = '</span>';
       break;
@@ -2395,7 +2426,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       // These are all strings that are legal function names, where the function
       // name is put into something like a hook_menu() page callback as a
       // string.
-      $pattern = '!<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!';
+      $pattern = '!<span class="php-string">\'(' . API_RE_PHP_FUNCTION . ')\'</span>!';
       $prepend = '<span class="php-function-or-constant">\'';
       $append = '\'</span>';
       $prepend_if_not_found = '<span class="php-string">\'';
@@ -2407,7 +2438,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       // module_invoke(), or module_invoke_all() call. Note that module_invoke()
       // must have $module as its first argument for this regular expression to
       // match. This is due to a restriction in PCRE lookbehinds.
-      $pattern = '!(?<=module_invoke_all</span>\(|module_implements</span>\(|module_invoke</span>\(<span\ class="php-variable">\$module</span>, )<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!';
+      $pattern = '!(?<=module_invoke_all</span>\(|module_implements</span>\(|module_invoke</span>\(<span\ class="php-variable">\$module</span>, )<span class="php-string">\'(' . API_RE_HOOK_NAME . ')\'</span>!';
       $prepend = '<span class="php-function-or-constant">\'';
       $append = '\'</span>';
       $prepend_if_not_found = '<span class="php-string">\'';
@@ -2418,7 +2449,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     case 'code alter hook name':
       // Find potential alter hook names in marked-up code inside drupal_alter()
       // call.
-      $pattern = '!(?<=drupal_alter</span>\()<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!';
+      $pattern = '!(?<=drupal_alter</span>\()<span class="php-string">\'(' . API_RE_HOOK_NAME . ')\'</span>!';
       $prepend = '<span class="php-function-or-constant">\'';
       $append = '\'</span>';
       $prepend_if_not_found = '<span class="php-string">\'';
@@ -2428,7 +2459,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
 
     case 'code theme hook name':
       // Find potential theme hook names in marked-up code inside theme() call.
-      $pattern = '!(?<=theme</span>\()<span class="php-string">\'([a-zA-Z0-9_]+)\'</span>!';
+      $pattern = '!(?<=theme</span>\()<span class="php-string">\'(' . API_RE_HOOK_NAME . ')\'</span>!';
       $prepend = '<span class="php-function-or-constant">\'';
       $append = '\'</span>';
       $prepend_if_not_found = '<span class="php-string">\'';
@@ -2449,7 +2480,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
 
     case 'class':
       // Find class names, which have a capital letter.
-      $pattern = '/\b(\w*[A-Z]\w*)\b/';
+      $pattern = '/\b(' . API_RE_CLASS_NAME_TEXT . ')\b/';
       break;
   }
 
