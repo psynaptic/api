@@ -326,6 +326,22 @@ function api_menu() {
     'access arguments' => array('access API reference'),
     'type' => MENU_CALLBACK,
   );
+  $items['api/%/%/function/calls/%api_item'] = array(
+    'title' => 'Function calls',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['api/%/%/function/implementations/%api_item'] = array(
+    'title' => 'Function implementations',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_implementations',
+    'page arguments' => array(5),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+  );
   $items['api/%/%/constant/%api_item'] = array(
     'title' => 'Constant',
     'load arguments' => array(1, 5, 2, 3), // project, branch, filename, type
@@ -927,15 +943,6 @@ function api_theme() {
     'api_branch_table' => array(
       'arguments' => array('element' => NULL),
     ),
-    'api_expandable' => array(
-      'arguments' => array(
-        'prompt' => NULL,
-        'content' => NULL,
-        'class' => NULL,
-      ),
-      'path' => drupal_get_path('module', 'api') . '/templates',
-      'template' => 'api-expandable',
-    ),
     'api_defined' => array(
       'arguments' => array(
         'branch' => NULL,
@@ -953,6 +960,7 @@ function api_theme() {
     ),
     'api_functions' => array(
       'arguments' => array(
+        'title' => NULL,
         'functions' => array(),
       ),
       'path' => drupal_get_path('module', 'api') . '/templates',
@@ -976,6 +984,13 @@ function api_theme() {
       'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-function-page',
+    ),
+    'api_function_reference_page' => array(
+      'arguments' => array(
+        'functions' => NULL,
+      ),
+      'path' => drupal_get_path('module', 'api') . '/templates',
+      'template' => 'api-function-reference-page',
     ),
     'api_constant_page' => array(
       'arguments' => array(
@@ -1064,6 +1079,15 @@ function api_theme() {
       ),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-branch-default-page'
+    ),
+    'api_function_reference_link' => array(
+      'arguments' => array(
+        'title' => NULL,
+        'path' => NULL,
+        'link' => NULL,
+      ),
+      'path' => drupal_get_path('module', 'api') . '/templates',
+      'template' => 'api-function-reference-link'
     ),
   );
 }
@@ -1301,20 +1325,6 @@ function api_url($object, $file = FALSE) {
     $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->file_name);
     return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $object->object_type . '/' . $object->object_name . '/' . $branches[$object->branch_id]->branch_name;
   }
-}
-
-/**
- * Shows a link for theme('api_expandable').
- */
-function api_show_l($text) {
-  return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'show-content')));
-}
-
-/**
- * Hides a link for theme('api_expandable').
- */
-function api_hide_l($text) {
-  return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'hide-content')));
 }
 
 /**
@@ -1821,6 +1831,76 @@ function api_object_title_and_breadcrumb($branch, $object) {
 }
 
 /**
+ * Page callback that displays a list of instances where a function is called.
+ *
+ * @param $function
+ *   Documentation object representing the function to display.
+ */
+function api_page_function_calls($function) {
+  $branches = api_get_branches();
+  $branch = $branches[$function->branch_id];
+
+  api_object_title_and_breadcrumb($branch, $function);
+
+  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s'", $function->object_name));
+
+  // Build the list of functions that call this one, from the records added
+  // during parsing. Note that in the case of duplicate function names, we
+  // can't assume the {api_reference_storage}.to_did field matches this
+  // documentation object, so we match on the function name instead.
+  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' ORDER BY d.title", $function->object_name);
+  $call_functions = array();
+  while ($object = db_fetch_object($result)) {
+    $call_functions[] = array(
+      'function' => l($object->title, api_url($object)),
+      'file' => api_file_link($object),
+      'description' => api_link_documentation($object->summary, $branch),
+    );
+  }
+
+  $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
+
+  return theme('api_functions', $call_title, $call_functions);
+}
+
+/**
+ * Page callback that displays a list of implementations of a hook.
+ *
+ * @param $function
+ *   Documentation object representing the function to display.
+ */
+function api_page_function_implementations($function) {
+  $branches = api_get_branches();
+  $branch = $branches[$function->branch_id];
+
+  api_object_title_and_breadcrumb($branch, $function);
+
+  // Special case: If this is a hook, make a list of functions that appear to
+  // be implementations of this hook.
+  if (strpos($function->title, 'hook_') === 0) {
+    $hook_name = substr($function->title, 5);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d ORDER BY d.title", $hook_name, $function->branch_id);
+    $hook_functions = array();
+    while ($object = db_fetch_object($result)) {
+      if ($object->did == $function->did) {
+        // Don't list the hook_* itself.
+        continue;
+      }
+
+      $hook_functions[] = array(
+        'function' => l($object->title, api_url($object)),
+        'file' => api_file_link($object),
+        'description' => api_link_documentation($object->summary, $branch),
+      );
+    }
+  }
+
+  $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
+
+  return theme('api_functions', $hook_title, $hook_functions);
+}
+
+/**
  * Page callback that displays documentation for a function.
  *
  * @param $function
@@ -1949,42 +2029,30 @@ function api_page_function($function) {
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s'", $function->object_name));
   $call = '';
   if ($call_count > 0) {
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' ORDER BY d.title", $function->object_name);
-    $call_functions = array();
-    while ($object = db_fetch_object($result)) {
-      $call_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
-        'description' => api_link_documentation($object->summary, $branch),
-      );
-    }
     $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
-    $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
+
+    $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
+    $call_path = 'api/' . $branches[$function->branch_id]->project . '/' . $replaced_string . '/function/calls/' . $function->object_name . '/' . $branches[$function->branch_id]->branch_name;
+    $call_link = l($call_title, $call_path);
+    $call = theme('api_function_reference_link', $call_title, $call_path, $call_link);
   }
 
-  // Special case: If this is a hook, make a list of functions that appear to
-  // be implementations of this hook.
+  // Special case: If this is a hook, make a list of functions that appear to be
+  // implementations of this hook.
   $hook_implementations = '';
   if (strpos($function->title, 'hook_') === 0) {
     $hook_name = substr($function->title, 5);
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d ORDER BY d.title", $hook_name, $function->branch_id);
-    $hook_functions = array();
-    while ($object = db_fetch_object($result)) {
-      if ($object->did == $function->did) {
-        // Don't list the hook_* itself.
-        continue;
-      }
+    $hook_count = db_result(db_query("SELECT count(*) from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d", $hook_name, $function->branch_id));
 
-      $hook_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
-        'description' => api_link_documentation($object->summary, $branch),
-      );
-    }
+    // Don't count the hook itself.
+    $hook_count = $hook_count - 1;
 
-    if (count($hook_functions) > 0) {
-      $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
-      $hook_implementations = theme('api_expandable', '<h3>'. api_show_l('▸ '. $hook_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $hook_title) .'</h3>'. theme('api_functions', $hook_functions));
+    if ($hook_count > 0) {
+      $hook_title = format_plural($hook_count, '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
+      $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
+      $hook_path = 'api/' . $branches[$function->branch_id]->project . '/' . $replaced_string . '/function/implementations/' . $function->object_name . '/' . $branches[$function->branch_id]->branch_name;
+      $hook_link = l($hook_title, $hook_path);
+      $hook_implementations = theme('api_function_reference_link', $hook_title, $hook_path, $hook_link);
     }
   }
 
