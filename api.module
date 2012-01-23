@@ -1075,12 +1075,12 @@ function api_theme() {
     ),
     'api_function_reference_link' => array(
       'arguments' => array(
-        'title' => NULL,
-        'path' => NULL,
-        'link' => NULL,
+        'type' => NULL,
+        'count' => NULL,
+        'branches' => array(),
+        'function' => array(),
       ),
-      'path' => drupal_get_path('module', 'api') . '/templates',
-      'template' => 'api-function-reference-link'
+      'file' => 'api.theme.inc',
     ),
   );
 }
@@ -2022,12 +2022,7 @@ function api_page_function($function) {
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s'", $function->object_name));
   $call = '';
   if ($call_count > 0) {
-    $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
-
-    $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
-    $call_path = 'api/'. $branches[$function->branch_id]->project .'/'. $replaced_string .'/function/calls/'. $function->object_name .'/'. $branches[$function->branch_id]->branch_name;
-    $call_link = l($call_title, $call_path);
-    $call = theme('api_function_reference_link', $call_title, $call_path, $call_link);
+    $call = theme('api_function_reference_link', 'calls', $call_count, $branches, $function);
   }
 
   // Special case: If this is a hook, make a list of functions that appear to be
@@ -2041,11 +2036,7 @@ function api_page_function($function) {
     $hook_count = $hook_count - 1;
 
     if ($hook_count > 0) {
-      $hook_title = format_plural($hook_count, '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
-      $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
-      $hook_path = 'api/'. $branches[$function->branch_id]->project .'/'. $replaced_string .'/function/implementations/'. $function->object_name .'/'. $branches[$function->branch_id]->branch_name;
-      $hook_link = l($hook_title, $hook_path);
-      $hook_implementations = theme('api_function_reference_link', $hook_title, $hook_path, $hook_link);
+      $hook_implementations = theme('api_function_reference_link', 'implementations', $hook_count, $branches, $function);
     }
   }
 
@@ -2820,3 +2811,4 @@ function api_mark_for_reparse($branch_or_file = NULL) {
 
   return db_affected_rows();
 }
+
