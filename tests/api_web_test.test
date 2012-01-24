@@ -297,7 +297,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
 
     // Check the text on the page.
-    $this->assertTrue(strpos($this->xpath('//title'), 'DUPLICATE_CONSTANT') !== FALSE, 'Constant page title includes constant name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'DUPLICATE_CONSTANT') !== FALSE, 'Constant page title includes constant name');
     $this->assertText('For testing duplicate constant linking.', 'Description is present on constant page');
     $this->assertText("define('DUPLICATE_CONSTANT'", 'Code is present on constant page');
     $this->assertLink('sample.php', 0, 'Link to file is present on constant page');
@@ -330,7 +330,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
 
     // Check the text on the page.
-    $this->assertTrue(strpos($this->xpath('//title'), 'duplicate_function') !== FALSE, 'Function page title includes function name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'duplicate_function') !== FALSE, 'Function page title includes function name');
     $this->assertText('For testing duplicate function name linking.', 'Description is present on function page');
     $this->assertText("function duplicate_function() {", 'Code is present on function page');
     $this->assertLink('sample.php', 0, 'Link to file is present on function page');
@@ -420,7 +420,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/global/sample_global');
 
     // Check the text on the page.
-    $this->assertTrue(strpos($this->xpath('//title'), '$sample_global') !== FALSE, 'Global page title includes global name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), '$sample_global') !== FALSE, 'Global page title includes global name');
     $this->assertText('A sample global.', 'Description is present on global page');
     $this->assertLink('sample.php', 0, 'Link to file is present on global page');
     $this->assertText($this->branch_info['project_title'], 'Project title is on global page');
@@ -466,7 +466,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
 
     // Check the text on the page.
-    $this->assertTrue(strpos($this->xpath('//title'), 'Sample') !== FALSE, 'Class page title includes class name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample') !== FALSE, 'Class page title includes class name');
     $this->assertText('Sample class.', 'Description is present on class page');
     $this->assertLink('classes.php', 0, 'Link to file is present on class page');
     $this->assertText($this->branch_info['project_title'], 'Project title is on class page');
@@ -502,7 +502,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::$property');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/property/Sample') !== FALSE, 'Property link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::$property') !== FALSE, 'Property page title includes property name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::$property') !== FALSE, 'Property page title includes property name');
     $this->assertLink('SampleInterface', 0, 'Link to type appears on property page');
     $this->assertText('A property', 'Description appears on property page');
     $this->assertText('variable value', 'Code appears on property page');
@@ -511,7 +511,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::baz');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/function/Sample') !== FALSE, 'Method link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::baz') !== FALSE, 'Method page title includes method name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::baz') !== FALSE, 'Method page title includes method name');
     $this->assertText('public function', 'Code appears on the method page');
     $this->assertText('Only implemented in children', 'Description appears on method page');
 
@@ -519,7 +519,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::constant');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/constant/Sample') !== FALSE, 'Constant link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos($this->xpath('//title'), 'Sample::constant') !== FALSE, 'Constant page title includes constant name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::constant') !== FALSE, 'Constant page title includes constant name');
     $this->assertText('constant value', 'Code appears on the constant page');
     $this->assertText('A class constant', 'Description appears on constant page');
 
@@ -542,7 +542,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     // Test the Sample topic page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
     $this->assertText('A sample group', 'Sample topic description appears on the page');
-    $this->assertTrue(strpos($this->xpath('//title'), 'Samples') !== FALSE, 'Topic page title includes topic name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Samples') !== FALSE, 'Topic page title includes topic name');
     $this->assertLink('sample_function', 0, 'sample_function link is on sample topic page');
     $this->assertText('A sample function', 'sample_function description is on sample topic page');
     $this->assertLink('sample_class_function', 0, 'sample_class_function link is on sample topic page');
@@ -570,7 +570,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/group/class_samples');
     $this->assertText('A sample group of classes. Should not include members', 'Sample group topic description appears on the page');
-    $this->assertTrue(strpos($this->xpath('//title'), 'Class Samples') !== FALSE, 'Topic page title includes topic name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'Class Samples') !== FALSE, 'Topic page title includes topic name');
     $this->assertLink('Sample', 0, 'Sample class link is on topic page');
     $this->assertText('Sample class.', 'Sample class description is on topic page');
     $this->assertLink('Sample2', 0, 'Sample2 class link is on topic page');
@@ -598,7 +598,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
   function testFilePages() {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/');
     $this->assertText('A sample file', 'Sample file description appears on the page');
-    $this->assertTrue(strpos($this->xpath('//title'), 'sample.php') !== FALSE, 'File page title includes file name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'sample.php') !== FALSE, 'File page title includes file name');
     $this->assertLink('sample_function', 0, 'sample_function link is on sample file page');
     $this->assertText('A sample function', 'sample_function description is on sample file page');
     $this->assertLink('sample_class_function', 0, 'sample_class_function link is on sample file page');
@@ -622,7 +622,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     // Now try the classes file.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php');
     $this->assertText('Object-oriented tests', 'Sample file file description appears on the page');
-    $this->assertTrue(strpos($this->xpath('//title'), 'classes.php') !== FALSE, 'File page title includes file name');
+    $this->assertTrue(strpos(current($this->xpath('//title')), 'classes.php') !== FALSE, 'File page title includes file name');
     $this->assertLink('Sample', 0, 'Sample class link is on file page');
     $this->assertText('Sample class.', 'Sample class description is on file page');
     $this->assertLink('Sample2', 0, 'Sample2 class link is on file page');
