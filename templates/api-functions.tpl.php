@@ -5,6 +5,7 @@
  * Theme implementation to show a list of functions, their source and description.
  *
  * Available variables:
+ * - $title: The title for the page e.g., "N functions call function()".
  * - $function['function']: Function link.
  * - $function['file']: File link.
  * - $function['description']: Function description.
