@@ -960,7 +960,6 @@ function api_theme() {
     ),
     'api_functions' => array(
       'arguments' => array(
-        'title' => NULL,
         'functions' => array(),
       ),
       'path' => drupal_get_path('module', 'api') . '/templates',
