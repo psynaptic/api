@@ -1550,7 +1550,7 @@ function api_autocomplete($branch_name, $page = TRUE) {
     $objects[] = $object->title;
   }
 
-  $objects = array_unique($objects);
+  $objects = array_values(array_unique($objects));
   if ($page) {
     drupal_json($objects);
   }
