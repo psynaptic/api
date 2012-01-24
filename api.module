@@ -1080,7 +1080,6 @@ function api_theme() {
         'branches' => array(),
         'function' => array(),
       ),
-      'file' => 'api.theme.inc',
     ),
   );
 }
@@ -1790,9 +1789,16 @@ function api_page_function_dump($branch_name) {
  *   Object representing the branch.
  * @param $object
  *   Object representing the documentation item on the current page.
+ * @param $title
+ *   A string to be used as a replacement for the title (optional).
  */
-function api_object_title_and_breadcrumb($branch, $object) {
-  drupal_set_title($object->title);
+function api_object_title_and_breadcrumb($branch, $object, $title = NULL) {
+  // Allow the title to be overridden.
+  if (empty($title)) {
+    $title = $object->title;
+  }
+  drupal_set_title($title);
+
   $breadcrumb = array(
     l(t('Home'), '<front>'),
     l(t('API reference'), 'api/' . $branch->project),
@@ -1817,7 +1823,17 @@ function api_object_title_and_breadcrumb($branch, $object) {
     // includes the class.
   }
 
-  $page_title[] = check_plain($object->title);
+  // Set the page title and breadcrumb for the function calls and
+  // implementations pages.
+  $menu_item = menu_get_item();
+  if ($menu_item['path'] == 'api/%/%/function/calls/%' ||
+      $menu_item['path'] == 'api/%/%/function/implementations/%') {
+    $page_title[] = $title;
+    $breadcrumb[] = l($object->object_name, api_url($object));
+  }
+  else {
+    $page_title[] = check_plain($object->title);
+  }
 
   drupal_set_breadcrumb($breadcrumb);
   api_set_html_page_title(implode(' | ', array_reverse($page_title)));
@@ -1832,8 +1848,6 @@ function api_object_title_and_breadcrumb($branch, $object) {
 function api_page_function_calls($function) {
   $branches = api_get_branches();
   $branch = $branches[$function->branch_id];
-
-  api_object_title_and_breadcrumb($branch, $function);
 
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s'", $function->object_name));
 
@@ -1853,7 +1867,9 @@ function api_page_function_calls($function) {
 
   $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
 
-  return theme('api_functions', $call_title, $call_functions);
+  api_object_title_and_breadcrumb($branch, $function, $call_title);
+
+  return theme('api_functions', $call_functions);
 }
 
 /**
@@ -1865,8 +1881,6 @@ function api_page_function_calls($function) {
 function api_page_function_implementations($function) {
   $branches = api_get_branches();
   $branch = $branches[$function->branch_id];
-
-  api_object_title_and_breadcrumb($branch, $function);
 
   // Special case: If this is a hook, make a list of functions that appear to
   // be implementations of this hook.
@@ -1890,7 +1904,9 @@ function api_page_function_implementations($function) {
 
   $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
 
-  return theme('api_functions', $hook_title, $hook_functions);
+  api_object_title_and_breadcrumb($branch, $function, $hook_title);
+
+  return theme('api_functions', $hook_functions);
 }
 
 /**
@@ -2812,3 +2828,34 @@ function api_mark_for_reparse($branch_or_file = NULL) {
   return db_affected_rows();
 }
 
+/**
+ * Theme function to generate reference links on function pages.
+ *
+ * This theme hook is used for the "N functions call function()" and "N
+ * functions implement hook()" links on function pages.
+ *
+ * @param $type
+ *   The type of reference link i.e., calls or implementations.
+ * @param $count
+ *   The number of referenced items.
+ * @param $branches
+ *   An array of branches.
+ * @param $function
+ *   The function object being referenced.
+ *
+ * @return
+ *   Markup for a link to the reference listing pages.
+ */
+function theme_api_function_reference_link($type, $count, $branches, $function) {
+  // Create the link title.
+  $action = ($type == 'calls') ? format_plural($count, 'calls', 'call') : format_plural($count, 'implements', 'implement');
+  $link_title = format_plural($count, '1 function @action @name()', '@count functions @action @name()', array('@action' => $action, '@name' => $function->title));
+
+  // Create the link path.
+  $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
+  $link_path = 'api/'. $branches[$function->branch_id]->project .'/'. $replaced_string .'/function/'. $type .'/'. $function->object_name .'/'. $branches[$function->branch_id]->branch_name;
+
+  return '<h3>'. l($link_title, $link_path) .'</h3>';
+}
+
+>>>>>>> 1411776-relegate-calls
