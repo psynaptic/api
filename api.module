@@ -2858,4 +2858,3 @@ function theme_api_function_reference_link($type, $count, $branches, $function) 
   return '<h3>'. l($link_title, $link_path) .'</h3>';
 }
 
->>>>>>> 1411776-relegate-calls
