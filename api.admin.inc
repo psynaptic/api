@@ -144,7 +144,6 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
     $branch->branch_id = 0;
     $branch->type = $branch_id;
     $branch->project = '';
-    $branch->project_name = '';
     $branch->project_title = '';
     $branch->branch_name = '';
     $branch->title = '';
