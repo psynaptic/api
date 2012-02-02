@@ -1977,10 +1977,10 @@ function api_page_function($function) {
   // during parsing. Note that in the case of duplicate function names, we can't
   // assume the {api_reference_storage}.to_did field matches this documentation
   // object, so we match on the function name instead.
-  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s'", $function->object_name));
+  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d", $function->object_name, $branch->branch_id));
   $call = '';
   if ($call_count > 0) {
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' ORDER BY d.title", $function->object_name);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d ORDER BY d.title", $function->object_name, $branch->branch_id);
     $call_functions = array();
     while ($object = db_fetch_object($result)) {
       $call_functions[] = array(
@@ -1994,18 +1994,13 @@ function api_page_function($function) {
   }
 
   // Special case: If this is a hook, make a list of functions that appear to
-  // be implementations of this hook.
+  // be implementations of this hook (make sure to exclude the hook itself).
   $hook_implementations = '';
   if (strpos($function->title, 'hook_') === 0) {
     $hook_name = substr($function->title, 5);
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d ORDER BY d.title", $hook_name, $function->branch_id);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d ORDER BY d.title", $hook_name, $function->branch_id, $function->did);
     $hook_functions = array();
     while ($object = db_fetch_object($result)) {
-      if ($object->did == $function->did) {
-        // Don't list the hook_* itself.
-        continue;
-      }
-
       $hook_functions[] = array(
         'function' => l($object->title, api_url($object)),
         'file' => api_file_link($object),
