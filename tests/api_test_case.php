@@ -18,10 +18,12 @@ class ApiTestCase extends DrupalWebTestCase {
   function setUp() {
     $this->default_branch = variable_get('api_default_branch', NULL);
     variable_del('api_default_branch');
-    parent::setUp('job_queue', 'grammar_parser', 'api');
+    parent::setUp('drupal_queue', 'grammar_parser', 'api');
 
     include drupal_get_path('module', 'api') .'/api.admin.inc';
     include drupal_get_path('module', 'api') .'/parser.inc';
+
+    drupal_queue_include();
 
     // Make a branch for sample code.
     $branch = new stdClass();
@@ -39,7 +41,21 @@ class ApiTestCase extends DrupalWebTestCase {
 
     // Parse the code.
     api_update_all_branches();
-    while (job_queue_dequeue()) { }
+
+    // Process just the API queues.
+    $queues = api_cron_queue_info();
+    drupal_alter('cron_queue_info', $queues);
+    foreach ($queues as $queue_name => $info) {
+      $function = $info['worker callback'];
+      $end = time() + (isset($info['time']) ? $info['time'] : 15);
+      $queue = DrupalQueue::get($queue_name);
+      while (time() < $end && ($item = $queue->claimItem())) {
+        $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
+        $function($item->data);
+        $queue->deleteItem($item);
+      }
+    }
+
     api_shutdown();
 
     cache_clear_all('variables', 'cache');

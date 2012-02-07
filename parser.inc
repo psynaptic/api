@@ -915,6 +915,8 @@ function api_shutdown() {
   // Save JSON autocomplete cache
   $directory = file_directory_path();
   if (is_dir($directory) && is_writable($directory) && (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC)) {
+    drupal_queue_include();
+
     $path = file_create_path('api');
     file_check_directory($path, FILE_CREATE_DIRECTORY);
     $date = gmdate('U');
@@ -927,7 +929,8 @@ function api_shutdown() {
           continue; // No changes, no file write.
         }
         // Delete in the future, help avoid race conditions.
-        job_queue_add('file_delete', t('Remove expired API JSON, %path.'), array('%path' => $old_file_path));
+        $queue = DrupalQueue::get('api_delete');
+        $queue->createItem(array('path' => $old_file_path));
       }
 
       $file_name = $path . '/api-' . $branch_name . '-' . $date . '.json';
@@ -1069,7 +1072,10 @@ function api_update_branch_files($branch) {
         $parse = TRUE;
       }
       if ($parse) {
-        job_queue_add('api_parse_file', t('API parse %branch %file'), array($parse_functions[$matches[1]], $path, $branch, '%file' => $file_name, '%branch' => $branch->branch_name), drupal_get_path('module', 'api') .'/parser.inc', TRUE);
+        drupal_queue_include();
+
+        $queue = DrupalQueue::get('api_parse');
+        $queue->createItem(array('parser' => $parse_functions[$matches[1]], 'path' => $path, 'branch' => $branch, 'file' => $file_name, 'branch_name' => $branch->branch_name));
       }
     }
   }

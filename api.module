@@ -817,6 +817,22 @@ function api_item_load($object_name, $project, $branch_name, $file_name, $type) 
 }
 
 /**
+ * Implementation of hook_cron_queue_info().
+ */
+function api_cron_queue_info() {
+  return array(
+    'api_parse' => array(
+      'worker callback' => 'api_queue_parse_file',
+      'time' => 15,
+    ),
+    'api_delete' => array(
+      'worker callback' => 'api_queue_file_delete',
+      'time' => 15,
+    ),
+  );
+}
+
+/**
  * Menu object load callback for %api_filename in menu paths.
  *
  * API v 1.3 replaced all '/'s in the file path with '--' for the URL generated
@@ -2823,4 +2839,25 @@ function api_mark_for_reparse($branch_or_file = NULL) {
   }
 
   return db_affected_rows();
+}
+
+/**
+ * Parse queued files
+ */
+function api_queue_parse_file($data) {
+  module_load_include('inc', 'api', 'parser');
+
+  api_parse_file($data['parser'], $data['path'], $data['branch'], $data['file']);
+  watchdog('api', 'API parse %branch %file', array('%branch' => $data['branch_name'], '%file' => $data['file']));
+}
+
+/**
+ * Process any file deletes to remove any obsolete js index files.
+ *
+ * @param $data
+ *   Data past by queue.
+ */
+function api_queue_file_delete($data) {
+  file_delete($data['path']);
+  watchdog('api', 'Remove expired API JSON, %path.', array('%path' => $data['path']));
 }

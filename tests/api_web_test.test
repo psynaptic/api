@@ -19,7 +19,7 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
     // Save the default branch for teardown.
     $this->default_branch = variable_get('api_default_branch', NULL);
     variable_del('api_default_branch');
-    DrupalWebTestCase::setUp('job_queue', 'grammar_parser', 'api', 'ctools');
+    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
 
     // Set up a super-user.
     $this->super_user = $this->drupalCreateUser(array(
@@ -82,7 +82,20 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
 
     include_once drupal_get_path('module', 'api') .'/parser.inc';
     api_update_all_branches();
-    while (job_queue_dequeue()) { }
+
+    drupal_queue_include();
+    $queues = api_cron_queue_info();
+    drupal_alter('cron_queue_info', $queues);
+    foreach ($queues as $queue_name => $info) {
+      $function = $info['worker callback'];
+      $end = time() + (isset($info['time']) ? $info['time'] : 15);
+      $queue = DrupalQueue::get($queue_name);
+      while (time() < $end && ($item = $queue->claimItem())) {
+        $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
+        $function($item->data);
+        $queue->deleteItem($item);
+      }
+    }
     api_shutdown();
 
     api_get_branches(TRUE);
