@@ -344,9 +344,15 @@ function api_enable() {
   // Workaround for http://drupal.org/node/200931
   drupal_get_schema(NULL, TRUE);
 
-  $names = api_get_branch_names();
-  if (!isset($names['php'])) {
-    // Save PHP branch
+  $exists = FALSE;
+  $result = db_query("SELECT branch_name FROM {api_branch} WHERE branch_name='php'");
+  while ($branch = db_fetch_object($result)) {
+    $exists = TRUE;
+    break;
+  }
+
+  if (!$exists) {
+    // Create new PHP branch.
     $branch = new stdClass();
     $branch->type = 'php';
     $branch->project = 'php';
