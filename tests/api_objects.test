@@ -28,7 +28,7 @@ class ApiBranchCreation extends ApiTestCase {
     $this->assertEqual($object->summary, 'A sample file.', t('sample.php has summary %summary.', array('%summary' => $object->summary)));
     $parsed = strip_tags($object->code);
     $file = htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name)));
-    $nums = implode("\n", range(1, 219));
+    $nums = implode("\n", range(1, 221));
     $this->assertEqual($parsed, $nums . $file, t('sample.php\'s code matches file.'));
 
     // Check sample_function()
@@ -66,10 +66,12 @@ class ApiBranchCreation extends ApiTestCase {
       "</li></ul>";
 
     $list2 = "<p>This list uses our key format:</p>" .
-      "<ul><li><strong>key1</strong>: The usual format, no quotes." .
-      "</li><li><strong>&#039;key2&#039;</strong>: Sometimes we have quotes." .
-      "</li><li><strong>&quot;key3 multiple&quot;</strong>: Sometimes double quotes and multiple words." .
-      "</li></ul>";
+      "<ul><li><strong>key1</strong>: The usual format, no quotes.</li>" .
+      "<li><strong>&#039;key2&#039;</strong>: Sometimes we have quotes.</li>" .
+      "<li><strong>&quot;key3 multiple&quot;</strong>: Sometimes double quotes and multiple words.</li>" .
+      "<li>The following item should not have strong formatting.</li>" .
+      "<li>http://example.com</li>" .
+      "</ul>";
 
     // Test the list HTML with no whitespace, and then spot check some of the
     // list text to make sure the spaces are there. Trying to get all the

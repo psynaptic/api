@@ -44,6 +44,8 @@ define('SAMPLE_CONSTANT', 7);
  * - key1: The usual format, no quotes.
  * - 'key2': Sometimes we have quotes.
  * - "key3 multiple": Sometimes double quotes and multiple words.
+ * - The following item should not have strong formatting.
+ * - http://example.com
  *
  * @param $parameter
  *   A generic parameter.

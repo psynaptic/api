@@ -626,9 +626,9 @@ function api_format_documentation_lists($documentation) {
       $is_start = TRUE;
     }
 
-    // At the start of a bullet, if there is a ":", put everything before the :
-    // in bold.
-    if ($is_start && (($p = strpos($matches[3], ':')) > 0)) {
+    // At the start of a bullet, if there is a ":" followed by a space, put
+    // everything before the : in bold.
+    if ($is_start && (($p = strpos($matches[3], ': ')) > 0)) {
       $matches[3] = '<strong>' . substr($matches[3], 0, $p) . '</strong>' .
         substr($matches[3], $p);
     }

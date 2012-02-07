@@ -428,6 +428,10 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     // some of this.
     $strong_lists = $this->xpath('//li/strong');
     $this->assertTrue(in_array('key1', $strong_lists), 'key1 is highlighted in a list on function page');
+    $this->assertTrue(in_array("'key2'", $strong_lists), 'key2 is highlighted in a list on function page');
+    $this->assertTrue(in_array('"key3 multiple"', $strong_lists), 'key3 is highlighted in a list on function page');
+    $this->assertFalse(in_array('http', $strong_lists), 'http is not highlighted in a list on function page');
+
     $strong_pars = $this->xpath('//p/strong');
     $this->assertTrue(in_array('$parameter', $strong_pars), 'parameter is highlighted on function page');
 
