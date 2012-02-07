@@ -1010,20 +1010,15 @@ function api_update_branch_php($branch) {
 }
 
 /**
- * Updates a files branch.
+ * Returns the list of parsing functions for file extensions.
  *
- * Checks the current directories included in the branch to make an updated
- * list of files. Removes documentation from files that no longer exist, adds
- * documentation from new files, and updates documentation for any files that
- * have changed.
- *
- * @param $branch
- *   Object representing a files branch to update.
- *
- * @see api_update_all_branches()
+ * @return
+ *   An associative array whose keys are file extensions, and whose values are
+ *   the functions used to parse files with that extension.
  */
-function api_update_branch_files($branch) {
-  static $parse_functions = array(
+function api_parse_functions() {
+  // @todo This could use a hook to let other modules extend this array?
+  return array(
     'php' => 'api_parse_php_file',
     'module' => 'api_parse_php_file',
     'inc' => 'api_parse_php_file',
@@ -1038,6 +1033,23 @@ function api_update_branch_files($branch) {
     'htm' => 'api_parse_html_file',
     'html' => 'api_parse_html_file',
   );
+}
+
+/**
+ * Updates a files branch.
+ *
+ * Checks the current directories included in the branch to make an updated
+ * list of files. Removes documentation from files that no longer exist, adds
+ * documentation from new files, and updates documentation for any files that
+ * have changed.
+ *
+ * @param $branch
+ *   Object representing a files branch to update.
+ *
+ * @see api_update_all_branches()
+ */
+function api_update_branch_files($branch) {
+  $parse_functions = api_parse_functions();
 
   // List all documented files for the branch.
   $files = array();
@@ -1087,12 +1099,17 @@ function api_update_branch_files($branch) {
  * @return
  *   Associative array of files, where the keys are the full paths to the
  *   files and the values are the file names. File names exclude the part of
- *   the full path that is shared by all directories in the scan list.
+ *   the full path that is shared by all directories in the scan list. Only
+ *   files that can be parsed are included (see api_parse_functions() for a
+ *   list). Hidden directories (names starting with .) below top-level entries
+ *   in $directories are excluded, as well as directories called CVS.
  */
 function api_scan_directories($directories, $excluded_directories) {
   $directory_array = explode("\n", $directories);
   $excluded_array = explode("\n", $excluded_directories);
+  $extensions = array_keys(api_parse_functions());
 
+  // Figure out the shared part of the file name that is in all the directories.
   if (count($directory_array) > 1) {
     $directories_components = array();
     foreach ($directory_array as $directory) {
@@ -1113,26 +1130,37 @@ function api_scan_directories($directories, $excluded_directories) {
     $common_ancestor = $directories;
   }
 
+  // Scan the directories. Instead of letting file_scan_directory() do its own
+  // recursion, we recurse ourselves. The reason is that we can exclude things
+  // as we go, saving time and memory scanning .git, CVS, and the excluded
+  // directories.
   $source_files = array();
-  foreach ($directory_array as $directory) {
-    $files = file_scan_directory($directory, '.*');
+  $todo = $directory_array;
+  while(count($todo) > 0) {
+    $directory = array_shift($todo);
+    $files = file_scan_directory($directory, '.*', array('.', '..', 'CVS'), 0, FALSE);
     foreach ($files as $path => $file) {
-      if (strpos($path, '/.') !== FALSE) {
-        continue;
-      }
-      $excluded = FALSE;
-      // If the file is in an excluded path, ignore it
-      foreach ($excluded_array as $excluded_path) {
-        if (!empty($excluded_path) && (strpos($path, $excluded_path) === 0)) {
-          $excluded = TRUE;
+      if (is_dir($path)) {
+        // See if we want to scan this path, and if so, add to To Do list.
+        // Don't keep any directory that starts with ".", or anything in the
+        // excluded list.
+        if ((strpos($file->filename, '.') !== 0) &&
+          !in_array($path, $excluded_array)) {
+          $todo[] = $path;
         }
       }
-      if (!$excluded) {
-        $file_name = substr($path, strlen($common_ancestor) + 1);
-        $source_files[$path] = $file_name;
+      else {
+        // This is a regular file. See if it has an extension we recognize,
+        // and save it in our return list if so.
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        if (in_array($ext, $extensions)) {
+          $file_name = substr($path, strlen($common_ancestor) + 1);
+          $source_files[$path] = $file_name;
+        }
       }
     }
   }
+
   return $source_files;
 }
 

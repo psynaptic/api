@@ -32,7 +32,7 @@ class ApiTestCase extends DrupalWebTestCase {
     $branch->status = 1;
     $branch->data = array(
       'directories' => drupal_get_path('module', 'api') .'/tests/sample',
-      'excluded_directories' => '',
+      'excluded_directories' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
     );
     api_save_branch($branch);
     variable_set('api_default_branch', $branch->branch_id);

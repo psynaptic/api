@@ -38,6 +38,7 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
       'title' => 'Testing 6',
       'status' => 1,
       'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
     );
 
     $this->drupalPost('admin/settings/api/branches/new/files',
@@ -148,6 +149,9 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('duplicates.php', 0,  'duplicates.php file name is on functions list page');
     $this->assertLink('sample_insubdir_function', 0,  'subdir function is on functions list page');
     $this->assertLink('sample-subdir.php', 0,  'sample-subdir.php file name is on functions list page');
+    $this->assertNoRaw('excluded_function', 'Excluded function is not on functions list page');
+    $this->assertNoRaw('hidden_function', 'Hidden function is not on functions list page');
+
 
     // Verify file/function links.
     $this->clickLink('sample_function');
@@ -229,6 +233,8 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('classes-subdir.php', 0, 'sub-directory file name is on files list page');
     $this->assertText('A sample file', 'sample.php file description is on files list page');
     $this->assertText('Object-oriented tests', 'classes.php file description is on files list page');
+    $this->assertNoRaw('excluded.php', 'Excluded file is not shown on files list page');
+    $this->assertNoRaw('hidden.php', 'Hidden file is not shown on files list page');
 
     // Verify file links.
     $this->clickLink('classes.php');
