@@ -78,27 +78,7 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
     );
 
     // Parse the code.
-    api_get_branches(TRUE);
-
-    include_once drupal_get_path('module', 'api') .'/parser.inc';
-    api_update_all_branches();
-
-    drupal_queue_include();
-    $queues = api_cron_queue_info();
-    drupal_alter('cron_queue_info', $queues);
-    foreach ($queues as $queue_name => $info) {
-      $function = $info['worker callback'];
-      $end = time() + (isset($info['time']) ? $info['time'] : 15);
-      $queue = DrupalQueue::get($queue_name);
-      while (time() < $end && ($item = $queue->claimItem())) {
-        $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
-        $function($item->data);
-        $queue->deleteItem($item);
-      }
-    }
-    api_shutdown();
-
-    api_get_branches(TRUE);
+    $this->updateEverything();
   }
 
   /**
@@ -132,6 +112,47 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
       $url_target = $this->getAbsoluteUrl($links[0]['href']);
       $this->assertEqual($url_target, $url, $message_url);
     }
+  }
+
+  /**
+   * Asserts that the current page's title contains a string.
+   *
+   * @param $string
+   *   String to match in the title.
+   * @param $message
+   *   Message to print.
+   */
+  protected function assertTitleContains($string, $message) {
+    $title = current($this->xpath('//title'));
+    $this->assertTrue(strpos($title, $string) !== FALSE, $message);
+  }
+
+  /**
+   * Updates all the branches.
+   */
+  protected function updateEverything() {
+    api_get_branches(TRUE);
+
+    include_once drupal_get_path('module', 'api') .'/parser.inc';
+    api_update_all_branches();
+
+    drupal_queue_include();
+    $queues = api_cron_queue_info();
+    drupal_alter('cron_queue_info', $queues);
+    foreach ($queues as $queue_name => $info) {
+      $function = $info['worker callback'];
+      $end = time() + (isset($info['time']) ? $info['time'] : 15);
+      $queue = DrupalQueue::get($queue_name);
+      while (time() < $end && ($item = $queue->claimItem())) {
+        $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
+        $function($item->data);
+        $queue->deleteItem($item);
+      }
+    }
+
+    api_shutdown();
+
+    api_get_branches(TRUE);
   }
 }
 
@@ -316,7 +337,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
 
     // Check the text on the page.
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'DUPLICATE_CONSTANT') !== FALSE, 'Constant page title includes constant name');
+    $this->assertTitleContains('DUPLICATE_CONSTANT', 'Constant page title includes constant name');
     $this->assertText('For testing duplicate constant linking.', 'Description is present on constant page');
     $this->assertText("define('DUPLICATE_CONSTANT'", 'Code is present on constant page');
     $this->assertLink('sample.php', 0, 'Link to file is present on constant page');
@@ -349,7 +370,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
 
     // Check the text on the page.
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'duplicate_function') !== FALSE, 'Function page title includes function name');
+    $this->assertTitleContains('duplicate_function', 'Function page title includes function name');
     $this->assertText('For testing duplicate function name linking.', 'Description is present on function page');
     $this->assertText("function duplicate_function() {", 'Code is present on function page');
     $this->assertLink('sample.php', 0, 'Link to file is present on function page');
@@ -439,7 +460,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/global/sample_global');
 
     // Check the text on the page.
-    $this->assertTrue(strpos(current($this->xpath('//title')), '$sample_global') !== FALSE, 'Global page title includes global name');
+    $this->assertTitleContains('$sample_global', 'Global page title includes global name');
     $this->assertText('A sample global.', 'Description is present on global page');
     $this->assertLink('sample.php', 0, 'Link to file is present on global page');
     $this->assertText($this->branch_info['project_title'], 'Project title is on global page');
@@ -485,7 +506,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
 
     // Check the text on the page.
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample') !== FALSE, 'Class page title includes class name');
+    $this->assertTitleContains('Sample', 'Class page title includes class name');
     $this->assertText('Sample class.', 'Description is present on class page');
     $this->assertLink('classes.php', 0, 'Link to file is present on class page');
     $this->assertText($this->branch_info['project_title'], 'Project title is on class page');
@@ -521,7 +542,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::$property');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/property/Sample') !== FALSE, 'Property link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::$property') !== FALSE, 'Property page title includes property name');
+    $this->assertTitleContains('Sample::$property', 'Property page title includes property name');
     $this->assertLink('SampleInterface', 0, 'Link to type appears on property page');
     $this->assertText('A property', 'Description appears on property page');
     $this->assertText('variable value', 'Code appears on property page');
@@ -530,7 +551,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::baz');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/function/Sample') !== FALSE, 'Method link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::baz') !== FALSE, 'Method page title includes method name');
+    $this->assertTitleContains('Sample::baz', 'Method page title includes method name');
     $this->assertText('public function', 'Code appears on the method page');
     $this->assertText('Only implemented in children', 'Description appears on method page');
 
@@ -538,7 +559,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::constant');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/classes.php/constant/Sample') !== FALSE, 'Constant link went to the right place');
     // While here, check text...
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Sample::constant') !== FALSE, 'Constant page title includes constant name');
+    $this->assertTitleContains('Sample::constant', 'Constant page title includes constant name');
     $this->assertText('constant value', 'Code appears on the constant page');
     $this->assertText('A class constant', 'Description appears on constant page');
 
@@ -561,7 +582,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     // Test the Sample topic page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
     $this->assertText('A sample group', 'Sample topic description appears on the page');
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Samples') !== FALSE, 'Topic page title includes topic name');
+    $this->assertTitleContains('Samples', 'Topic page title includes topic name');
     $this->assertLink('sample_function', 0, 'sample_function link is on sample topic page');
     $this->assertText('A sample function', 'sample_function description is on sample topic page');
     $this->assertLink('sample_class_function', 0, 'sample_class_function link is on sample topic page');
@@ -589,7 +610,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/group/class_samples');
     $this->assertText('A sample group of classes. Should not include members', 'Sample group topic description appears on the page');
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'Class Samples') !== FALSE, 'Topic page title includes topic name');
+    $this->assertTitleContains('Class Samples', 'Topic page title includes topic name');
     $this->assertLink('Sample', 0, 'Sample class link is on topic page');
     $this->assertText('Sample class.', 'Sample class description is on topic page');
     $this->assertLink('Sample2', 0, 'Sample2 class link is on topic page');
@@ -617,7 +638,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
   function testFilePages() {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/');
     $this->assertText('A sample file', 'Sample file description appears on the page');
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'sample.php') !== FALSE, 'File page title includes file name');
+    $this->assertTitleContains('sample.php', 'File page title includes file name');
     $this->assertLink('sample_function', 0, 'sample_function link is on sample file page');
     $this->assertText('A sample function', 'sample_function description is on sample file page');
     $this->assertLink('sample_class_function', 0, 'sample_class_function link is on sample file page');
@@ -641,7 +662,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     // Now try the classes file.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php');
     $this->assertText('Object-oriented tests', 'Sample file file description appears on the page');
-    $this->assertTrue(strpos(current($this->xpath('//title')), 'classes.php') !== FALSE, 'File page title includes file name');
+    $this->assertTitleContains('classes.php', 'File page title includes file name');
     $this->assertLink('Sample', 0, 'Sample class link is on file page');
     $this->assertText('Sample class.', 'Sample class description is on file page');
     $this->assertLink('Sample2', 0, 'Sample2 class link is on file page');
@@ -765,7 +786,7 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
     // Save the default branch for teardown.
     $this->default_branch = variable_get('api_default_branch', NULL);
     variable_del('api_default_branch');
-    DrupalWebTestCase::setUp('job_queue', 'grammar_parser', 'api', 'ctools');
+    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
 
     // Set up a super-user.
     $this->super_user = $this->drupalCreateUser(array(
@@ -827,14 +848,7 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
     );
 
     // Parse the code.
-    api_get_branches(TRUE);
-
-    include_once drupal_get_path('module', 'api') .'/parser.inc';
-    api_update_all_branches();
-    while (job_queue_dequeue()) { }
-    api_shutdown();
-
-    api_get_branches(TRUE);
+    $this->updateEverything();
   }
 }
 
@@ -925,5 +939,114 @@ class ApiEmptyPageLinksTestCase extends ApiMultipleProjectsBaseTest {
     $this->assertNoLink('Constants', 'Constants link is not present');
     $this->assertNoLink('Globals', 'Globals link is not present');
     $this->assertNoLink('Topics', 'Topics link is not present');
+  }
+}
+
+/**
+ * Provides a base class for testing multiple branches for the API module.
+ */
+class ApiMultipleBranchesBaseTest extends ApiWebPagesBaseTest {
+
+  protected $branch_info_2;
+
+  /**
+   * Overrides ApiWebPagesBaseTest::setUp().
+   *
+   * Sets up two branches in the same project using the admin interface.
+   */
+  public function setUp() {
+    // Save the default branch for teardown.
+    $this->default_branch = variable_get('api_default_branch', NULL);
+    variable_del('api_default_branch');
+    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
+
+    // Set up a super-user.
+    $this->super_user = $this->drupalCreateUser(array(
+        'access API reference',
+        'administer API reference',
+        'access content',
+        'access administration pages',
+        'administer blocks',
+      ));
+    $this->drupalLogin($this->super_user);
+
+    // Create a "file" branch with the sample code, from the admin interface.
+    $this->branch_info = array(
+      'project' => 'test',
+      'branch_name' => '6',
+      'project_title' => 'Project Test',
+      'title' => 'Testing 6',
+      'status' => 1,
+      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/files',
+      $this->branch_info,
+      t('Save branch')
+    );
+
+    // Find the ID that was assigned to the function branch.
+    $branches = api_get_branches(TRUE);
+    $this_id = 0;
+    foreach ($branches as $branch) {
+      if ($branch->title == $this->branch_info['title']) {
+        $this_id = $branch->branch_id;
+        break;
+      }
+    }
+
+    // Make this the default branch.
+    $this->drupalPost('admin/settings/api/branches/list',
+      array(
+        'default_branch' => $this_id,
+      ),
+      t('Save changes')
+    );
+
+    // Create a second "file" branch in the same project.
+    $this->branch_info_2 = array(
+      'project' => 'test',
+      'branch_name' => '7',
+      'project_title' => 'Project Test',
+      'title' => 'Testing 7',
+      'status' => 1,
+      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample2',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/files',
+      $this->branch_info_2,
+      t('Save branch')
+    );
+
+    // Parse the code.
+    $this->updateEverything();
+  }
+}
+
+/**
+ * Tests that the list of functions calling this function is branch-specific.
+ */
+class ApiBranchesCallingFunctionsTestCase extends ApiMultipleBranchesBaseTest {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Calling functions branch specific'),
+      'description' => t('Tests that the list of functions calling this function does not extend to other branches.'),
+      'group' => 'API Module',
+    );
+  }
+
+  /**
+   * Tests that the list of functions calling this function is branch-specific.
+   */
+  function testBranchesCallingFunctions() {
+    // Visit the sample.php function sample_function().
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
+
+    // Verify that there is only one function calling this function.
+    $this->assertRaw('1 function calls sample_function()', 'Only one calling function');
+    // Verify links in the calling functions area.
+    $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
+    $this->assertNoLink('second_sample_function', 'Calling function from other branch link is not present');
   }
 }
