@@ -1283,12 +1283,25 @@ function api_block($op, $delta = NULL, $edit = array()) {
           if (user_access('access API reference') && !empty($branch)) {
             $links = array();
             $links[] = l($branch->title, 'api/' . $branch->project . '/' . $branch->branch_name);
-            $links[] = l(t('Constants'), 'api/' . $branch->project . '/constants/' . $branch->branch_name);
-            $links[] = l(t('Classes'), 'api/' . $branch->project . '/classes/' . $branch->branch_name);
-            $links[] = l(t('Files'), 'api/' . $branch->project . '/files/' . $branch->branch_name);
-            $links[] = l(t('Functions'), 'api/' . $branch->project . '/functions/' . $branch->branch_name);
-            $links[] = l(t('Globals'), 'api/' . $branch->project . '/globals/' . $branch->branch_name);
-            $links[] = l(t('Topics'), 'api/' . $branch->project . '/groups/' . $branch->branch_name);
+            $counts = api_listing_counts($branch);
+            if ($counts['constants'] > 0) {
+              $links[] = l(t('Constants'), 'api/' . $branch->project . '/constants/' . $branch->branch_name);
+            }
+            if ($counts['classes'] > 0) {
+              $links[] = l(t('Classes'), 'api/' . $branch->project . '/classes/' . $branch->branch_name);
+            }
+            if ($counts['files'] > 0) {
+              $links[] = l(t('Files'), 'api/' . $branch->project . '/files/' . $branch->branch_name);
+            }
+            if ($counts['functions'] > 0) {
+              $links[] = l(t('Functions'), 'api/' . $branch->project . '/functions/' . $branch->branch_name);
+            }
+            if ($counts['globals'] > 0) {
+              $links[] = l(t('Globals'), 'api/' . $branch->project . '/globals/' . $branch->branch_name);
+            }
+            if ($counts['groups'] > 0) {
+              $links[] = l(t('Topics'), 'api/' . $branch->project . '/groups/' . $branch->branch_name);
+            }
 
             return array(
               'subject' => t('API Navigation'),
@@ -1298,6 +1311,61 @@ function api_block($op, $delta = NULL, $edit = array()) {
           return;
       }
   }
+}
+
+/**
+ * Returns an array of the counts of each type of listing for a branch.
+ *
+ * @param $branch
+ *   Object representing the branch to count.
+ *
+ * @return
+ *   Associative array where the keys are the type of listing ('functions',
+ *   'classes', etc.) and the values are the count of how many there are in
+ *   that listing for the given branch.
+ */
+function api_listing_counts($branch) {
+
+  static $cached_counts = array();
+
+  // Check the cache.
+  $key = $branch->branch_name . $branch->branch_id;
+  if (isset($cached_counts[$key])) {
+    return $cached_counts[$key];
+  }
+
+  $return = array(
+    'groups' => 0,
+    'classes' => 0,
+    'functions' => 0,
+    'constants' => 0,
+    'globals' => 0,
+    'files' => 0,
+  );
+
+  // These queries mirror what is done in api_page_listing().
+  $result = db_query("SELECT COUNT(*) as num FROM {api_documentation} WHERE branch_id = %d AND object_type = 'group' GROUP BY branch_id", $branch->branch_id);
+  while ($obj = db_fetch_object($result)) {
+    $return['groups'] = $obj->num;
+    break;
+  }
+
+  $result = db_query("SELECT COUNT(*) as num FROM {api_documentation} WHERE branch_id = %d AND ( object_type = 'class' OR 'object_type' = 'interface') AND class_did = 0 GROUP BY branch_id", $branch->branch_id);
+  while ($obj = db_fetch_object($result)) {
+    $return['classes'] = $obj->num;
+    break;
+  }
+
+  foreach (array('function', 'constant', 'global', 'file') as $type) {
+    $result = db_query("SELECT COUNT(*) as num FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 GROUP BY branch_id", $branch->branch_id, $type);
+    while ($obj = db_fetch_object($result)) {
+      $return[$type . 's'] = $obj->num;
+      break;
+    }
+  }
+
+  $cached_counts[$key] = $return;
+  return $return;
 }
 
 /**
@@ -1728,10 +1796,19 @@ function api_switch_project($current_branch, $url = '') {
   $links = array();
   foreach (api_get_branches() as $branch) {
     if ($branch->status && $branch->project !== $current_branch->project && !isset($links[$branch->project])) {
-      $links[$branch->project] = array(
-        'title' => $branch->project_title,
-        'href' => 'api/' . $branch->project . $url,
-      );
+      // Only make a link to this project if there are items of this type, or
+      // if the URL suffix is blank (indicating the project home page).
+      $has_items = empty($url);
+      if (!$has_items) {
+        $counts = api_listing_counts($branch);
+        $has_items = ($counts[substr($url,1)] > 0);
+      }
+      if ($has_items) {
+        $links[$branch->project] = array(
+          'title' => $branch->project_title,
+          'href' => 'api/' . $branch->project . $url,
+        );
+      }
     }
   }
   if (count($links) > 0) {

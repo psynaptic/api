@@ -748,3 +748,182 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
     return db_result(db_query('SELECT COUNT(*) from {api_file} WHERE modified < 100'));
   }
 }
+
+/**
+ * Provides a base class for testing multiple projects for the API module.
+ */
+class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
+
+  protected $branch_info_2;
+
+  /**
+   * Overrides ApiWebPagesBaseTest::setUp().
+   *
+   * Sets up two branches in two different projects using the admin interface.
+   */
+  public function setUp() {
+    // Save the default branch for teardown.
+    $this->default_branch = variable_get('api_default_branch', NULL);
+    variable_del('api_default_branch');
+    DrupalWebTestCase::setUp('job_queue', 'grammar_parser', 'api', 'ctools');
+
+    // Set up a super-user.
+    $this->super_user = $this->drupalCreateUser(array(
+        'access API reference',
+        'administer API reference',
+        'access content',
+        'access administration pages',
+        'administer blocks',
+      ));
+    $this->drupalLogin($this->super_user);
+
+    // Create a "file" branch with the sample code, from the admin interface.
+    $this->branch_info = array(
+      'project' => 'test',
+      'branch_name' => '6',
+      'project_title' => 'Project 6',
+      'title' => 'Testing 6',
+      'status' => 1,
+      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/files',
+      $this->branch_info,
+      t('Save branch')
+    );
+
+    // Find the ID that was assigned to the function branch.
+    $branches = api_get_branches(TRUE);
+    $this_id = 0;
+    foreach ($branches as $branch) {
+      if ($branch->title == $this->branch_info['title']) {
+        $this_id = $branch->branch_id;
+        break;
+      }
+    }
+
+    // Make this the default branch.
+    $this->drupalPost('admin/settings/api/branches/list',
+      array(
+        'default_branch' => $this_id,
+      ),
+      t('Save changes')
+    );
+
+    // Create a second "file" branch in a different project, but with the same
+    // branch name.
+    $this->branch_info_2 = array(
+      'project' => 'test2',
+      'branch_name' => '6',
+      'project_title' => 'Project 2',
+      'title' => 'Testing 6',
+      'status' => 1,
+      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample2',
+    );
+
+    $this->drupalPost('admin/settings/api/branches/new/files',
+      $this->branch_info_2,
+      t('Save branch')
+    );
+
+    // Parse the code.
+    api_get_branches(TRUE);
+
+    include_once drupal_get_path('module', 'api') .'/parser.inc';
+    api_update_all_branches();
+    while (job_queue_dequeue()) { }
+    api_shutdown();
+
+    api_get_branches(TRUE);
+  }
+}
+
+/**
+ * Tests that links to empty listing pages are not created.
+ */
+class ApiEmptyPageLinksTestCase extends ApiMultipleProjectsBaseTest {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Empty listing page links'),
+      'description' => t('Tests that links to empty listing pages are not made.'),
+      'group' => 'API Module',
+    );
+  }
+
+  /**
+   * Tests that links to empty listing pages are not present.
+   */
+  function testEmptyPageLinks() {
+    // Visit the branch home page for the first project.
+    $this->drupalGet('api/' . $this->branch_info['project']);
+    // Verify that all the listing page links are there.
+    $this->assertLink('Files', 0, 'Files link is present');
+    $this->assertLink('Functions', 0, 'Functions link is present');
+    $this->assertLink('Classes and Interfaces', 0, 'Classes link is present');
+    $this->assertLink('Constants', 0, 'Constants link is present');
+    $this->assertLink('Globals', 0, 'Globals link is present');
+    $this->assertLink('Topics', 0, 'Topics link is present');
+    // Verify link to the other project is present.
+    $this->assertLink($this->branch_info_2['project_title'], 0, 'Link to other project is present');
+
+    // Visit the branch home page for the second project.
+    $this->drupalGet('api/' . $this->branch_info_2['project']);
+    // Verify that the correct listing page links are there.
+    $this->assertLink('Files', 0, 'Files link is present');
+    $this->assertLink('Functions', 0, 'Functions link is present');
+    // Verify that the listing pages that would be empty are not present.
+    $this->assertNoLink('Classes and Interfaces', 'Classes link is not present');
+    $this->assertNoLink('Constants', 'Constants link is not present');
+    $this->assertNoLink('Globals', 'Globals link is not present');
+    $this->assertNoLink('Topics', 'Topics link is not present');
+    // Verify link to the other project is present.
+    $this->assertLink($this->branch_info['project_title'], 0, 'Link to other project is present');
+
+    // Visit the Functions listing pages and verify they link to the other
+    // projects.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
+    $this->assertLink($this->branch_info_2['project_title'], 0, 'Link to other project is present');
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/functions');
+    $this->assertLink($this->branch_info['project_title'], 0, 'Link to other project is present');
+
+    // Visit the Classes and Constants listing pages for the first project and
+    // verify there is no link to the other project.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
+    $this->assertNoLink($this->branch_info_2['project_title'], 'Link to other project is not present');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
+    $this->assertNoLink($this->branch_info_2['project_title'], 'Link to other project is not present');
+
+    // Turn on the API navigation block. Visit a function page in both
+    // projects, and verify the right links are showing in the API
+    // navigation block.
+
+    $this->drupalPost('admin/build/block/list', array(
+        'api_navigation[region]' => 'left'
+      ),
+      t('Save blocks')
+    );
+
+    // Project/branch with all possible types of items.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
+    $this->assertText('API Navigation', 'Block title is present');
+    $this->assertLink($this->branch_info['title'], 0, 'Branch link is present');
+    $this->assertLink('Files', 0, 'Files link is present');
+    $this->assertLink('Functions', 0, 'Functions link is present');
+    $this->assertLink('Classes', 0, 'Classes link is present');
+    $this->assertLink('Constants', 0, 'Constants link is present');
+    $this->assertLink('Globals', 0, 'Globals link is present');
+    $this->assertLink('Topics', 0, 'Topics link is present');
+
+    // Project/branch with only files/functions.
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/sample2.php/function/second_sample_function');
+    $this->assertText('API Navigation', 'Block title is present');
+    $this->assertLink($this->branch_info_2['title'], 0, 'Branch link is present');
+    $this->assertLink('Files', 0, 'Files link is present');
+    $this->assertLink('Functions', 0, 'Functions link is present');
+    $this->assertNoLink('Classes', 'Classes link is not present');
+    $this->assertNoLink('Constants', 'Constants link is not present');
+    $this->assertNoLink('Globals', 'Globals link is not present');
+    $this->assertNoLink('Topics', 'Topics link is not present');
+  }
+}
