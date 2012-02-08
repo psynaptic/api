@@ -143,6 +143,28 @@ function api_get_branches($_reset = FALSE) {
 }
 
 /**
+ * Returns a branch, given an branch ID number.
+ *
+ * @param $id
+ *   Branch ID number.
+ *
+ * @return
+ *   Branch object for the given branch ID. If $id is not set, the default
+ *   branch is returned. If the requested branch does not exist, NULL.
+ */
+function api_get_branch_by_id($id = NULL) {
+  $branches = api_get_branches();
+  if (!isset($id)) {
+    $id = variable_get('api_default_branch', NULL);
+  }
+  if (isset($branches[$id])) {
+    return $branches[$id];
+  }
+
+  return NULL;
+}
+
+/**
  * Returns the list of currently-used branch names across all projects.
  *
  * @param $_reset
@@ -689,10 +711,14 @@ function api_legacy_1_2_object_load($object_name, $object_type, $branch_name) {
  *   URL to redirect this listing to, in the default project.
  */
 function api_legacy_1_2_listing_load($branch_name, $type = NULL) {
-  $branches = api_get_branches();
-  $branch = $branches[variable_get('api_default_branch', NULL)];
+  $branch = api_get_branch_by_id();
   if (empty($branch_name)) {
-    $branch_name = $branch->branch_name;
+    if (isset($branch)) {
+      $branch_name = $branch->branch_name;
+    }
+    else {
+      $branch_name = '';
+    }
   }
   if (isset($type)) {
     return 'api/' . $branch->project . '/' . $type . '/' . $branch_name;
@@ -712,16 +738,20 @@ function api_legacy_1_2_listing_load($branch_name, $type = NULL) {
  *   Array of all branch objects with this name.
  */
 function api_get_branches_by_name($branch_name) {
-  $branches = api_get_branches();
   $return = array();
   if (empty($branch_name)) {
-    return api_get_branches_by_name($branches[variable_get('api_default_branch', NULL)]->branch_name);
+    $branch = api_get_branch_by_id();
+    if (isset($branch)) {
+      $branch_name = $branch->branch_name;
+    }
+    else {
+      return array();
+    }
   }
-  else {
-    foreach ($branches as $branch) {
-      if ($branch->branch_name === $branch_name) {
-        $return[] = $branch;
-      }
+
+  foreach (api_get_branches() as $branch) {
+    if ($branch->branch_name === $branch_name) {
+      $return[] = $branch;
     }
   }
 
@@ -738,16 +768,20 @@ function api_get_branches_by_name($branch_name) {
  *   default branch name.
  *
  * @return
- *   Object representing the branch.
+ *   Object representing the branch, or NULL if there is no match.
  */
 function api_get_branch_by_name($project, $branch_name) {
-  $branches = api_get_branches();
-
   if (empty($branch_name)) {
-    $branch_name = $branches[variable_get('api_default_branch', NULL)]->branch_name;
+    $branch = api_get_branch_by_id();
+    if (isset($branch)) {
+      $branch_name = $branch->branch_name;
+    }
+    else {
+      $branch_name = '';
+    }
   }
 
-  foreach ($branches as $branch) {
+  foreach (api_get_branches() as $branch) {
     if ($branch->project === $project && $branch->branch_name === $branch_name) {
       return $branch;
     }
@@ -1400,21 +1434,25 @@ function api_filter($op, $delta = 0, $format = -1, $text = '') {
  *   itself.
  *
  * @return
- *   A URL string.
+ *   A URL string, or an empty string if there was a problem.
  */
 function api_url($object, $file = FALSE) {
-  $branches = api_get_branches();
+  $branch = api_get_branch_by_id($object->branch_id);
+  if (!$branch) {
+    return '';
+  }
+
   if ($file) {
     $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->file_name);
-    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $branches[$object->branch_id]->branch_name;
+    return 'api/' . $branch->project . '/' . $replaced_string . '/' . $branch->branch_name;
   }
   elseif ($object->object_type === 'file') {
     $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->object_name);
-    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $branches[$object->branch_id]->branch_name;
+    return 'api/' . $branch->project . '/' . $replaced_string . '/' . $branch->branch_name;
   }
   else {
     $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $object->file_name);
-    return 'api/' . $branches[$object->branch_id]->project . '/' . $replaced_string . '/' . $object->object_type . '/' . $object->object_name . '/' . $branches[$object->branch_id]->branch_name;
+    return 'api/' . $branch->project . '/' . $replaced_string . '/' . $object->object_type . '/' . $object->object_name . '/' . $branch->branch_name;
   }
 }
 
@@ -1569,9 +1607,14 @@ function api_search_redirect() {
   else {
     $tail = implode('/', $args);
   }
-  $branches = api_get_branches();
-  $_REQUEST['destination'] = 'api/search/'. $branches[variable_get('api_default_branch', NULL)]->branch_name .'/'. $tail;
-  drupal_goto();
+  $branch = api_get_branch_by_id();
+  if (!isset($branch)) {
+    $branch = api_get_active_branch();
+  }
+  if (isset($branch)) {
+    $_REQUEST['destination'] = 'api/search/'. $branch->branch_name .'/'. $tail;
+    drupal_goto();
+  }
 }
 
 /**
@@ -1605,7 +1648,6 @@ function api_search_listing($branch_name) {
   if ((int) $count === 1) {
     // Exact match.
     $item = db_fetch_object(db_query("SELECT b.branch_name, b.project, b.project_title, ad.* FROM {api_branch} b INNER JOIN {api_documentation} ad ON b.branch_id = ad.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.title = '%s' AND (ao.did IS NULL OR ao.root_did = ao.did)", $branch_name, $search_text));
-    $branches = api_get_branches();
     drupal_goto(api_url($item));
   }
   else {
@@ -1929,8 +1971,8 @@ function api_object_title_and_breadcrumb($branch, $object) {
     $page_title[] = check_plain(basename($object->file_name));
   }
   if (!empty($object->class_did)) {
-    $branches = api_get_branches();
-    $class = api_object_load((int) $object->class_did, $branches[$object->branch_id], array('interface', 'class'), $object->file_name);
+    $branch = api_get_branch_by_id($object->branch_id);
+    $class = api_object_load((int) $object->class_did, $branch, array('interface', 'class'), $object->file_name);
     if (isset($class)) {
       $breadcrumb[] = l($class->object_name, api_url($class));
     }
@@ -2120,8 +2162,7 @@ function api_page_function($function) {
  *   Documentation object representing the constant to display.
  */
 function api_page_constant($constant) {
-  $branches = api_get_branches();
-  $branch = $branches[$constant->branch_id];
+  $branch = api_get_branch_by_id($constant->branch_id);
 
   api_object_title_and_breadcrumb($branch, $constant);
 
@@ -2142,8 +2183,7 @@ function api_page_constant($constant) {
  *   Documentation object representing the global to display.
  */
 function api_page_global($global) {
-  $branches = api_get_branches();
-  $branch = $branches[$global->branch_id];
+  $branch = api_get_branch_by_id($global->branch_id);
 
   api_object_title_and_breadcrumb($branch, $global);
 
@@ -2164,8 +2204,7 @@ function api_page_global($global) {
  *   Documentation object representing the property to display.
  */
 function api_page_property($property) {
-  $branches = api_get_branches();
-  $branch = $branches[$property->branch_id];
+  $branch = api_get_branch_by_id($property->branch_id);
 
   api_object_title_and_breadcrumb($branch, $property);
 
@@ -2187,8 +2226,7 @@ function api_page_property($property) {
  *   Documentation object representing the class to display.
  */
 function api_page_class($class) {
-  $branches = api_get_branches();
-  $branch = $branches[$class->branch_id];
+  $branch = api_get_branch_by_id($class->branch_id);
 
   api_object_title_and_breadcrumb($branch, $class);
 
@@ -2264,8 +2302,7 @@ function api_class_hierarchy($class) {
  *   Documentation object representing the file to display.
  */
 function api_page_file($file) {
-  $branches = api_get_branches();
-  $branch = $branches[$file->branch_id];
+  $branch = api_get_branch_by_id($file->branch_id);
 
   api_object_title_and_breadcrumb($branch, $file);
 
@@ -2324,8 +2361,7 @@ function _api_add_comments($documentation_object) {
  *   Documentation object representing the group (topic) to display.
  */
 function api_page_group($group) {
-  $branches = api_get_branches();
-  $branch = $branches[$group->branch_id];
+  $branch = api_get_branch_by_id($group->branch_id);
 
   api_object_title_and_breadcrumb($branch, $group);
 

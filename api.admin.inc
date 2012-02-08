@@ -135,9 +135,8 @@ function api_admin_new_branch_page() {
  * @see api_branch_edit_form_submit()
  */
 function api_branch_edit_form($form_state, $branch_id = NULL) {
-  $branches = api_get_branches();
   if (is_numeric($branch_id)) {
-    $branch = $branches[$branch_id];
+    $branch = api_get_branch_by_id($branch_id);
   }
   else {
     $branch = new stdClass();
@@ -360,8 +359,8 @@ function api_clean_directory_list($list) {
  * @see api_branch_delete_form_submit()
  */
 function api_branch_delete_form($form_state, $branch_id) {
-  $branches = api_get_branches();
-  return confirm_form(array('#branch' => $branches[$branch_id]), t('Are you sure you want to delete %branch_name?', array('%branch_name' => $branches[$branch_id]->branch_name)), 'admin/settings/api', NULL, t('Delete'));
+  $branch = api_get_branch_by_id($branch_id);
+  return confirm_form(array('#branch' => $branch), t('Are you sure you want to delete %branch_name?', array('%branch_name' => $branch->branch_name)), 'admin/settings/api', NULL, t('Delete'));
 }
 
 /**
@@ -444,11 +443,8 @@ function api_comments_settings_form_submit($form, &$form_state) {
 function api_admin_reparse($branch_id) {
   $num = api_mark_for_reparse($branch_id);
   $type = ($num > 0) ? 'status' : 'error';
-  $branches = api_get_branches();
-  if (isset($branches[$branch_id])) {
-    $branch_id = $branches[$branch_id]->branch_name;
-  }
+  $branch = api_get_branch_by_id($branch_id);
 
-  drupal_set_message(t('@num files in branch @branch set to reparse, starting at next cron run', array('@num' => $num, '@branch' => $branch_id)), $type);
+  drupal_set_message(t('@num files in branch @branch set to reparse, starting at next cron run', array('@num' => $num, '@branch' => $branch->branch_name)), $type);
   drupal_goto('admin/settings/api/branches');
 }
