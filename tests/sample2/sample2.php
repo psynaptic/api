@@ -13,11 +13,11 @@
  * Here is the link:
  * @link samples Link to the samples group @endlink
  *
- * Here we use the sample_function(), $sample_global, and SAMPLE_CONSTANT in
+ * Here we use the sample_in_code_links(), $sample_global, SAMPLE_CONSTANT in
  * the text. These should all turn into links. So should a reference to the
  * sample.php file.
  *
- * @see sample_function()
+ * @see sample_in_code_links()
  */
 function second_sample_function() {
   // Use global variable, constant, and function from the sample project in the
@@ -27,4 +27,12 @@ function second_sample_function() {
   $sample_global = SAMPLE_CONSTANT;
 
   $foo = sample_function('a', 'b');
+}
+
+/**
+ * This project/branch's version of the sample function.
+ *
+ * For testing of links.
+ */
+function sample_function() {
 }

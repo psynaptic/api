@@ -1961,7 +1961,7 @@ function api_page_function($function) {
   $last_signature = '';
   $signatures = array();
   $n = 0;
-  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' AND d.class_did = %d ORDER BY b.weight", $function->title, $function->class_did);
+  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
   while ($signature = db_fetch_object($result)) {
       $signature_branch = $branches[$signature->branch_id];
       if (!$signature_branch->status) {

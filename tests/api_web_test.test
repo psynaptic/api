@@ -775,11 +775,19 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
 }
 
 /**
- * Provides a base class for testing multiple projects for the API module.
+ * Tests that links to empty listing pages are not created.
  */
-class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
+class ApiEmptyPageLinksTestCase extends  ApiWebPagesBaseTest {
 
   protected $branch_info_2;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Empty listing page links'),
+      'description' => t('Tests that links to empty listing pages are not made.'),
+      'group' => 'API Module',
+    );
+  }
 
   /**
    * Overrides ApiWebPagesBaseTest::setUp().
@@ -810,6 +818,7 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
       'title' => 'Testing 6',
       'status' => 1,
       'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
     );
 
     $this->drupalPost('admin/settings/api/branches/new/files',
@@ -836,7 +845,8 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
     );
 
     // Create a second "file" branch in a different project, but with the same
-    // branch name.
+    // branch name. Exclude the "maybe_exclude" directory so that this branch
+    // only has functions and not constants and classes.
     $this->branch_info_2 = array(
       'project' => 'test2',
       'branch_name' => '6',
@@ -844,6 +854,7 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
       'title' => 'Testing 6',
       'status' => 1,
       'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample2',
+      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample2/maybe_exclude',
     );
 
     $this->drupalPost('admin/settings/api/branches/new/files',
@@ -853,20 +864,6 @@ class ApiMultipleProjectsBaseTest extends ApiWebPagesBaseTest {
 
     // Parse the code.
     $this->updateEverything();
-  }
-}
-
-/**
- * Tests that links to empty listing pages are not created.
- */
-class ApiEmptyPageLinksTestCase extends ApiMultipleProjectsBaseTest {
-
-  public static function getInfo() {
-    return array(
-      'name' => t('Empty listing page links'),
-      'description' => t('Tests that links to empty listing pages are not made.'),
-      'group' => 'API Module',
-    );
   }
 
   /**
@@ -947,11 +944,19 @@ class ApiEmptyPageLinksTestCase extends ApiMultipleProjectsBaseTest {
 }
 
 /**
- * Provides a base class for testing multiple branches for the API module.
+ * Tests multiple-branch functionality.
  */
-class ApiMultipleBranchesBaseTest extends ApiWebPagesBaseTest {
+class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
 
   protected $branch_info_2;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Multiple branches functionality'),
+      'description' => t('Tests that the multiple-branch setup works correctly'),
+      'group' => 'API Module',
+    );
+  }
 
   /**
    * Overrides ApiWebPagesBaseTest::setUp().
@@ -977,11 +982,12 @@ class ApiMultipleBranchesBaseTest extends ApiWebPagesBaseTest {
     // Create a "file" branch with the sample code, from the admin interface.
     $this->branch_info = array(
       'project' => 'test',
-      'branch_name' => '6',
+      'branch_name' => 'long_6',
       'project_title' => 'Project Test',
       'title' => 'Testing 6',
       'status' => 1,
       'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
+      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
     );
 
     $this->drupalPost('admin/settings/api/branches/new/files',
@@ -1008,9 +1014,11 @@ class ApiMultipleBranchesBaseTest extends ApiWebPagesBaseTest {
     );
 
     // Create a second "file" branch in the same project.
+    // Unlike in the multiple project setup, do *not* exclude the
+    // "maybe_exclude" directory.
     $this->branch_info_2 = array(
       'project' => 'test',
-      'branch_name' => '7',
+      'branch_name' => 'long_7',
       'project_title' => 'Project Test',
       'title' => 'Testing 7',
       'status' => 1,
@@ -1025,20 +1033,6 @@ class ApiMultipleBranchesBaseTest extends ApiWebPagesBaseTest {
     // Parse the code.
     $this->updateEverything();
   }
-}
-
-/**
- * Tests that the list of functions calling this function is branch-specific.
- */
-class ApiBranchesCallingFunctionsTestCase extends ApiMultipleBranchesBaseTest {
-
-  public static function getInfo() {
-    return array(
-      'name' => t('Calling functions branch specific'),
-      'description' => t('Tests that the list of functions calling this function does not extend to other branches.'),
-      'group' => 'API Module',
-    );
-  }
 
   /**
    * Tests that the list of functions calling this function is branch-specific.
@@ -1052,5 +1046,61 @@ class ApiBranchesCallingFunctionsTestCase extends ApiMultipleBranchesBaseTest {
     // Verify links in the calling functions area.
     $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
     $this->assertNoLink('second_sample_function', 'Calling function from other branch link is not present');
+
+    // Visit the other branch's function sample_function().
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/sample2.php/function/sample_function/' . $this->branch_info_2['branch_name']);
+
+    // Verify that there is only one function calling this function.
+    $this->assertRaw('1 function calls sample_function()', 'Only one calling function');
+    // Verify links in the calling functions area.
+    $this->assertLink('second_sample_function', 0, 'Calling function link is present');
+    $this->assertNoLink('sample_in_code_links', 'Calling function from other branch link is not present');
+  }
+
+  /**
+   * Tests that the links between branches on pages are working.
+   */
+  function testBranchLinks() {
+    // Verify function-style linking.
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/sample2.php/function/sample_function/' . $this->branch_info_2['branch_name']);
+    $this->assertRaw($this->branch_info['branch_name'] . ' sample.php', 'Other branch name and file name are shown');
+    $this->assertRaw('$complex_parameter', 'Other sample parameter is shown');
+
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' sample2.php', 'Other sample file and branch are shown');
+    $this->assertLink('sample_function()', 0, 'Other sample link is there');
+
+    // Test constant-style linking.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
+    $this->assertRaw($this->branch_info['branch_name'] . ' duplicates.php', 'Other file in same branch is shown');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    $this->assertRaw($this->branch_info['project_title'], 'This project title is shown');
+
+    // Test class and method linking.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
+    $this->assertRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    $this->assertRaw($this->branch_info['project_title'], 'This project title is shown');
+
+    // Now visit the method page.
+    $this->clickLink('Sample::foo');
+    $this->assertRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+
+    // Now visit the class page in the other branch. Click through to the
+    // method and verify that it doesn't show the DifferentClassName::foo()
+    // method on that page at all, and vice versa.
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/maybe_exclude!extras.php/class/Sample/' . $this->branch_info_2['branch_name']);
+    $this->clickLink('Sample::foo');
+    $this->assertRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    $this->assertNoRaw('DifferentClassName', 'Other class is not shown');
+
+    $this->drupalGet('api/' . $this->branch_info_2['project'] . '/maybe_exclude!extras.php/class/DifferentClassName/' . $this->branch_info_2['branch_name']);
+    $this->assertNoRaw('classes.php', 'Name of other project file is not shown');
+    $this->clickLink('DifferentClassName::foo');
+    $this->assertNoRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
+    $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    $this->assertNoRaw('Sample::foo', 'Sample method name is not shown');
   }
 }
