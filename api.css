@@ -1,7 +1,7 @@
-/* Expandable regions */
-html.js div.api-expandable div.content {
-  display: none;
-}
+/**
+ * @file
+ * CSS for the API module.
+ */
 
 /* PHP code */
 .php {

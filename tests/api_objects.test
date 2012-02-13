@@ -21,14 +21,14 @@ class ApiBranchCreation extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 55, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 56, 'Found ' . $count . ' documentation objects.');
 
     // Check sample.php
     $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
     $this->assertEqual($object->summary, 'A sample file.', t('sample.php has summary %summary.', array('%summary' => $object->summary)));
     $parsed = strip_tags($object->code);
     $file = htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name)));
-    $nums = implode("\n", range(1, 221));
+    $nums = implode("\n", range(1, 230));
     $this->assertEqual($parsed, $nums . $file, t('sample.php\'s code matches file.'));
 
     // Check sample_function()

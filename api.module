@@ -384,6 +384,26 @@ function api_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'api.pages.inc',
   );
+
+  $items['api/%/%/function/calls/%api_item'] = array(
+    'title' => 'Function calls',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+  $items['api/%/%/function/implementations/%api_item'] = array(
+    'title' => 'Function implementations',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_hook_implementations',
+    'page arguments' => array(5),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+
   $items['api/%/%/constant/%api_item'] = array(
     'title' => 'Constant',
     'load arguments' => array(1, 5, 2, 3), // project, branch, filename, type
@@ -1032,15 +1052,6 @@ function api_theme() {
     'api_branch_table' => array(
       'arguments' => array('element' => NULL),
     ),
-    'api_expandable' => array(
-      'arguments' => array(
-        'prompt' => NULL,
-        'content' => NULL,
-        'class' => NULL,
-      ),
-      'path' => drupal_get_path('module', 'api') . '/templates',
-      'template' => 'api-expandable',
-    ),
     'api_defined' => array(
       'arguments' => array(
         'branch' => NULL,
@@ -1178,6 +1189,14 @@ function api_theme() {
       ),
       'path' => drupal_get_path('module', 'api') . '/templates',
       'template' => 'api-branch-default-page'
+    ),
+    'api_function_reference_link' => array(
+      'arguments' => array(
+        'type' => '',
+        'count' => 0,
+        'function' => (object) array(),
+      ),
+      'file' => 'api.pages.inc',
     ),
   );
 }

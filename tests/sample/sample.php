@@ -219,3 +219,12 @@ function sample_in_code_links() {
   }
   $d = drupal_alter('nonexistent_alter_name', $foo);
 }
+
+/**
+ * Implements hook_sample_name().
+ *
+ * This is used for testing the "N functions implement hook()" link on function
+ * pages.
+ */
+function foo_sample_name() {
+}

@@ -376,9 +376,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('sample.php', 0, 'Link to file is present on function page');
     $this->assertLink($this->branch_info['branch_name'] . ' duplicates.php', 0, 'Link to other version is present on function page');
     $this->assertLink('duplicate_function()', 0, 'Second link to other version is present on function page');
-    $this->assertText('1 function calls duplicate_function()', 'List of calling functions is present');
-    $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
-    $this->assertText('Does something interesting, to test', 'Calling function description is present');
+    $this->assertLink('1 function calls duplicate_function()', 0, 'Link to calling functions page is present');
 
     // Test the links made with @link on this function.
     $this->assertLink('Subscribers', 0, 'Link to Subscribers is on function page');
@@ -397,14 +395,38 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
 
+    // Verify the calling functions link and page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
+    $this->clickLink('1 function calls duplicate_function()');
+    $this->assertTrue(strpos($this->url, 'api/' . $this->branch_info['project'] . '/sample.php/function/calls/duplicate_function') !== FALSE, 'Calling functions link went to the correct path');
+    $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
+    $this->assertText('Does something interesting, to test', 'Calling function description is present');
+    $this->clickLink('duplicate_function');
+    $this->assertTrue(strpos($this->url, 'api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function') !== FALSE, 'Breadcrumb link went back to the function page');
+
+    // Test the function implementations link and page.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/hook_sample_name');
+    $this->assertLink('1 function implements hook_sample_name()', 0, 'Link to implemented hooks page is present');
+    $this->clickLink('1 function implements hook_sample_name()');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/function/implementations/hook_sample_name') !== FALSE, 'Link to implementing functions page went to the right place');
+    $this->assertText('1 function implements hook_sample_name()', 'Title of implementations listing page is correct');
+    $this->assertLink('foo_sample_name', 0, 'Link to implementing function page is present');
+    $this->assertText('Implements hook_sample_name().', 'Implementing function description is present');
+    $this->assertLink('hook_sample_name', 0, 'Link back to implementing function page is present');
+    $this->clickLink('hook_sample_name');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/function/hook_sample_name') !== FALSE, 'Breadcrumb link went back to function page');
+
     // Try the other duplicate_function() page, and verify the calling
     // functions are there too.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/duplicates.php/function/duplicate_function');
-    $this->assertText('1 function calls duplicate_function()', 'List of calling functions is present');
+    $this->assertLink('1 function calls duplicate_function()', 0, 'Link to list of calling functions is present');
+    $this->clickLink('1 function calls duplicate_function()');
+    $this->assertTrue(strpos($this->url, 'api/' . $this->branch_info['project'] . '/duplicates.php/function/calls/duplicate_function') !== FALSE, 'Calling functions link went to the correct path');
     $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
     $this->assertText('Does something interesting, to test', 'Calling function description is present');
 
     // Also check the links in duplicate_function() to the two PHP branches.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/duplicates.php/function/duplicate_function');
     $this->assertLinkURL('foo_function', 'http://example.com/function/foo_function', 'foo_function is linked', 'foo_function link goes to right place');
     $this->assertLinkURL('bar_function', 'http://example.com/function/bar_function', 'bar_function is linked', 'bar_function link goes to right place');
     $this->assertNoLink('not_a_function', 'not_a_function() is not linked');
@@ -1042,8 +1064,9 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
 
     // Verify that there is only one function calling this function.
-    $this->assertRaw('1 function calls sample_function()', 'Only one calling function');
-    // Verify links in the calling functions area.
+    $this->assertLink('1 function calls sample_function()', 0, 'Only one calling function');
+    $this->clickLink('1 function calls sample_function()');
+    // Verify links on the calling functions page.
     $this->assertLink('sample_in_code_links', 0, 'Calling function link is present');
     $this->assertNoLink('second_sample_function', 'Calling function from other branch link is not present');
 
@@ -1051,8 +1074,9 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info_2['project'] . '/sample2.php/function/sample_function/' . $this->branch_info_2['branch_name']);
 
     // Verify that there is only one function calling this function.
-    $this->assertRaw('1 function calls sample_function()', 'Only one calling function');
-    // Verify links in the calling functions area.
+    $this->assertLink('1 function calls sample_function()', 0, 'Only one calling function');
+    $this->clickLink('1 function calls sample_function()');
+    // Verify links in the calling functions page.
     $this->assertLink('second_sample_function', 0, 'Calling function link is present');
     $this->assertNoLink('sample_in_code_links', 'Calling function from other branch link is not present');
   }

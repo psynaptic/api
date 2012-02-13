@@ -396,44 +396,22 @@ function api_page_function($function) {
   $code = api_link_code($function->code, $branch, $function->class_did);
   $related_topics = api_related_topics($function->did, $branch);
 
-  // Build the list of functions that call this one, from the records added
-  // during parsing. Note that in the case of duplicate function names, we can't
-  // assume the {api_reference_storage}.to_did field matches this documentation
-  // object, so we match on the function name instead.
+  // If any functions call this one, display a link to the page listing calls of
+  // this function.
   $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d", $function->object_name, $branch->branch_id));
   $call = '';
   if ($call_count > 0) {
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d ORDER BY d.title", $function->object_name, $branch->branch_id);
-    $call_functions = array();
-    while ($object = db_fetch_object($result)) {
-      $call_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
-        'description' => api_link_documentation($object->summary, $branch),
-      );
-    }
-    $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
-    $call = theme('api_expandable', '<h3>'. api_show_l('▸ '. $call_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $call_title) .'</h3>'. theme('api_functions', $call_functions));
+    $call = theme('api_function_reference_link', 'calls', $call_count, $function);
   }
 
-  // Special case: If this is a hook, make a list of functions that appear to
-  // be implementations of this hook (make sure to exclude the hook itself).
+  // If this is a hook, display a link to the page listing implementations of
+  // this hook.
   $hook_implementations = '';
   if (strpos($function->title, 'hook_') === 0) {
     $hook_name = substr($function->title, 5);
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d ORDER BY d.title", $hook_name, $function->branch_id, $function->did);
-    $hook_functions = array();
-    while ($object = db_fetch_object($result)) {
-      $hook_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
-        'description' => api_link_documentation($object->summary, $branch),
-      );
-    }
-
-    if (count($hook_functions) > 0) {
-      $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
-      $hook_implementations = theme('api_expandable', '<h3>'. api_show_l('▸ '. $hook_title) .'</h3>', '<h3>'. api_hide_l('▾ '. $hook_title) .'</h3>'. theme('api_functions', $hook_functions));
+    $hook_count = db_result(db_query("SELECT count(*) from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d", $hook_name, $function->branch_id, $function->did));
+    if ($hook_count > 0) {
+      $hook_implementations = theme('api_function_reference_link', 'implementations', $hook_count, $function);
     }
   }
 
@@ -441,6 +419,70 @@ function api_page_function($function) {
   $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see, $throws, $hook_implementations);
   $output .= _api_add_comments($function);
   return $output;
+}
+
+/**
+ * Page callback that displays a list of instances where a function is called.
+ *
+ * @param $function
+ *   Documentation object representing the function to display.
+ */
+function api_page_function_calls($function) {
+  $branches = api_get_branches();
+  $branch = $branches[$function->branch_id];
+
+  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d", $function->object_name, $branch->branch_id));
+
+  // Build the list of functions that call this one, from the records added
+  // during parsing. Note that in the case of duplicate function names, we
+  // can't assume the {api_reference_storage}.to_did field matches this
+  // documentation object, so we match on the function name instead.
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d ORDER BY d.title", $function->object_name, $branch->branch_id);
+  $call_functions = array();
+  while ($object = db_fetch_object($result)) {
+    $call_functions[] = array(
+      'function' => l($object->title, api_url($object)),
+      'file' => api_file_link($object),
+      'description' => api_link_documentation($object->summary, $branch),
+    );
+  }
+
+  $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
+
+  api_object_title_and_breadcrumb($branch, $function, $call_title, TRUE);
+
+  return theme('api_functions', $call_functions);
+}
+
+/**
+ * Page callback that displays a list of implementations of a hook.
+ *
+ * @param $function
+ *   Documentation object representing the function to display.
+ */
+function api_page_hook_implementations($function) {
+  $branches = api_get_branches();
+  $branch = $branches[$function->branch_id];
+
+  // Make a list of functions that appear to be implementations of this hook.
+  $hook_functions = array();
+  if (strpos($function->title, 'hook_') === 0) {
+    $hook_name = substr($function->title, 5);
+    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d ORDER BY d.title", $hook_name, $function->branch_id, $function->did);
+    while ($object = db_fetch_object($result)) {
+      $hook_functions[] = array(
+        'function' => l($object->title, api_url($object)),
+        'file' => api_file_link($object),
+        'description' => api_link_documentation($object->summary, $branch),
+      );
+    }
+  }
+
+  $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
+
+  api_object_title_and_breadcrumb($branch, $function, $hook_title, TRUE);
+
+  return theme('api_functions', $hook_functions);
 }
 
 /**
@@ -621,20 +663,6 @@ function api_preprocess_api_object_page(&$variables) {
 }
 
 /**
- * Shows a link for theme('api_expandable').
- */
-function api_show_l($text) {
-  return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'show-content')));
-}
-
-/**
- * Hides a link for theme('api_expandable').
- */
-function api_hide_l($text) {
-  return l($text, $_REQUEST['q'], array('attributes' => array('class' => 'hide-content')));
-}
-
-/**
  * Returns links to switch projects.
  *
  * @param $current_branch
@@ -752,9 +780,18 @@ function api_render_listing($result, $empty_message = NULL, $show_headings = TRU
  *   Object representing the branch.
  * @param $object
  *   Object representing the documentation item on the current page.
+ * @param $title
+ *   A string to be used as a replacement for the title (optional).
+ * @param $object_name_in_breadcrumb
+ *   A boolean indicating whether to add the object name to the breadcrumb.
  */
-function api_object_title_and_breadcrumb($branch, $object) {
-  drupal_set_title($object->title);
+function api_object_title_and_breadcrumb($branch, $object, $title = NULL, $object_name_in_breadcrumb = FALSE) {
+  // Allow the title to be overridden.
+  if (empty($title)) {
+    $title = check_plain($object->title);
+  }
+  drupal_set_title($title);
+
   $breadcrumb = array(
     l(t('Home'), '<front>'),
     l(t('API reference'), 'api/' . $branch->project),
@@ -779,7 +816,13 @@ function api_object_title_and_breadcrumb($branch, $object) {
     // includes the class.
   }
 
-  $page_title[] = check_plain($object->title);
+  // Add the object name to the breadcrumb. This is used for function calls and
+  // hook implementations listing pages.
+  if ($object_name_in_breadcrumb) {
+    $breadcrumb[] = l($object->object_name, api_url($object));
+  }
+
+  $page_title[] = $title;
 
   drupal_set_breadcrumb($breadcrumb);
   api_set_html_page_title(implode(' | ', array_reverse($page_title)));
@@ -883,7 +926,6 @@ function api_related_topics($did, $branch) {
   return '';
 }
 
-
 /**
  * Returns a link to the file a documentation object is in.
  *
@@ -895,4 +937,43 @@ function api_related_topics($did, $branch) {
  */
 function api_file_link($object) {
   return str_replace('/', '/<wbr>', dirname($object->file_name)) . '/<wbr>' . l(basename($object->file_name), api_url($object, TRUE));
+}
+
+
+/**
+ * Theme function to generate reference links on function pages.
+ *
+ * This theme hook is used for the "N functions call function()" and "N
+ * functions implement hook()" links on function pages.
+ *
+ * @param $type
+ *   The type of reference link, either 'calls' or 'implementations'.
+ * @param $count
+ *   The number of referenced items.
+ * @param $function
+ *   The function object being referenced.
+ *
+ * @return
+ *   Markup for a link to the reference listing pages.
+ */
+function theme_api_function_reference_link($type, $count, $function) {
+  if (!isset($function->branch_id)) {
+    return '';
+  }
+
+  $branch = api_get_branch_by_id($function->branch_id);
+
+  // Create the link title.
+  if ($type == 'calls') {
+    $link_title = format_plural($count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
+  }
+  else {
+    $link_title = format_plural($count, '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
+  }
+
+  // Create the link path.
+  $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
+  $link_path = 'api/'. $branch->project .'/'. $replaced_string .'/function/'. $type .'/'. $function->object_name .'/'. $branch->branch_name;
+
+  return '<h3>'. l($link_title, $link_path) .'</h3>';
 }
