@@ -772,17 +772,20 @@ function api_format_php($code, $number = FALSE) {
     }
   }
 
-  $output = '<pre class="php"><code>'. trim($output) .'</code></pre>';
-
+  $output = trim($output);
 
   // Add line numbering, if requested.
   if ($number !== FALSE) {
     $start = (is_int($number)) ? $number : 1;
-    $count = substr_count($output, "\n");
-    $numbers = range($start, $start + $count);
-    $output = '<table><tr><td class="line-numbers"><pre>' . implode("\n", $numbers) . '</pre></td><td class="code">' . $output . '</td></tr></table>';
+    $lines = explode("\n", $output);
+    $output = '<ol class="code-lines" start="' . $number . '">';
+    foreach ($lines as $line) {
+      $output .= '<li>' . $line . "\n</li>";
+    }
+    $output .= '</ol>';
   }
 
+  $output = '<pre class="php"><code>'. $output .'</code></pre>';
   return $output;
 }
 

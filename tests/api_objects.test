@@ -26,10 +26,9 @@ class ApiBranchCreation extends ApiTestCase {
     // Check sample.php
     $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
     $this->assertEqual($object->summary, 'A sample file.', t('sample.php has summary %summary.', array('%summary' => $object->summary)));
-    $parsed = strip_tags($object->code);
-    $file = htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name)));
-    $nums = implode("\n", range(1, 230));
-    $this->assertEqual($parsed, $nums . $file, t('sample.php\'s code matches file.'));
+    $parsed = trim(strip_tags($object->code));
+    $file = trim(htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name))));
+    $this->assertEqual($parsed, $file, t('sample.php\'s code matches file.'));
 
     // Check sample_function()
     $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
@@ -108,10 +107,9 @@ class ApiBranchCreation extends ApiTestCase {
     // Check classes.php
     $object = api_filename_load('classes.php', $branch->project, $branch->branch_name);
     $this->assertEqual($object->summary, 'Object-oriented tests.', t('classes.php has summary %summary.', array('%summary' => $object->summary)));
-    $parsed = strip_tags($object->code);
-    $file = htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name)));
-    $nums = implode("\n", range(1, 86));
-    $this->assertEqual($parsed, $nums . $file, t('classes.php\'s code matches file.'));
+    $parsed = trim(strip_tags($object->code));
+    $file = trim(htmlspecialchars(trim(file_get_contents($branch->directories . '/' . $object->file_name))));
+    $this->assertEqual($parsed, $file, t('classes.php\'s code matches file.'));
 
     // Check Sample class
     $class = api_object_load('Sample', $branch, 'class', 'classes.php');

@@ -6,6 +6,7 @@
 /* PHP code */
 .php {
   overflow: auto;
+  white-space: pre-wrap;
 }
 .php .php-comment {
   color: #666;
@@ -34,9 +35,14 @@
   color: #060;
 }
 
-td.line-numbers {
-    color: #666666;
-    text-align: right;
+ol.code-lines {
+   padding: 0;
+   margin: 0 0 0 20px;
+}
+
+ol.code-lines li {
+   padding: 0 0 0 5px;
+   margin: 0 0 0 20px;
 }
 
 /* Function signature */
