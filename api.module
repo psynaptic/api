@@ -1554,16 +1554,18 @@ function api_get_active_branch() {
  * @see api_search_form_submit()
  */
 function api_search_form($form_state, $branch) {
-  $form = array(
-    '#token' => FALSE,
-  );
+  $form = array();
 
+  $form['#token'] = FALSE;
+  $form['#attributes']['class'] = 'api-search-form';
   $form['#branch'] = $branch;
+
   $form['search'] = array(
     '#title' => t('Function, file, or topic'),
     '#type' => 'textfield',
     '#default_value' => '',
     '#required' => TRUE,
+    '#attributes' => array('class' => 'api-search-keywords'),
   );
   $form['submit'] = array(
     '#type' => 'submit',

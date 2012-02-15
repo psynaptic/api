@@ -4,9 +4,9 @@
  */
 
 Drupal.behaviors.apiAutoComplete = function (context) {
-  $('#api-search-form:not(.apiAutoCompleteProcessed)', context).addClass('apiAutoCompleteProcessed').each(function () {
+  $('form.api-search-form:not(.apiAutoCompleteProcessed)', context).addClass('apiAutoCompleteProcessed').each(function () {
     // On the first focus.
-    $('#edit-search', this).attr('autocomplete', 'off').one('focus', function () {
+    $('input.api-search-keywords', this).attr('autocomplete', 'off').one('focus', function () {
       var $this = $(this);
       // Prefetch list of objects for this branch.
       $.getJSON(Drupal.settings.apiAutoCompletePath, function (data) {

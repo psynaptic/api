@@ -91,21 +91,18 @@ ol.code-lines li {
   color: #456500;
 }
 
-/* Search block- make the text field the correct width */
-#api-search-form #edit-search-wrapper,
-#api-search-form-1 #edit-search-1-wrapper {
+/* Search form */
+
+form.api-search-form div.form-item {
   display: inline;
 }
-#api-search-form #edit-search,
-#api-search-form-1 #edit-search-1 {
+
+form.api-search-form input.api-search-keywords {
   width: 115px;
-}
-#api-search-form #autocomplete,
-#api-search-form-1 #autocomplete-1 {
-  width: 250px !important;
 }
 
 /* Other styles */
+
 .api-defined {
   color: #9d9d93;
   font-size: 0.8333em;
