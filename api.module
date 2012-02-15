@@ -244,8 +244,7 @@ function api_menu() {
     'description' => 'Configure branches for documentation.',
     'access callback' => 'user_access',
     'access arguments' => array('administer API reference'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('api_page_admin_form'),
+    'page callback' => 'api_page_admin_overview',
     'file' => 'api.admin.inc',
   );
   $items['admin/settings/api/branches'] = array(
@@ -265,6 +264,15 @@ function api_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer API reference'),
     'page callback' => 'api_admin_new_branch_page',
+    'file' => 'api.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/settings/api/branches/reset_queue'] = array(
+    'title' => 'Reset parse queue',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer API reference'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('api_reset_queue_form'),
     'file' => 'api.admin.inc',
     'type' => MENU_LOCAL_TASK,
   );
@@ -2156,4 +2164,18 @@ function api_queue_parse_file($data) {
 function api_queue_file_delete($data) {
   file_delete($data['path']);
   watchdog('api', 'Remove expired API JSON, %path.', array('%path' => $data['path']));
+}
+
+/**
+ * Resets the parse queue.
+ *
+ * Empties all parse jobs from the queue, and sets all files to "unqueued"
+ * status.
+ */
+function api_reset_parse_queue() {
+  drupal_queue_include();
+  $queue = DrupalQueue::get('api_parse');
+  $queue->deleteQueue();
+
+  db_query('UPDATE {api_file} SET queued=0');
 }

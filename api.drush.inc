@@ -31,6 +31,10 @@ function api_drush_command() {
       'callback' => 'api_drush_list_branches',
       'description' => 'List API branches.',
     ),
+    'api-reset-queue' => array(
+      'callback' => 'api_drush_reset_queue',
+      'description' => 'Reset the parsing queue.',
+    ),
   );
 }
 
@@ -47,6 +51,15 @@ function api_drush_reparse($branch_or_file = NULL) {
   $num = api_mark_for_reparse($branch_or_file);
 
   drush_log(dt('Marked @number files for reparsing.', array('@number' => $num)), 'ok');
+}
+
+/**
+ * Resets the parsing queue.
+ */
+function api_drush_reset_queue() {
+  api_reset_parse_queue();
+
+  drush_log(dt('API parse queue reset. Necessary jobs will be added in the next cron run'), 'ok');
 }
 
 /**

@@ -6,9 +6,26 @@
  */
 
 /**
- * Generates the main admin page for the API module.
+ * Page callback: Generates the API module main admin page.
  *
- * Menu callback for path admin/settings/api.
+ * @return
+ *   HTML for the page.
+ */
+function api_page_admin_overview() {
+  // Display branch overview form.
+  $output = drupal_get_form('api_page_admin_form');
+
+  // Display parsing status.
+  drupal_queue_include();
+  $queue = DrupalQueue::get('api_parse');
+  $num = $queue->numberOfItems();
+  $output .= '<p>' . format_plural($num, 'There is approximately @count parsing job waiting in the queue.',  'There are approximately @count parsing jobs waiting in the queue.') . '</p>';
+
+  return $output;
+}
+
+/**
+ * Generates the branches list form for the API module.
  *
  * @see theme_api_branch_table()
  * @see api_page_admin_form_submit()
@@ -105,6 +122,30 @@ function api_page_admin_form_submit($form, &$form_state) {
   cache_clear_all('*', 'cache_menu', TRUE);
 
   drupal_set_message(t('Changes saved.'));
+}
+
+/**
+ * Generates the form for resetting the API parse queue.
+ *
+ * @see api_reset_queue_form_submit()
+ */
+function api_reset_queue_form() {
+
+  $form = array();
+
+  return confirm_form($form, t('Are you sure you want to reset the parse queue?'), 'admin/settings/api', t('Files will be added back to the queue as necessary at the next cron run.'));
+}
+
+/**
+ * Submission handler for api_reset_queue_form().
+ *
+ * Resets the parsing queue and redirects to the API admin page.
+ */
+function api_reset_queue_form_submit($form, &$form_state) {
+  if ($form_state['values']['confirm']) {
+    api_reset_parse_queue();
+  }
+  $form_state['redirect'] = 'admin/settings/api';
 }
 
 /**

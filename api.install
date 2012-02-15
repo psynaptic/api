@@ -185,16 +185,8 @@ function api_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'version' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'found' => array(
+      'queued' => array(
         'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
       ),
@@ -860,6 +852,27 @@ function api_update_6102() {
 function api_update_6103() {
   $return = array();
   return _api_update_force_all_reparse($return);
+}
+
+/**
+ * Drops and adds fields in {api_files} and resets parsing queue.
+ */
+function api_update_6104() {
+  $return = array();
+  db_drop_field($return, 'api_file', 'version');
+  db_drop_field($return, 'api_file', 'found');
+
+  db_add_field($return, 'api_file', 'queued', array(
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+
+  drupal_load('module', 'api');
+  api_reset_parse_queue();
+  $return[] = array('success' => TRUE, 'query' => "Parse queue was emptied");
+
+  return $return;
 }
 
 /**

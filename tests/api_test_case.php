@@ -47,10 +47,8 @@ class ApiTestCase extends DrupalWebTestCase {
     drupal_alter('cron_queue_info', $queues);
     foreach ($queues as $queue_name => $info) {
       $function = $info['worker callback'];
-      $end = time() + (isset($info['time']) ? $info['time'] : 15);
       $queue = DrupalQueue::get($queue_name);
-      while (time() < $end && ($item = $queue->claimItem())) {
-        $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
+      while ($item = $queue->claimItem()) {
         $function($item->data);
         $queue->deleteItem($item);
       }

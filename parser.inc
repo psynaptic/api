@@ -34,17 +34,12 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
     'file_name' => $file_name,
     'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
     'documentation' => '',
-    'version' => '',
     'modified' => filemtime($file_path),
+    'queued' => 0,
     'source' => str_replace(array("\r\n", "\r"), array("\n", "\n"), file_get_contents($file_path)),
     'content' => '',
     'class' => '',
   );
-
-  $match = array();
-  if (preg_match('!\$'.'Id: .*?,v (.*?) (.*?) (.*?) (.*?) Exp \$!', $docblock['source'], $match)) {
-    $docblock['version'] = $match[1] .' (checked in on '. $match[2] .' at '. $match[3] .' by '. $match[4] .')';
-  }
 
   $callback($docblock);
 }
@@ -393,14 +388,8 @@ function api_save_documentation($docblocks) {
       drupal_write_record('api_documentation', $docblock, 'did');
     }
     else {
-      $node = new stdClass();
-      $node->type = 'api';
-      $node->uid = 0;
-      if (module_exists('comment')) {
-        $node->comment = COMMENT_NODE_READ_WRITE;
-      }
-      node_save($node);
-      $docblock['did'] = $node->nid;
+      $nid = api_new_documentation_node();
+      $docblock['did'] = $nid;
       $docblock['branch_id'] = $docblocks[0]['branch']->branch_id;
       _api_add_text_defaults($docblock, 'api_documentation');
       drupal_write_record('api_documentation', $docblock);
@@ -428,8 +417,9 @@ function api_save_documentation($docblocks) {
         break;
 
       case 'file':
-        db_query('DELETE FROM {api_file} WHERE did = %d', $docblock['did']);
-        drupal_write_record('api_file', $docblock);
+        // Note that this will set the 'queued' field back to zero, since
+        // $docblock['queued'] is set to 0 up at the top of api_parse_file().
+        drupal_write_record('api_file', $docblock, 'did');
         break;
 
       case 'interface':
@@ -1059,7 +1049,7 @@ function api_update_branch_files($branch) {
 
   // List all documented files for the branch.
   $files = array();
-  $result = db_query("SELECT f.did, f.modified, d.object_name FROM {api_documentation} d INNER JOIN {api_file} f ON d.did = f.did WHERE d.branch_id = %d AND d.object_type = 'file'", $branch->branch_id);
+  $result = db_query("SELECT f.did, f.modified, f.queued, d.object_name FROM {api_documentation} d INNER JOIN {api_file} f ON d.did = f.did WHERE d.branch_id = %d AND d.object_type = 'file'", $branch->branch_id);
   while ($file = db_fetch_object($result)) {
     $files[$file->object_name] = $file;
   }
@@ -1067,18 +1057,47 @@ function api_update_branch_files($branch) {
   foreach (api_scan_directories($branch->directories, $branch->excluded_directories) as $path => $file_name) {
     preg_match('!\.([a-z]*)$!', $file_name, $matches);
     if (isset($matches[1]) && isset($parse_functions[$matches[1]])) {
+      $new = FALSE;
       if (isset($files[$file_name])) {
-        $parse = (filemtime($path) > $files[$file_name]->modified);
+        $parse = (filemtime($path) > $files[$file_name]->modified) && !$files[$file_name]->queued;
+        $file = $files[$file_name];
         unset($files[$file_name]); // All remaining files will be removed.
       }
       else { // New file.
         $parse = TRUE;
+        $new = TRUE;
       }
       if ($parse) {
         drupal_queue_include();
 
         $queue = DrupalQueue::get('api_parse');
         $queue->createItem(array('parser' => $parse_functions[$matches[1]], 'path' => $path, 'branch' => $branch, 'file' => $file_name, 'branch_name' => $branch->branch_name));
+
+        // Make sure this doesn't get added to the parse queue again.
+
+        if ($new) {
+          // Add stub to the {api_documentation} and {api_file} table for this
+          // file so it doesn't get added to the parse queue again.
+          $nid = api_new_documentation_node();
+          $doc = array(
+            'object_name' => $file_name,
+            'file_name' => $file_name,
+            'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
+            'object_type' => 'file',
+            'branch_id' => $branch->branch_id,
+            'queued' => time(),
+            'did' => $nid,
+          );
+          _api_add_text_defaults($doc, 'api_documentation');
+          drupal_write_record('api_documentation', $doc);
+          drupal_write_record('api_file', $doc);
+        }
+        else {
+          // Update the 'queued' field in the {api_file} table so this does not
+          // get queued again.
+          $file->queued = time();
+          drupal_write_record('api_file', $file, 'did');
+        }
       }
     }
   }
@@ -1203,4 +1222,22 @@ function _api_add_text_defaults(&$record, $table) {
       );
       break;
   }
+}
+
+/**
+ * Creates a new documentation object node (for comments).
+ *
+ * @return
+ *   Node ID of the created node.
+ */
+function api_new_documentation_node() {
+  $node = new stdClass();
+  $node->type = 'api';
+  $node->uid = 0;
+  if (module_exists('comment')) {
+    $node->comment = COMMENT_NODE_READ_WRITE;
+  }
+  node_save($node);
+
+  return $node->nid;
 }
