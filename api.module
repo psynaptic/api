@@ -359,14 +359,16 @@ function api_menu() {
   );
 
   foreach (api_get_branches() as $branch) {
-    $items['api/search/'. $branch->branch_name .'/%menu_tail'] = array(
-      'title' => $branch->title,
-      'page callback' => 'api_search_listing',
-      'page arguments' => array($branch->branch_name, 3),
-      'access arguments' => array('access API reference'),
-      'type' => MENU_LOCAL_TASK,
-      'file' => 'api.pages.inc',
-    );
+    if ($branch->status) {
+      $items['api/search/'. $branch->branch_name .'/%menu_tail'] = array(
+        'title' => $branch->branch_name,
+        'page callback' => 'api_search_listing',
+        'page arguments' => array($branch->branch_name, 3),
+        'access arguments' => array('access API reference'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'api.pages.inc',
+      );
+    }
   }
 
   // Listings
