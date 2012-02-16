@@ -1,0 +1,129 @@
+<?php
+
+/**
+ * Tests that files in .. directories are scanned.
+ */
+class ApiDotDotTestCase extends DrupalWebTestCase {
+  private $default_branch;
+  private $branch_info;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Dot dot directories'),
+      'description' => t('Tests that the API module can parse files in .. directories'),
+      'group' => 'API Module',
+    );
+  }
+
+  /**
+   * Overrides DrupalWebTestCase::setUp().
+   *
+   * Sets up the sample branch.
+   */
+  function setUp() {
+    $this->default_branch = variable_get('api_default_branch', NULL);
+    variable_del('api_default_branch');
+    parent::setUp('drupal_queue', 'grammar_parser', 'api');
+
+    include drupal_get_path('module', 'api') .'/api.admin.inc';
+    include drupal_get_path('module', 'api') .'/parser.inc';
+
+    drupal_queue_include();
+
+    // Make a branch for sample code, using a .. in the path.
+
+    $base = getcwd();
+    $parts = explode('/', $base);
+    $last = array_pop($parts);
+    $prefix = '../' . $last . '/';
+
+    $branch_info = new stdClass();
+    $branch_info->type = 'files';
+    $branch_info->project = 'test';
+    $branch_info->branch_name = '6';
+    $branch_info->title = 'Testing 6';
+    $branch_info->status = 1;
+    $branch_info->data = array(
+      'directories' => $prefix . drupal_get_path('module', 'api') .'/tests/sample',
+      'excluded_directories' => $prefix . drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
+    );
+
+    api_save_branch($branch_info);
+    variable_set('api_default_branch', $branch_info->branch_id);
+
+    api_update_all_branches();
+    $count = $this->processApiParseQueue();
+    $this->assertEqual($count, 8, "8 files were parsed ($count)");
+  }
+
+  /**
+   * Tests that all the files were parsed.
+   */
+  function testParsing() {
+    // Make sure we have the right number of doc objects.
+    $branch = $this->getBranch();
+    $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
+    $this->assertEqual($count, 56, 'Found ' . $count . ' documentation objects.');
+
+    // Verify that the top-level directory was parsed.
+
+    $object = api_filename_load('sample.php', $branch->project, $branch->branch_name);
+    $this->assertTrue(isset($object) && $object, 'sample.php was found (top level)');
+
+    $object = api_object_load('sample_function', $branch, 'function');
+    $this->assertTrue(isset($object) && $object, 'sample_function was found (top level)');
+
+    // Verify that the subdirectory was parsed.
+
+    $object = api_filename_load('subdirectory/sample-subdir.php', $branch->project, $branch->branch_name);
+    $this->assertTrue(isset($object) && $object, 'sample_insubdir.php was found (sub-directory)');
+
+    $object = api_object_load('sample_insubdir_function', $branch, 'function');
+    $this->assertTrue(isset($object) && $object, 'sample_insubdir_function was found (sub-directory)');
+  }
+
+  /*
+   * Ensures that the default branch doesn't get overridden by tests.
+   */
+  function tearDown() {
+    parent::tearDown();
+    // Aparently SimpleTest is leaky sometimes.
+    variable_set('api_default_branch', $this->default_branch);
+  }
+
+  /**
+   * Returns the branch set up by this base testing class.
+   */
+  function getBranch() {
+    $branches = api_get_branches();
+    return reset($branches);
+  }
+
+  /**
+   * Processes the API parse queue.
+   */
+  function processApiParseQueue() {
+    $queues = api_cron_queue_info();
+    drupal_alter('cron_queue_info', $queues);
+
+    $queue_name = 'api_parse';
+    $info = $queues[$queue_name];
+    $function = $info['worker callback'];
+    $queue = DrupalQueue::get($queue_name);
+
+    $count = 0;
+    while ($item = $queue->claimItem()) {
+      $function($item->data);
+      $queue->deleteItem($item);
+      $count++;
+    }
+
+    api_shutdown();
+    cache_clear_all('variables', 'cache');
+    variable_init();
+    api_get_branches(TRUE);
+    menu_rebuild();
+
+    return $count;
+  }
+}

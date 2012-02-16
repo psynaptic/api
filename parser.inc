@@ -1171,8 +1171,10 @@ function api_scan_directories($directories, $excluded_directories) {
       if (is_dir($path)) {
         // See if we want to scan this path, and if so, add to To Do list.
         // Don't keep any directory that starts with ".", or anything in the
-        // excluded list.
-        if ((strpos($file->filename, '.') !== 0) &&
+        // excluded list. Note that $file->filename includes $directory, so
+        // strip that off before checking the name for ".".
+        $dir_name = substr($file->filename, strlen($directory));
+        if ((strpos($dir_name, '.') !== 0) &&
           !in_array($path, $excluded_array)) {
           $todo[] = $path;
         }

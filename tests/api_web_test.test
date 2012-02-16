@@ -183,6 +183,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('sample-subdir.php', 0,  'sample-subdir.php file name is on functions list page');
     $this->assertNoRaw('excluded_function', 'Excluded function is not on functions list page');
     $this->assertNoRaw('hidden_function', 'Hidden function is not on functions list page');
+    $this->assertNoRaw('hidden_function_two', 'Second hidden function is not on functions list page');
 
 
     // Verify file/function links.
@@ -267,6 +268,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('Object-oriented tests', 'classes.php file description is on files list page');
     $this->assertNoRaw('excluded.php', 'Excluded file is not shown on files list page');
     $this->assertNoRaw('hidden.php', 'Hidden file is not shown on files list page');
+    $this->assertNoRaw('hidden2.php', 'Second hidden file is not shown on files list page');
 
     // Verify file links.
     $this->clickLink('classes.php');
