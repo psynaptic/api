@@ -1,158 +1,6 @@
 <?php
 
-/**
- * Provides a base class for testing web pages (user/admin) for the API module.
- */
-class ApiWebPagesBaseTest extends DrupalWebTestCase {
-  protected $default_branch;
-  protected $super_user;
-  protected $branch_info;
-  protected $php_branch_info;
-
-  /**
-   * Overrides DrupalWebTestCase::setUp().
-   *
-   * Sets up the sample branch, using the administrative interface, and updates
-   * this and the default PHP branch.
-   */
-  public function setUp() {
-    // Save the default branch for teardown.
-    $this->default_branch = variable_get('api_default_branch', NULL);
-    variable_del('api_default_branch');
-    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
-
-    // Set up a super-user.
-    $this->super_user = $this->drupalCreateUser(array(
-        'access API reference',
-        'administer API reference',
-        'access content',
-        'access administration pages',
-      ));
-    $this->drupalLogin($this->super_user);
-
-    // Create a "file" branch with the sample code, from the admin interface.
-    $this->branch_info = array(
-      'project' => 'test',
-      'branch_name' => '6',
-      'project_title' => 'Project 6',
-      'title' => 'Testing 6',
-      'status' => 1,
-      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
-      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
-    );
-
-    $this->drupalPost('admin/settings/api/branches/new/files',
-      $this->branch_info,
-      t('Save branch')
-    );
-
-    // Create a "php" branch with the sample PHP function list, from the admin
-    // interface.
-    $this->php_branch_info = array(
-      'branch_name' => 'php2',
-      'data[summary]' => url(drupal_get_path('module', 'api') . '/tests/php_sample/funcsummary.txt', array('absolute' => TRUE)),
-      'data[path]' => 'http://example.com/function/!function',
-    );
-
-    $this->drupalPost('admin/settings/api/branches/new/php',
-      $this->php_branch_info,
-      t('Save branch')
-    );
-
-    // Find the ID that was assigned to the function branch.
-    $branches = api_get_branches(TRUE);
-    $this_id = 0;
-    foreach ($branches as $branch) {
-      if ($branch->title == $this->branch_info['title']) {
-        $this_id = $branch->branch_id;
-        break;
-      }
-    }
-
-    // Make this the default branch.
-    $this->drupalPost('admin/settings/api/branches/list',
-      array(
-        'default_branch' => $this_id,
-      ),
-      t('Save changes')
-    );
-
-    // Parse the code.
-    $this->updateEverything();
-  }
-
-  /**
-   * Overrides DrupalWebTestCase::tearDown().
-   *
-   * Ensures that the default branch doesn't get overridden by tests.
-   */
-  public function tearDown() {
-    DrupalWebTestCase::tearDown();
-    // Aparently SimpleTest is leaky sometimes.
-    variable_set('api_default_branch', $this->default_branch);
-  }
-
-  /**
-   * Asserts that a link exists, with the given URL.
-   *
-   * @param $label
-   *   Label of the link to find.
-   * @param $url
-   *   URL to match.
-   * @param $message_link
-   *   Message to use in link exist assertion.
-   * @param $message_url
-   *   Message to use for URL matching assertion.
-   */
-  protected function assertLinkURL($label, $url, $message_link, $message_url) {
-    // Code follows DrupalWebTestCase::clickLink() and assertLink().
-    $links = $this->xpath('//a[text()="' . $label . '"]');
-    $this->assert(isset($links[0]), $message_link);
-    if (isset($links[0])) {
-      $url_target = $this->getAbsoluteUrl($links[0]['href']);
-      $this->assertEqual($url_target, $url, $message_url);
-    }
-  }
-
-  /**
-   * Asserts that the current page's title contains a string.
-   *
-   * @param $string
-   *   String to match in the title.
-   * @param $message
-   *   Message to print.
-   */
-  protected function assertTitleContains($string, $message) {
-    $title = current($this->xpath('//title'));
-    $this->assertTrue(strpos($title, $string) !== FALSE, $message);
-  }
-
-  /**
-   * Updates all the branches.
-   */
-  protected function updateEverything() {
-    api_get_branches(TRUE);
-
-    include_once drupal_get_path('module', 'api') .'/parser.inc';
-    api_update_all_branches();
-
-    drupal_queue_include();
-    $queues = api_cron_queue_info();
-    drupal_alter('cron_queue_info', $queues);
-    foreach ($queues as $queue_name => $info) {
-      $function = $info['worker callback'];
-      $queue = DrupalQueue::get($queue_name);
-      while ($item = $queue->claimItem()) {
-        $function($item->data);
-        $queue->deleteItem($item);
-      }
-    }
-
-    api_shutdown();
-
-    api_get_branches(TRUE);
-  }
-}
+include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
 /**
  * Tests the API module listing pages (functions, classes, etc.).
@@ -160,8 +8,8 @@ class ApiWebPagesBaseTest extends DrupalWebTestCase {
 class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
     return array(
-      'name' => t('Listing pages'),
-      'description' => t('Tests listing pages for the API module.'),
+      'name' => 'Listing pages',
+      'description' => 'Tests listing pages for the API module.',
       'group' => 'API Module',
     );
   }
@@ -314,7 +162,6 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->clickLink('Samples');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Samples link went to the right place');
   }
-
 }
 
 /**
@@ -323,8 +170,8 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
 class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
     return array(
-      'name' => t('Simple item pages'),
-      'description' => t('Tests simple item pages (function, constant, etc.) for the API module.'),
+      'name' => 'Simple item pages',
+      'description' => 'Tests simple item pages (function, constant, etc.) for the API module.',
       'group' => 'API Module',
     );
   }
@@ -518,8 +365,8 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
 class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
     return array(
-      'name' => t('Complex item pages'),
-      'description' => t('Tests complex item pages (class, topic, file) for the API module.'),
+      'name' => 'Complex item pages',
+      'description' => 'Tests complex item pages (class, topic, file) for the API module.',
       'group' => 'API Module',
     );
   }
@@ -717,7 +564,6 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample--doubledash.tpl.php');
     $this->assertText('Displays a sample with a doubledash.', 'File description appears on double-dash page');
   }
-
 }
 
 /**
@@ -726,8 +572,8 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
 class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
     return array(
-      'name' => t('Admin pages'),
-      'description' => t('Tests admin pages for the API module.'),
+      'name' => 'Admin pages',
+      'description' => 'Tests admin pages for the API module.',
       'group' => 'API Module',
     );
   }
@@ -787,26 +633,19 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('8 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
     $this->assertTrue($this->howManyToParse() == 8, '8 files are marked to parse after clicking reparse link');
   }
-
-  /**
-   * Returns the number of files that have been marked as needing to be parsed.
-   */
-  function howManyToParse() {
-    return db_result(db_query('SELECT COUNT(*) from {api_file} WHERE modified < 100'));
-  }
 }
 
 /**
  * Tests that links to empty listing pages are not created.
  */
-class ApiEmptyPageLinksTestCase extends  ApiWebPagesBaseTest {
+class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
 
   protected $branch_info_2;
 
   public static function getInfo() {
     return array(
-      'name' => t('Empty listing page links'),
-      'description' => t('Tests that links to empty listing pages are not made.'),
+      'name' => 'Empty listing page links',
+      'description' => 'Tests that links to empty listing pages are not made.',
       'group' => 'API Module',
     );
   }
@@ -817,75 +656,25 @@ class ApiEmptyPageLinksTestCase extends  ApiWebPagesBaseTest {
    * Sets up two branches in two different projects using the admin interface.
    */
   public function setUp() {
-    // Save the default branch for teardown.
-    $this->default_branch = variable_get('api_default_branch', NULL);
-    variable_del('api_default_branch');
-    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
-
-    // Set up a super-user.
-    $this->super_user = $this->drupalCreateUser(array(
-        'access API reference',
-        'administer API reference',
-        'access content',
-        'access administration pages',
-        'administer blocks',
-      ));
-    $this->drupalLogin($this->super_user);
+    $this->baseSetUp();
 
     // Create a "file" branch with the sample code, from the admin interface.
-    $this->branch_info = array(
-      'project' => 'test',
-      'branch_name' => '6',
-      'project_title' => 'Project 6',
-      'title' => 'Testing 6',
-      'status' => 1,
-      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
-      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
-    );
-
-    $this->drupalPost('admin/settings/api/branches/new/files',
-      $this->branch_info,
-      t('Save branch')
-    );
-
-    // Find the ID that was assigned to the function branch.
-    $branches = api_get_branches(TRUE);
-    $this_id = 0;
-    foreach ($branches as $branch) {
-      if ($branch->title == $this->branch_info['title']) {
-        $this_id = $branch->branch_id;
-        break;
-      }
-    }
-
-    // Make this the default branch.
-    $this->drupalPost('admin/settings/api/branches/list',
-      array(
-        'default_branch' => $this_id,
-      ),
-      t('Save changes')
-    );
+    $this->branch_info = $this->setUpBranchUI();
 
     // Create a second "file" branch in a different project, but with the same
     // branch name. Exclude the "maybe_exclude" directory so that this branch
     // only has functions and not constants and classes.
-    $this->branch_info_2 = array(
+    $this->branch_info_2 = $this->setUpBranchUI('', FALSE, array(
       'project' => 'test2',
-      'branch_name' => '6',
       'project_title' => 'Project 2',
-      'title' => 'Testing 6',
-      'status' => 1,
-      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample2',
-      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample2/maybe_exclude',
-    );
-
-    $this->drupalPost('admin/settings/api/branches/new/files',
-      $this->branch_info_2,
-      t('Save branch')
-    );
+      'directory' => drupal_get_path('module', 'api') .'/tests/sample2',
+      'excluded' => drupal_get_path('module', 'api') .'/tests/sample2/maybe_exclude',
+      ));
 
     // Parse the code.
-    $this->updateEverything();
+    api_get_branches(TRUE);
+    api_update_all_branches();
+    $this->processApiParseQueue();
   }
 
   /**
@@ -974,8 +763,8 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
 
   public static function getInfo() {
     return array(
-      'name' => t('Multiple branches functionality'),
-      'description' => t('Tests that the multiple-branch setup works correctly'),
+      'name' => 'Multiple branches functionality',
+      'description' => 'Tests that the multiple-branch setup works correctly',
       'group' => 'API Module',
     );
   }
@@ -986,74 +775,29 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
    * Sets up two branches in the same project using the admin interface.
    */
   public function setUp() {
-    // Save the default branch for teardown.
-    $this->default_branch = variable_get('api_default_branch', NULL);
-    variable_del('api_default_branch');
-    DrupalWebTestCase::setUp('drupal_queue', 'grammar_parser', 'api', 'ctools');
-
-    // Set up a super-user.
-    $this->super_user = $this->drupalCreateUser(array(
-        'access API reference',
-        'administer API reference',
-        'access content',
-        'access administration pages',
-        'administer blocks',
-      ));
-    $this->drupalLogin($this->super_user);
+    $this->baseSetUp();
 
     // Create a "file" branch with the sample code, from the admin interface.
-    $this->branch_info = array(
-      'project' => 'test',
+    $this->branch_info = $this->setUpBranchUI('', TRUE, array(
       'branch_name' => 'long_6',
       'project_title' => 'Project Test',
-      'title' => 'Testing 6',
-      'status' => 1,
-      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample',
-      'data[excluded_directories]' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
-    );
+      ));
 
-    $this->drupalPost('admin/settings/api/branches/new/files',
-      $this->branch_info,
-      t('Save branch')
-    );
-
-    // Find the ID that was assigned to the function branch.
-    $branches = api_get_branches(TRUE);
-    $this_id = 0;
-    foreach ($branches as $branch) {
-      if ($branch->title == $this->branch_info['title']) {
-        $this_id = $branch->branch_id;
-        break;
-      }
-    }
-
-    // Make this the default branch.
-    $this->drupalPost('admin/settings/api/branches/list',
-      array(
-        'default_branch' => $this_id,
-      ),
-      t('Save changes')
-    );
-
-    // Create a second "file" branch in the same project.
-    // Unlike in the multiple project setup, do *not* exclude the
-    // "maybe_exclude" directory.
-    $this->branch_info_2 = array(
-      'project' => 'test',
+    // Create a second "file" branch in a different project, but with the same
+    // branch name. Exclude the "maybe_exclude" directory so that this branch
+    // only has functions and not constants and classes.
+    $this->branch_info_2 = $this->setUpBranchUI('', FALSE, array(
       'branch_name' => 'long_7',
       'project_title' => 'Project Test',
       'title' => 'Testing 7',
-      'status' => 1,
-      'data[directories]' => drupal_get_path('module', 'api') .'/tests/sample2',
-    );
-
-    $this->drupalPost('admin/settings/api/branches/new/files',
-      $this->branch_info_2,
-      t('Save branch')
-    );
+      'directory' => drupal_get_path('module', 'api') .'/tests/sample2',
+      'excluded' => 'none',
+      ));
 
     // Parse the code.
-    $this->updateEverything();
+    api_get_branches(TRUE);
+    api_update_all_branches();
+    $this->processApiParseQueue();
   }
 
   /**

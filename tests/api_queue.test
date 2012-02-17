@@ -1,16 +1,16 @@
 <?php
 
+include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
+
 /**
  * Tests the queue functionality of the API module.
  */
-class ApiQueuesTestCase extends DrupalWebTestCase {
-  private $default_branch;
-  private $branch_info;
+class ApiQueuesTestCase extends ApiTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => t('Parsing queue'),
-      'description' => t('Tests that the API parsing queue is functioning properly'),
+      'name' => 'Parsing queue',
+      'description' => 'Tests that the API parsing queue is functioning properly',
       'group' => 'API Module',
     );
   }
@@ -21,61 +21,11 @@ class ApiQueuesTestCase extends DrupalWebTestCase {
    * Sets up the sample branch.
    */
   function setUp() {
-    $this->default_branch = variable_get('api_default_branch', NULL);
-    variable_del('api_default_branch');
-    parent::setUp('drupal_queue', 'grammar_parser', 'api');
-
-    include drupal_get_path('module', 'api') .'/api.admin.inc';
-    include drupal_get_path('module', 'api') .'/parser.inc';
-
-    drupal_queue_include();
-
-    // Make a branch for sample code.
-    $branch_info = new stdClass();
-    $branch_info->type = 'files';
-    $branch_info->project = 'test';
-    $branch_info->branch_name = '6';
-    $branch_info->title = 'Testing 6';
-    $branch_info->status = 1;
-    $branch_info->data = array(
-      'directories' => drupal_get_path('module', 'api') .'/tests/sample',
-      'excluded_directories' => drupal_get_path('module', 'api') .'/tests/sample/to_exclude',
-    );
-    api_save_branch($branch_info);
-    variable_set('api_default_branch', $branch_info->branch_id);
-  }
-
-  /**
-   * Processes the API parse queue.
-   */
-  function processApiParseQueue() {
-    $queues = api_cron_queue_info();
-    drupal_alter('cron_queue_info', $queues);
-
-    $queue_name = 'api_parse';
-    $info = $queues[$queue_name];
-    $function = $info['worker callback'];
-    $queue = DrupalQueue::get($queue_name);
-
-    while ($item = $queue->claimItem()) {
-      $this->verbose(t('Processing queue %queue - file %path', array('%queue' => $queue_name, '%path' => $item->data['path'])));
-      $function($item->data);
-      $queue->deleteItem($item);
-    }
-
-    api_shutdown();
+    $this->baseSetUp();
+    $this->setUpBranchAPICall();
     cache_clear_all('variables', 'cache');
     variable_init();
     api_get_branches(TRUE);
-    menu_rebuild();
-  }
-
-  /**
-   * Returns the approximate number of items in the API parse queue.
-   */
-  function countParseQueue() {
-    $queue = DrupalQueue::get('api_parse');
-    return $queue->numberOfItems();
   }
 
   /**
@@ -94,27 +44,58 @@ class ApiQueuesTestCase extends DrupalWebTestCase {
     $this->assertEqual($this->countParseQueue(), 8, 'Parse queue still has 8 files in it after second update');
 
     // Parse all the files and verify the queue is empty.
-    $this->processApiParseQueue();
+    $count = $this->processApiParseQueue(TRUE);
+    $this->assertEqual($count, 8, '8 items were processed in the queue');
     $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
 
     // Update branches again and verify nothing is added to the queue.
     api_update_all_branches();
-    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still emty after branch update');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still empty after branch update');
 
     // Mark this branch for reparsing, update, and verify the queue is full.
-    api_mark_for_reparse($this->branch_info['branch_id']);
-    api_update_all_branches();
-    $this->assertEqual($this->countParseQueue(), 8, 'Parse queue is full again after marking for reparse.');
-  }
+    $branch = $this->getBranch();
+    $this->verbose(print_r($branch, TRUE));
+    api_mark_for_reparse($branch->branch_id);
+    $this->assertEqual($this->howManyToParse(), 8, '8 files marked for reparsing with branch ID');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still empty after marking for parsing');
 
-  /**
-   * Overrides DrupalWebTestCase::tearDown().
-   *
-   * Ensures that the default branch doesn't get overridden by tests.
-   */
-  function tearDown() {
-    parent::tearDown();
-    // Aparently SimpleTest is leaky sometimes.
-    variable_set('api_default_branch', $this->default_branch);
+    api_update_all_branches();
+    $this->assertEqual($this->countParseQueue(), 8, 'Parse queue is full again (' . $this->countParseQueue() . ') after marking for reparse.');
+
+    // Parse and verify empty again.
+    $count = $this->processApiParseQueue(TRUE);
+    $this->assertEqual($count, 8, '8 items were processed in the queue');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
+
+ /* NOTE: This test fails -- see issue #1444138 -- commenting out the test
+       for the moment until this is fixed!!
+
+    // Now try marking to reparse with the branch name.
+    api_mark_for_reparse($branch->branch_name);
+    $this->assertEqual($this->howManyToParse(), 8, '8 files marked for reparsing with branch name');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still empty after marking for parsing');
+
+    api_update_all_branches();
+    $this->assertEqual($this->countParseQueue(), 8, 'Parse queue is full again (' . $this->countParseQueue() . ') after marking for reparse.');
+
+    // Parse and verify empty again.
+    $count = $this->processApiParseQueue(TRUE);
+    $this->assertEqual($count, 8, '8 items were processed in the queue');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
+
+ */
+
+    // Now try marking just one file to reparse.
+    api_mark_for_reparse('sample.php');
+    $this->assertEqual($this->howManyToParse(), 1, '1 file marked for reparsing with file name');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still empty after marking for parsing');
+
+    api_update_all_branches();
+    $this->assertEqual($this->countParseQueue(), 1, 'Parse queue is full again (' . $this->countParseQueue() . ') after marking for reparse.');
+
+    // Parse and verify empty again.
+    $count = $this->processApiParseQueue(TRUE);
+    $this->assertEqual($count, 1, '1 item was processed in the queue');
+    $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
   }
 }

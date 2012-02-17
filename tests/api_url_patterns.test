@@ -22,18 +22,10 @@ class ApiURLPatternsTest extends ApiTestCase {
 
   static function getInfo() {
     return array(
-      'name' => t('URL functioning'),
-      'description' => t('Test URLs specified in api_menu(), both old and current.'),
+      'name' => 'URL functioning',
+      'description' => 'Test URLs specified in api_menu(), both old and current.',
       'group' => 'API Module',
     );
-  }
-
-  function setUp() {
-    parent::setUp();
-
-    // Create and log in user.
-    $api_user = $this->drupalCreateUser(array('access API reference'));
-    $this->drupalLogin($api_user);
   }
 
   /**

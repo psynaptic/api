@@ -8,8 +8,8 @@ include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 class ApiLinkCodeTest extends ApiTestCase {
   public static function getInfo() {
     return array(
-      'name' => t('api_link_code()'),
-      'description' => t('Test the api_link_code() function.'),
+      'name' => 'Code linking',
+      'description' => 'Test the api_link_code() function.',
       'group' => 'API Module',
     );
   }
