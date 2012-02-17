@@ -2119,18 +2119,22 @@ function api_link_link($name, $branch, $prepend = '', $append = '', $class_did =
  *   single file to reparse. If omitted all branches will be reparsed. File
  *   names must include the path relative to the common path to the directories
  *   indexed by this branch.
+ * @param $is_branch_name
+ *   If passing in a branch name, set to TRUE so that if it happens to be an
+ *   integer, it won't be considered to be a branch ID number by mistake.
+ *   Otherwise, just leave this as the default FALSE.
  *
  * @return
  *   Number of files marked for reparsing.
  */
-function api_mark_for_reparse($branch_or_file = NULL) {
+function api_mark_for_reparse($branch_or_file = NULL, $is_branch_name = FALSE) {
   $time_in_past = 52;
   if (empty($branch_or_file)) {
     // Reparse all.
     db_query("UPDATE {api_file} SET modified = %d", $time_in_past);
   }
   else {
-    if (is_numeric($branch_or_file)) {
+    if (!$is_branch_name && is_numeric($branch_or_file) && ($branch_or_file == intval($branch_or_file))) {
       $branch_id = $branch_or_file;
     }
     else {

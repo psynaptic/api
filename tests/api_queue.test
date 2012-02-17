@@ -67,11 +67,8 @@ class ApiQueuesTestCase extends ApiTestCase {
     $this->assertEqual($count, 8, '8 items were processed in the queue');
     $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
 
- /* NOTE: This test fails -- see issue #1444138 -- commenting out the test
-       for the moment until this is fixed!!
-
     // Now try marking to reparse with the branch name.
-    api_mark_for_reparse($branch->branch_name);
+    api_mark_for_reparse($branch->branch_name, TRUE);
     $this->assertEqual($this->howManyToParse(), 8, '8 files marked for reparsing with branch name');
     $this->assertEqual($this->countParseQueue(), 0, 'Parse queue is still empty after marking for parsing');
 
@@ -82,8 +79,6 @@ class ApiQueuesTestCase extends ApiTestCase {
     $count = $this->processApiParseQueue(TRUE);
     $this->assertEqual($count, 8, '8 items were processed in the queue');
     $this->assertEqual($this->countParseQueue(), 0, 'Parse queue has been emptied');
-
- */
 
     // Now try marking just one file to reparse.
     api_mark_for_reparse('sample.php');
