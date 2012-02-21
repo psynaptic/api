@@ -190,10 +190,11 @@ function api_page_file($file) {
   $see = api_link_documentation($file->see, $branch, NULL, TRUE);
   $related_topics = api_related_topics($file->did, $branch);
   $code = api_link_code($file->code, $branch);
+  $defined = $file->file_name;
 
   $objects = api_render_listing(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name, did FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id));
 
-  $output = theme('api_file_page', $file, $documentation, $objects, $code, $see, $related_topics);
+  $output = theme('api_file_page', $file, $documentation, $objects, $code, $see, $related_topics, $defined);
   $output .= _api_add_comments($file);
   return $output;
 }
