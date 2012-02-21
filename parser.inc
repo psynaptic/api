@@ -54,7 +54,7 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
  *   about the file, branch, etc.
  */
 Function api_parse_text_file($docblock) {
-  $docblock['documentation'] = api_format_documentation($docblock['source']);
+  $docblock['documentation'] = api_format_documentation($docblock['source'], FALSE);
   $docblock['code'] = api_format_php($docblock['source'], TRUE);
 
   api_save_documentation(array($docblock));
@@ -465,11 +465,14 @@ function api_save_documentation($docblocks) {
  *
  * @param $documentation
  *   Documentation string to format.
+ * @param $auto_p
+ *   TRUE (default) to convert to paragraphs. FALSE to skip this conversion and
+ *   put the documentation in PRE tags.
  *
  * @return
  *   Formatted documentation.
  */
-function api_format_documentation($documentation) {
+function api_format_documentation($documentation, $auto_p = TRUE) {
   // Don't do processing on empty text (so we don't end up with empty paragraphs).
   if (empty($documentation)) {
     return '';
@@ -489,7 +492,12 @@ function api_format_documentation($documentation) {
   $documentation = preg_replace_callback('/' . API_RE_TAG_START . 'code(.+?)' . API_RE_TAG_START . 'endcode/s', 'api_format_embedded_php', $documentation);
 
   // Convert newlines into paragraphs.
-  $documentation = api_autop($documentation);
+  if ($auto_p) {
+    $documentation = api_autop($documentation);
+  }
+  else {
+    $documentation = '<pre class="api-text">' . $documentation . '</pre>';
+  }
 
   return $documentation;
 }

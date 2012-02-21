@@ -876,6 +876,20 @@ function api_update_6104() {
 }
 
 /**
+ * Forces reparse of text files, because parsing has changed for them.
+ */
+function api_update_6105() {
+  $return = array();
+
+  db_query("UPDATE {api_file} af LEFT JOIN {api_documentation} ad ON af.did = ad.did SET af.modified = 52 WHERE ad.object_type = 'file' AND (ad.file_name LIKE '%.txt' OR ad.file_name LIKE '%.info')");
+  $num = db_affected_rows();
+  $return[] = array('success' => TRUE, 'query' => "$num text files set to reparse, starting at next cron run");
+
+  return $return;
+}
+
+
+/**
  * Remove variables on uninstall.
  */
 function api_uninstall() {
