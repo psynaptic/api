@@ -1025,6 +1025,7 @@ function api_parse_functions() {
     'test' => 'api_parse_php_file',
 
     'txt' => 'api_parse_text_file',
+    'info' => 'api_parse_text_file',
 
     'htm' => 'api_parse_html_file',
     'html' => 'api_parse_html_file',
