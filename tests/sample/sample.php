@@ -47,6 +47,21 @@ define('SAMPLE_CONSTANT', 7);
  * - The following item should not have strong formatting.
  * - http://example.com
  *
+ * And here is a code block with indentation:
+ * @code
+ *   $message = t('An error occurred.');
+ *   drupal_set_message($message, 'error');
+ *   $output .= $message;
+ * @endcode
+ *
+ * And another way to have indentation, in a list:
+ * - Here is some code:
+ *   @code
+ *   $message = t('An error occurred.');
+ *   drupal_set_message($message, 'error');
+ *   $output .= $message;
+ *   @endcode
+ *
  * @param $parameter
  *   A generic parameter.
  * @param $complex_parameter

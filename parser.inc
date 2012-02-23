@@ -569,7 +569,7 @@ function api_autop($text) {
  * Regular expression callback for \@code tags in api_format_documentation().
  */
 function api_format_embedded_php($matches) {
-  return "\n\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">") ."\n\n";
+  return "\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">") ."\n";
 }
 
 /**
@@ -639,6 +639,10 @@ function api_format_documentation_lists($documentation) {
     $output .= '</li></ul>';
   }
 
+  // To make sure that api_autop() doesn't get confused, remove newlines
+  // immediately before </li> tags.
+  $output = str_replace("\n</li>", "</li>", $output);
+
   return $output;
 }
 
@@ -672,7 +676,8 @@ function api_documentation_summary($documentation) {
  * Colorizes and formats PHP code.
  *
  * @param $code
- *   PHP code to format.
+ *   PHP code to format. Note that any actual PHP code needs to be enclosed in
+ *   PHP start/end tags to be formatted correctly.
  * @param $number
  *   FALSE to not number the lines (default). TRUE to number the lines, or an
  *   integer to start numbering at that line number.
@@ -692,9 +697,18 @@ function api_format_php($code, $number = FALSE) {
 
   $tokens = token_get_all($code);
 
+  // Keep track of if we are inside a string. Also if this code started/ended
+  // with PHP open/close tags and didn't have any additional ones later,
+  // we will remove them from the code.
+
   $in_string = FALSE;
+  $open_count = 0;
+  $close_count = 0;
+  $open_size = 0;
+  $close_size = 0;
 
   foreach ($tokens as $token) {
+    $close_size = 0;
     if ($in_string) {
       if ($token == '"') {
         $output .= '"</span>';
@@ -717,8 +731,25 @@ function api_format_php($code, $number = FALSE) {
 
       switch ($type) {
         case T_OPEN_TAG:
+          $to_add = '<span class="php-boundry">'. $value .'</span>';
+          $open_count++;
+          if (strlen($output) == 0) {
+            // This is at the start of $output, so we tentatively want
+            // to remove it.
+            $open_size = strlen($to_add);
+          }
+
+          $output .= $to_add;
+          break;
+
         case T_CLOSE_TAG:
-          $output .= '<span class="php-boundry">'. $value .'</span>';
+          $to_add = '<span class="php-boundry">'. $value .'</span>';
+          $close_count++;
+          // Save the size of the closing tag here. If we didn't encounter
+          // any more tokens after this, it will remain (this is reset to zero
+          // each time through the loop).
+          $close_size = strlen($to_add);
+          $output .= $to_add;
           break;
 
         case T_COMMENT:
@@ -770,7 +801,11 @@ function api_format_php($code, $number = FALSE) {
     }
   }
 
-  $output = trim($output);
+  // If this block of code started and ended with PHP open/close tags and
+  // didn't have any additional open/close inside, remove the open/close tags.
+  if ($open_size > 0 && $close_size > 0 && $open_count == 1 && $close_count == 1) {
+    $output = substr($output, $open_size, strlen($output) - $open_size - $close_size);
+  }
 
   // Add line numbering, if requested.
   if ($number !== FALSE) {

@@ -870,6 +870,13 @@ function api_update_6105() {
   return $return;
 }
 
+/**
+ * Forces refresh of everything, because parser has changed again.
+ */
+function api_update_6106() {
+  $return = array();
+  return _api_update_force_all_reparse($return);
+}
 
 /**
  * Remove variables on uninstall.
