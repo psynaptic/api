@@ -32,7 +32,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertNoRaw('excluded_function', 'Excluded function is not on functions list page');
     $this->assertNoRaw('hidden_function', 'Hidden function is not on functions list page');
     $this->assertNoRaw('hidden_function_two', 'Second hidden function is not on functions list page');
-
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify file/function links.
     $this->clickLink('sample_function');
@@ -58,6 +58,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on constants list page');
     $this->assertLink('SAMPLE_CONSTANT_IN_SUB_DIR', 0,  'subdir constant is on constants list page');
     $this->assertLink('sample-subdir.php', 0,  'sample-subdir.php file name is on constants list page');
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify constant/function links.
     $this->clickLink('SAMPLE_CONSTANT');
@@ -86,6 +87,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('classes.php', 0, 'classes.php file name is on classes list page');
     $this->assertLink('classes-subdir.php', 0, 'classes-subdir.php file name is on classes list page');
     $this->assertNoText('baz', 'Member name is not on classes page');
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify file/class links.
     $this->clickLink('Sample');
@@ -117,6 +119,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertNoRaw('excluded.php', 'Excluded file is not shown on files list page');
     $this->assertNoRaw('hidden.php', 'Hidden file is not shown on files list page');
     $this->assertNoRaw('hidden2.php', 'Second hidden file is not shown on files list page');
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify file links.
     $this->clickLink('classes.php');
@@ -136,6 +139,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample global.', '$sample_global description is on the globals list page');
     $this->assertLink('sample.php', 0, 'sample.php file name is on globals list page');
     $this->assertLink('sample-subdir.php', 0, 'sample-subdir.php file name is on globals list page');
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify global/file links.
     $this->clickLink('$sample_global');
@@ -157,6 +161,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample group of classes. Should not include members', 'Class Samples description is on the topics page');
     $this->assertLink('Samples', 0, 'Samples topic is on the topics page');
     $this->assertText('A sample group', 'Samples description is on the topics page');
+    $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
 
     // Verify topic link.
     $this->clickLink('Samples');
@@ -645,7 +650,7 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
     return array(
       'name' => 'Empty listing page links',
-      'description' => 'Tests that links to empty listing pages are not made.',
+      'description' => 'Tests that links to empty listing pages are not made. Also tests multiple projects setup.',
       'group' => 'API Module',
     );
   }
@@ -667,12 +672,13 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
     $this->branch_info_2 = $this->setUpBranchUI('', FALSE, array(
       'project' => 'test2',
       'project_title' => 'Project 2',
+      'title' => 'Project 2 6.x',
       'directory' => drupal_get_path('module', 'api') .'/tests/sample2',
       'excluded' => drupal_get_path('module', 'api') .'/tests/sample2/maybe_exclude',
       ));
 
     // Parse the code.
-    api_get_branches(TRUE);
+    $this->resetBranchesAndCache();
     api_update_all_branches();
     $this->processApiParseQueue();
   }
@@ -684,41 +690,41 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
     // Visit the branch home page for the first project.
     $this->drupalGet('api/' . $this->branch_info['project']);
     // Verify that all the listing page links are there.
-    $this->assertLink('Files', 0, 'Files link is present');
-    $this->assertLink('Functions', 0, 'Functions link is present');
-    $this->assertLink('Classes and Interfaces', 0, 'Classes link is present');
-    $this->assertLink('Constants', 0, 'Constants link is present');
-    $this->assertLink('Globals', 0, 'Globals link is present');
-    $this->assertLink('Topics', 0, 'Topics link is present');
-    // Verify link to the other project is present.
-    $this->assertLink($this->branch_info_2['project_title'], 0, 'Link to other project is present');
+    $this->assertLink(t('Files'), 0, 'Files link is present');
+    $this->assertLink(t('Functions'), 0, 'Functions link is present');
+    $this->assertLink(t('Classes and Interfaces'), 0, 'Classes link is present');
+    $this->assertLink(t('Constants'), 0, 'Constants link is present');
+    $this->assertLink(t('Globals'), 0, 'Globals link is present');
+    $this->assertLink(t('Topics'), 0, 'Topics link is present');
+    // Verify link to the project page is there.
+    $this->assertLink(t('Other projects'), 0, 'Link to projects page is present');
+
+    // Follow the projects link and verify both projects are listed.
+    $this->clickLink(t('Other projects'));
+    $this->assertText(t('Projects'), 'Page title is on the page');
+    $this->assertTitleContains(t('Projects'), 'Page title is correct');
+    $this->assertLink($this->branch_info['project_title'], 0, 'First project link is present');
+    $this->assertLink($this->branch_info_2['project_title'], 0, 'Second project link is present');
 
     // Visit the branch home page for the second project.
     $this->drupalGet('api/' . $this->branch_info_2['project']);
     // Verify that the correct listing page links are there.
-    $this->assertLink('Files', 0, 'Files link is present');
-    $this->assertLink('Functions', 0, 'Functions link is present');
+    $this->assertLink(t('Files'), 0, 'Files link is present');
+    $this->assertLink(t('Functions'), 0, 'Functions link is present');
     // Verify that the listing pages that would be empty are not present.
-    $this->assertNoLink('Classes and Interfaces', 'Classes link is not present');
-    $this->assertNoLink('Constants', 'Constants link is not present');
-    $this->assertNoLink('Globals', 'Globals link is not present');
-    $this->assertNoLink('Topics', 'Topics link is not present');
-    // Verify link to the other project is present.
-    $this->assertLink($this->branch_info['project_title'], 0, 'Link to other project is present');
+    $this->assertNoLink(t('Classes and Interfaces'), 'Classes link is not present');
+    $this->assertNoLink(t('Constants'), 'Constants link is not present');
+    $this->assertNoLink(t('Globals'), 'Globals link is not present');
+    $this->assertNoLink(t('Topics'), 'Topics link is not present');
+    // Verify link to the project page is there.
+    $this->assertLink(t('Other projects'), 0, 'Link to projects page is present');
 
     // Visit the Functions listing pages and verify they link to the other
     // projects.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/functions');
-    $this->assertLink($this->branch_info_2['project_title'], 0, 'Link to other project is present');
+    $this->assertLink(t('Other projects'), 0, 'Link to projects page is present');
     $this->drupalGet('api/' . $this->branch_info_2['project'] . '/functions');
-    $this->assertLink($this->branch_info['project_title'], 0, 'Link to other project is present');
-
-    // Visit the Classes and Constants listing pages for the first project and
-    // verify there is no link to the other project.
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes');
-    $this->assertNoLink($this->branch_info_2['project_title'], 'Link to other project is not present');
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/constants');
-    $this->assertNoLink($this->branch_info_2['project_title'], 'Link to other project is not present');
+    $this->assertLink(t('Other projects'), 0, 'Link to projects page is present');
 
     // Turn on the API navigation block. Visit a function page in both
     // projects, and verify the right links are showing in the API
@@ -732,25 +738,25 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
 
     // Project/branch with all possible types of items.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
-    $this->assertText('API Navigation', 'Block title is present');
+    $this->assertText(t('API Navigation'), 'Block title is present');
     $this->assertLink($this->branch_info['title'], 0, 'Branch link is present');
-    $this->assertLink('Files', 0, 'Files link is present');
-    $this->assertLink('Functions', 0, 'Functions link is present');
-    $this->assertLink('Classes', 0, 'Classes link is present');
-    $this->assertLink('Constants', 0, 'Constants link is present');
-    $this->assertLink('Globals', 0, 'Globals link is present');
-    $this->assertLink('Topics', 0, 'Topics link is present');
+    $this->assertLink(t('Files'), 0, 'Files link is present');
+    $this->assertLink(t('Functions'), 0, 'Functions link is present');
+    $this->assertLink(t('Classes'), 0, 'Classes link is present');
+    $this->assertLink(t('Constants'), 0, 'Constants link is present');
+    $this->assertLink(t('Globals'), 0, 'Globals link is present');
+    $this->assertLink(t('Topics'), 0, 'Topics link is present');
 
     // Project/branch with only files/functions.
     $this->drupalGet('api/' . $this->branch_info_2['project'] . '/sample2.php/function/second_sample_function');
-    $this->assertText('API Navigation', 'Block title is present');
+    $this->assertText(t('API Navigation'), 'Block title is present');
     $this->assertLink($this->branch_info_2['title'], 0, 'Branch link is present');
-    $this->assertLink('Files', 0, 'Files link is present');
-    $this->assertLink('Functions', 0, 'Functions link is present');
-    $this->assertNoLink('Classes', 'Classes link is not present');
-    $this->assertNoLink('Constants', 'Constants link is not present');
-    $this->assertNoLink('Globals', 'Globals link is not present');
-    $this->assertNoLink('Topics', 'Topics link is not present');
+    $this->assertLink(t('Files'), 0, 'Files link is present');
+    $this->assertLink(t('Functions'), 0, 'Functions link is present');
+    $this->assertNoLink(t('Classes'), 'Classes link is not present');
+    $this->assertNoLink(t('Constants'), 'Constants link is not present');
+    $this->assertNoLink(t('Globals'), 'Globals link is not present');
+    $this->assertNoLink(t('Topics'), 'Topics link is not present');
   }
 }
 
@@ -783,8 +789,8 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
       'project_title' => 'Project Test',
       ));
 
-    // Create a second "file" branch in a different project, but with the same
-    // branch name. Exclude the "maybe_exclude" directory so that this branch
+    // Create a second "file" branch in a different branch on the same project.
+    // Exclude the "maybe_exclude" directory so that this branch
     // only has functions and not constants and classes.
     $this->branch_info_2 = $this->setUpBranchUI('', FALSE, array(
       'branch_name' => 'long_7',
@@ -795,7 +801,7 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
       ));
 
     // Parse the code.
-    api_get_branches(TRUE);
+    $this->resetBranchesAndCache();
     api_update_all_branches();
     $this->processApiParseQueue();
   }

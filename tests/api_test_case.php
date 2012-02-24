@@ -14,8 +14,8 @@ class ApiTestCase extends DrupalWebTestCase {
     $this->baseSetUp();
     $this->setUpBranchAPICall();
 
+    $this->resetBranchesAndCache();
     api_update_all_branches();
-
     $count = $this->processApiParseQueue();
     $this->assertEqual($count, 8, "8 files were parsed ($count)");
   }
@@ -79,6 +79,7 @@ class ApiTestCase extends DrupalWebTestCase {
     $branch->type = 'files';
     $branch->status = 1;
     $branch->project = $info['project'];
+    $branch->project_title = $info['project_title'];
     $branch->branch_name = $info['branch_name'];
     $branch->title = $info['title'];
     $branch->data = array(
@@ -116,6 +117,16 @@ class ApiTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Makes sure all variables and branches have been reset.
+   */
+  function resetBranchesAndCache() {
+    cache_clear_all('variables', 'cache');
+    variable_init();
+    api_get_branches(TRUE);
+    menu_rebuild();
+  }
+
+  /**
    * Processes the API parse queue.
    *
    * @verbose
@@ -143,10 +154,7 @@ class ApiTestCase extends DrupalWebTestCase {
     }
 
     api_shutdown();
-    cache_clear_all('variables', 'cache');
-    variable_init();
-    api_get_branches(TRUE);
-    menu_rebuild();
+    $this->resetBranchesAndCache();
 
     return $count;
   }
@@ -191,7 +199,7 @@ class ApiWebPagesBaseTest extends ApiTestCase {
     $this->php_branch_info = $this->createPHPBranchUI();
 
     // Parse the code.
-    api_get_branches(TRUE);
+    $this->resetBranchesAndCache();
     api_update_all_branches();
     $this->processApiParseQueue();
   }

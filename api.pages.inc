@@ -171,6 +171,25 @@ function api_search_listing($branch_name) {
 }
 
 /**
+ * Page callback: Displays a list of links to projects using a pager.
+ */
+function api_page_projects() {
+  $num_per_page = 50;
+
+  $result = pager_query("SELECT project_title, project FROM {api_branch} WHERE status = 1 GROUP BY project ORDER BY project_title", $num_per_page, 0, "SELECT COUNT(DISTINCT(project)) FROM {api_branch}");
+
+  $links = array();
+  while ($project = db_fetch_object($result)) {
+    $links[$project->project] = array(
+      'title' => $project->project_title,
+      'href' => 'api/' . $project->project,
+    );
+  }
+
+  return theme('links', $links, array('class' => 'api-project-links')) . theme('pager', NULL, $num_per_page);
+}
+
+/**
  * Page callback: Displays documentation for a file.
  *
  * @param $file
@@ -227,13 +246,13 @@ function api_page_branch($branch) {
  *   Object representing branch to generate the listing for.
  * @param $object_type
  *   Type of object to list ('file', 'group', etc.).
- * @param $switch_links
- *   TRUE to include links to switch projects; FALSE to not include these.
+ * @param $switch_link
+ *   TRUE to include link to switch projects; FALSE to not include it.
  *
  * @return
  *   HTML for the listing page.
  */
-function api_page_listing($branch, $object_type, $switch_links = TRUE) {
+function api_page_listing($branch, $object_type, $switch_link = TRUE) {
 
   // Set the HTML page title and breadcrumb.
   $breadcrumb = array(
@@ -267,7 +286,29 @@ function api_page_listing($branch, $object_type, $switch_links = TRUE) {
     $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   }
 
-  return api_render_listing($result, NULL, $show_headings, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . ($switch_links ? api_switch_project($branch, '/' . $plural_type) : '');
+  $suffix = '';
+  if ($switch_link) {
+    $suffix = api_other_projects_link();
+  }
+  return api_render_listing($result, NULL, $show_headings, $object_type !== 'file' && $object_type !== 'group') . theme('pager', NULL, 50, 0) . $suffix;
+}
+
+/**
+ * Generates a link to the projects page if there is more than one project.
+ *
+ * @return
+ *   Link to the API projects page, inside a P tag, or an empty string if there
+ *   would only be one project to display on that page.
+ */
+function api_other_projects_link() {
+  // Figure out how many different projects there are.
+  $count = db_result(db_query('SELECT COUNT(DISTINCT(project)) FROM {api_branch} WHERE status=1'));
+
+  if ($count > 1) {
+    return '<p class="api-switch"><strong>' . l(t('Other projects'), 'api/projects') . '</strong></p>';
+  }
+
+  return '';
 }
 
 /**
@@ -661,41 +702,6 @@ function api_preprocess_api_object_page(&$variables) {
     );
   }
   $variables['alternatives'] = drupal_render($alternatives);
-}
-
-/**
- * Returns links to switch projects.
- *
- * @param $current_branch
- *   Current branch object (its project will be excluded from links).
- * @param $url
- *   URL suffix (such as 'classes', 'functions', etc.).
- *
- * @return
- *   HTML-formatted "Other projects" section, with links to other projects.
- */
-function api_switch_project($current_branch, $url = '') {
-  $links = array();
-  foreach (api_get_branches() as $branch) {
-    if ($branch->status && $branch->project !== $current_branch->project && !isset($links[$branch->project])) {
-      // Only make a link to this project if there are items of this type, or
-      // if the URL suffix is blank (indicating the project home page).
-      $has_items = empty($url);
-      if (!$has_items) {
-        $counts = api_listing_counts($branch);
-        $has_items = ($counts[substr($url,1)] > 0);
-      }
-      if ($has_items) {
-        $links[$branch->project] = array(
-          'title' => $branch->project_title,
-          'href' => 'api/' . $branch->project . $url,
-        );
-      }
-    }
-  }
-  if (count($links) > 0) {
-    return '<p class="api-switch"><strong>' . t('Other projects:') . '</strong> ' . theme('links', $links) . '</p>';
-  }
 }
 
 /**

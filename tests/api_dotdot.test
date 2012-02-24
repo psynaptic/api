@@ -30,6 +30,7 @@ class ApiDotDotTestCase extends ApiTestCase {
 
     $this->setUpBranchAPICall($prefix);
 
+    $this->resetBranchesAndCache();
     api_update_all_branches();
 
     $count = $this->processApiParseQueue();

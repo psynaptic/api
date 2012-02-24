@@ -373,6 +373,15 @@ function api_menu() {
 
   // Listings
 
+  // Projects
+  $items['api/projects'] = array(
+    'title' => 'Projects',
+    'page callback' => 'api_page_projects',
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+
   // Files
   $items['api/%/%api_filename'] = array(
     'title' => 'File',

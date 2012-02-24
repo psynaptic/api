@@ -21,11 +21,12 @@ class ApiQueuesTestCase extends ApiTestCase {
    * Sets up the sample branch.
    */
   function setUp() {
+    // This test takes longer than most to run, and times out on some machines.
+    $this->timeLimit *= 2;
+
     $this->baseSetUp();
     $this->setUpBranchAPICall();
-    cache_clear_all('variables', 'cache');
-    variable_init();
-    api_get_branches(TRUE);
+    $this->resetBranchesAndCache();
   }
 
   /**
