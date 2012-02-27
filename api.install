@@ -73,6 +73,9 @@ function api_schema() {
     ),
     'indexes' => array(
       'weight' => array('weight'),
+      'branch_name' => array('branch_name'),
+      'project_title' => array('project_title'),
+      'status' => array('status'),
     ),
   );
 
@@ -169,6 +172,8 @@ function api_schema() {
       'branch_id' => array('branch_id'),
       'title' => array('title'),
       'class_did' => array('class_did'),
+      'file_name' => array('file_name'),
+      'member_name' => array('member_name'),
     ),
   );
 
@@ -256,8 +261,11 @@ function api_schema() {
       ),
     ),
     'indexes' => array(
-      'object_ref' => array('object_name', 'branch_id', 'object_type'),
       'to_did' => array('to_did'),
+      'from_did' => array('from_did'),
+      'object_name' => array('object_name'),
+      'object_type' => array('object_type'),
+      'branch_id' => array('branch_id'),
     ),
   );
 
@@ -291,6 +299,8 @@ function api_schema() {
     ),
     'indexes' => array(
       'did' => array('did'),
+      'root_did' => array('root_did'),
+      'overrides_did' => array('overrides_did'),
     ),
   );
 
@@ -309,7 +319,8 @@ function api_schema() {
       ),
     ),
     'indexes' => array(
-      'class_did' => array('did'),
+      'did' => array('did'),
+      'class_did' => array('class_did'),
     ),
   );
 
@@ -877,6 +888,37 @@ function api_update_6106() {
   $return = array();
   return _api_update_force_all_reparse($return);
 }
+
+/**
+ * Adds indexes to various tables for query efficiency.
+ */
+function api_update_6107() {
+  $return = array();
+
+  db_add_index($return, 'api_branch', 'branch_name', array('branch_name'));
+  db_add_index($return, 'api_branch', 'status', array('status'));
+  db_add_index($return, 'api_branch', 'project_title', array('project_title'));
+
+  db_add_index($return, 'api_documentation', 'file_name', array('file_name'));
+  db_add_index($return, 'api_documentation', 'member_name', array('member_name'));
+
+  db_drop_index($return, 'api_reference_storage', 'object_ref');
+  db_add_index($return, 'api_reference_storage', 'from_did', array('from_did'));
+  db_add_index($return, 'api_reference_storage', 'object_name', array('object_name'));
+  db_add_index($return, 'api_reference_storage', 'object_type', array('object_type'));
+  db_add_index($return, 'api_reference_storage', 'branch_id', array('branch_id'));
+
+  db_add_index($return, 'api_overrides', 'root_did', array('root_did'));
+  db_add_index($return, 'api_overrides', 'overrides_did', array('overrides_did'));
+
+  db_drop_index($return, 'api_members', 'class_did');
+  db_add_index($return, 'api_members', 'class_did', array('class_did'));
+  db_add_index($return, 'api_members', 'did', array('did'));
+
+  return $return;
+
+}
+
 
 /**
  * Remove variables on uninstall.
