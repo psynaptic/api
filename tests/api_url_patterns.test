@@ -188,10 +188,10 @@ class ApiURLPatternsTest extends ApiTestCase {
         'links' => array('classes-subdir.php'),
       ),
       array(
-        'url' => 'api/' . $project_name . '/sample.php/group/samples/' . $branch_name,
+        'url' => 'api/' . $project_name . '/sample.php/group/samp_GRP-6.x/' . $branch_name,
         'aliases' => array(
-          'api/group/samples/' . $branch_name,
-          'api/group/samples',
+          'api/group/samp_GRP-6.x/' . $branch_name,
+          'api/group/samp_GRP-6.x',
         ),
         'text' => array('A sample group', 'A sample function'),
         'links' => array('sample_function', 'sample.php'),

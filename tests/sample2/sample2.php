@@ -11,7 +11,7 @@
  * This function links to the first sample function, with both see and link,
  * to verify that links work across projects. The see link is at the bottom.
  * Here is the link:
- * @link samples Link to the samples group @endlink
+ * @link samp_GRP-6.x Link to the samples group @endlink
  *
  * Here we use the sample_in_code_links(), $sample_global, SAMPLE_CONSTANT in
  * the text. These should all turn into links. So should a reference to the

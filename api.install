@@ -916,9 +916,15 @@ function api_update_6107() {
   db_add_index($return, 'api_members', 'did', array('did'));
 
   return $return;
-
 }
 
+/**
+ * Forces refresh of everything, because parser has changed again.
+ */
+function api_update_6108() {
+  $return = array();
+  return _api_update_force_all_reparse($return);
+}
 
 /**
  * Remove variables on uninstall.

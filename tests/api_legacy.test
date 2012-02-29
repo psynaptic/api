@@ -55,13 +55,13 @@ class ApiLegacyTest extends ApiTestCase {
       // Topic
       array(
         'function' => 'api_legacy_1_2_object_load',
-        'arguments' => array('samples', 'group', ''),
-        'redirect' => 'api/test/sample.php/group/samples/6',
+        'arguments' => array('samp_GRP-6.x', 'group', ''),
+        'redirect' => 'api/test/sample.php/group/samp_GRP-6.x/6',
       ),
       array(
         'function' => 'api_legacy_1_2_object_load',
-        'arguments' => array('samples', 'group', '6'),
-        'redirect' => 'api/test/sample.php/group/samples/6',
+        'arguments' => array('samp_GRP-6.x', 'group', '6'),
+        'redirect' => 'api/test/sample.php/group/samp_GRP-6.x/6',
       ),
     );
     include_once './' . drupal_get_path('module', 'api') . '/legacy.inc';

@@ -6,7 +6,7 @@
  */
 
 /**
- * @addtogroup samples
+ * @addtogroup samp_GRP-6.x
  * @{
  */
 
@@ -40,6 +40,6 @@ function sample_insubdir_function($parameter, $complex_parameter) {
 }
 
 /**
- * @} end addtogroup samples
+ * @} end addtogroup samp_GRP-6.x
  */
 

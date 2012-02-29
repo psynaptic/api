@@ -165,7 +165,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
 
     // Verify topic link.
     $this->clickLink('Samples');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Samples link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x') !== FALSE, 'Samples link went to the right place');
   }
 }
 
@@ -233,7 +233,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     // Test the links made with @link on this function.
     $this->assertLink('Subscribers', 0, 'Link to Subscribers is on function page');
     $this->clickLink('Subscribers');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Subscribers link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x') !== FALSE, 'Subscribers link went to the right place');
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
     $this->assertLink('newsletter issues', 0, 'Link to newsletter issues is on function page');
     $this->clickLink('newsletter issues');
@@ -350,7 +350,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'File link went to the right place');
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/global/sample_global');
     $this->clickLink('Samples');
-    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samples') !== FALSE, 'Topic link went to the right place');
+    $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x') !== FALSE, 'Topic link went to the right place');
 
     // Visit a global in a subdirectory and verify.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!sample-subdir.php/global/sample_in_sub_dir_global');
@@ -458,7 +458,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
    */
   function testTopicPages() {
     // Test the Sample topic page.
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x');
     $this->assertText('A sample group', 'Sample topic description appears on the page');
     $this->assertTitleContains('Samples', 'Topic page title includes topic name');
     $this->assertLink('sample_function', 0, 'sample_function link is on sample topic page');
@@ -469,17 +469,18 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample constant.', 'SAMPLE_CONSTANT description is on sample topic page.');
     $this->assertLink('$sample_global', 0, 'sample_global link is on sample topic page');
     $this->assertText('A sample global.', 'sample_global description is on sample topic page');
+    $this->assertLink('sample_insubdir_function', 0, 'sample_insubdir_function link is on sample topic page');
 
     // Verify links.
     $this->clickLink('sample_function');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/function/sample_function') !== FALSE, 'sample_function link went to the right place');
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x');
     $this->clickLink('sample.php');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php') !== FALSE, 'sample.php link went to the right place');
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x');
     $this->clickLink('SAMPLE_CONSTANT');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/constant/SAMPLE_CONSTANT') !== FALSE, 'SAMPLE_CONSTANT link went to the right place');
-    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samples');
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x');
     $this->clickLink('$sample_global');
     $this->assertTrue(strpos($this->url, $this->branch_info['project'] . '/sample.php/global/sample_global') !== FALSE, 'sample_global link went to the right place');
 

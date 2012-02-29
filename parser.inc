@@ -288,7 +288,7 @@ function api_save_documentation($docblocks) {
 
     // Determine group membership.
     $match = array();
-    if (preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_]+)/', $docblock['content'], $match)) {
+    if (preg_match_all('/' . API_RE_TAG_START . '(ingroup|addtogroup) ([a-zA-Z0-9_.-]+)/', $docblock['content'], $match)) {
       $docblock['groups'] = $match[2];
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . '(ingroup|addtogroup).*?\n/', '', $docblock['content']);
     }
