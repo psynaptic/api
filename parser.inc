@@ -803,7 +803,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           // This is a string like 'foo'. If we're in a call of some sort,
           // then this is a potential function, hook, etc. name.
           $class = 'php-string';
-          if ($in_type != '') {
+          if ($in_type != '' && preg_match('|' . API_RE_HOOK_NAME . '|', $value)) {
             $class .= ' potential-' . $in_type;
             if ($track_references) {
               $references['potential ' . $in_type][$value] = $value;
