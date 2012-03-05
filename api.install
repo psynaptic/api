@@ -411,7 +411,7 @@ function api_update_15() {
 }
 
 /**
- * Deletes all documentation to force a reindex.
+ * Delete all documentation to force a reindex.
  */
 function api_update_16() {
   $return = array();
@@ -435,7 +435,7 @@ function api_update_17() {
 }
 
 /**
- * This anti-pattern has been replaced with a queue.
+ * Delete a variable for cron runs; has been replaced with a queue.
  */
 function api_update_18() {
   variable_del('api_files_per_cron');
@@ -443,7 +443,7 @@ function api_update_18() {
 }
 
 /**
- * Move start line next to code.
+ * Move start line field from {api_function} to {api_documentation} table.
  */
 function api_update_19() {
   $return = array();
@@ -455,7 +455,7 @@ function api_update_19() {
 }
 
 /**
- * Add project to branches.
+ * Add project field to branch table.
  */
 function api_update_20() {
   $return = array();
@@ -485,7 +485,7 @@ function api_update_20() {
 }
 
 /**
- * Add branch id to api_reference_storage table.
+ * Add branch ID to api_reference_storage table.
  */
 function api_update_21() {
   $return = array();
@@ -503,7 +503,7 @@ function api_update_21() {
 }
 
 /**
- * Add branch id to api_documentation table.
+ * Add branch ID to api_documentation table.
  */
 function api_update_22() {
   $return = array();
@@ -523,7 +523,7 @@ function api_update_22() {
 }
 
 /**
- * Set up branches for multiple types and recombobulate.
+ * Set up branches for multiple types (php vs. file).
  */
 function api_update_23() {
   $return = array();
@@ -613,7 +613,7 @@ function api_update_27() {
 }
 
 /**
- * Add separate column for @see
+ * Add separate column for @see.
  */
 function api_update_28() {
   $return = array();
@@ -645,7 +645,7 @@ function api_update_29() {
 }
 
 /**
- * Adds the api_overrides table.
+ * Add the api_overrides table.
  */
 function api_update_30() {
   $return = array();
@@ -666,7 +666,7 @@ function api_update_30() {
 }
 
 /**
- * Adds 'var' and 'throws' fields to the api_documentation table.
+ * Add 'var' and 'throws' fields to the api_documentation table.
  */
 function api_update_31() {
   $return = array();
@@ -686,7 +686,7 @@ function api_update_31() {
 }
 
 /**
- * Adds member_name field to the api_documentation table.
+ * Add member_name field to the api_documentation table.
  */
 function api_update_32() {
   $return = array();
@@ -703,7 +703,7 @@ function api_update_32() {
 }
 
 /**
- * Adds documented_did field to the api_overrides table.
+ * Add documented_did field to the api_overrides table.
  */
 function api_update_33() {
   $return = array();
@@ -816,7 +816,7 @@ function _api_update_force_all_reparse($return) {
 }
 
 /**
- * Forces refresh of everything, because parser has changed.
+ * Force refresh of everything, because parser has changed.
  */
 function api_update_6100() {
   $return = array();
@@ -824,7 +824,7 @@ function api_update_6100() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed again.
+ * Force refresh of everything, because parser has changed again.
  */
 function api_update_6101() {
   $return = array();
@@ -832,7 +832,7 @@ function api_update_6101() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed again.
+ * Force refresh of everything, because parser has changed again.
  */
 function api_update_6102() {
   $return = array();
@@ -840,7 +840,7 @@ function api_update_6102() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed again.
+ * Force refresh of everything, because parser has changed again.
  */
 function api_update_6103() {
   $return = array();
@@ -848,7 +848,7 @@ function api_update_6103() {
 }
 
 /**
- * Drops and adds fields in {api_files} and resets parsing queue.
+ * Drop and add fields in {api_files} and reset parsing queue.
  */
 function api_update_6104() {
   $return = array();
@@ -869,7 +869,7 @@ function api_update_6104() {
 }
 
 /**
- * Forces reparse of text files, because parsing has changed for them.
+ * Force reparse of text files, because parsing has changed for them.
  */
 function api_update_6105() {
   $return = array();
@@ -882,7 +882,7 @@ function api_update_6105() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed again.
+ * Force refresh of everything, because parser has changed again.
  */
 function api_update_6106() {
   $return = array();
@@ -890,7 +890,7 @@ function api_update_6106() {
 }
 
 /**
- * Adds indexes to various tables for query efficiency.
+ * Add indexes to various tables for query efficiency.
  */
 function api_update_6107() {
   $return = array();
@@ -919,9 +919,17 @@ function api_update_6107() {
 }
 
 /**
- * Forces refresh of everything, because parser has changed again.
+ * Force refresh of everything, because parser has changed again.
  */
 function api_update_6108() {
+  $return = array();
+  return _api_update_force_all_reparse($return);
+}
+
+/**
+ * Force refresh of everything, as parsing has changed again.
+ */
+function api_update_6109() {
   $return = array();
   return _api_update_force_all_reparse($return);
 }

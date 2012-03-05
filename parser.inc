@@ -34,6 +34,7 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
     'file_name' => $file_name,
     'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
     'documentation' => '',
+    'references' => array(),
     'modified' => filemtime($file_path),
     'queued' => 0,
     'source' => str_replace(array("\r\n", "\r"), array("\n", "\n"), file_get_contents($file_path)),
@@ -55,7 +56,9 @@ function api_parse_file($callback, $file_path, $branch, $file_name) {
  */
 Function api_parse_text_file($docblock) {
   $docblock['documentation'] = api_format_documentation($docblock['source'], FALSE);
-  $docblock['code'] = api_format_php($docblock['source'], TRUE);
+  // We don't actually want to keep track of references for text files.
+  $references = array();
+  $docblock['code'] = api_format_php($docblock['source'], $references, TRUE, FALSE);
 
   api_save_documentation(array($docblock));
 }
@@ -109,25 +112,29 @@ function api_parse_php_file($docblock) {
   // Retrieve items of interest.
   $statements = $reader->getStatements();
   if (!$statements) {
-    // This is a text file or template file with no functions, constants, etc.
-    $docblock['code'] = api_format_php($docblock['source'], TRUE);
+    // This is a text file or template file with no declarations of functions,
+    // constants, etc. But we do want to track references in it.
+    $docblock['code'] = api_format_php($docblock['source'], $docblock['references'], TRUE);
     api_save_documentation(array($docblock));
     // Free up memory.
     $reader->reset();
     return;
   }
 
-  // Reserve the first array slot for the file documentation block.
-  $docblock['code'] = api_format_php($docblock['source'], TRUE);
+  // Reserve the first array slot for the file documentation block. Don't track
+  // references in this though.
+  $references = array();
+  $docblock['code'] = api_format_php($docblock['source'], $references, TRUE, FALSE);
   $docblocks = array($docblock);
 
-  // Set default documenation block array for items other than the file.
+  // Set default documentation block array for items other than the file.
   $default_block = array(
     'branch' => $docblock['branch'],
     'file_name' => $docblock['file_name'],
     'class' => '',
     'object_type' => '',
     'documentation' => '',
+    'references' => array(),
     'see' => '',
   );
 
@@ -188,9 +195,11 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
         $docblock['start_line'] = $current->line;
         $docblock['content'] = $editor->commentToString($statement->comment);
         $statement->comment = '';
-        $docblock['code'] = api_format_php("<?php\n". $statement->toString() ."\n?".">");
+        $references = array();
+        $docblock['code'] = api_format_php("<?php\n". $statement->toString() ."\n?".">", $references, FALSE, ($statement->type == T_FUNCTION));
         if ($statement->type == T_FUNCTION) {
           $docblock['signature'] = $editor->functionGetSignature($statement);
+          $docblock['references'] = $references;
         }
         elseif ($statement->type == T_CLASS || $statement->type == T_INTERFACE) {
           $docblock['extends'] = $statement->extends;
@@ -221,37 +230,20 @@ function api_documentation_loop($statements, $default_block, &$docblocks) {
 }
 
 /**
- * Finds functions called in a formatted block of code.
- *
- * @param $code
- *   Formatted block of code.
- *
- * @return
- *   Array of functions that are called in the code.
- */
-function api_parse_function_calls($code) {
-  $function_calls = array();
-  preg_match_all('!<span class="php-function-or-constant">([a-zA-Z0-9_]+)</span>\(!', $code, $function_call_matches, PREG_SET_ORDER);
-  array_shift($function_call_matches); // Remove the first match, the function declaration itself.
-  foreach ($function_call_matches as $function_call_match) {
-    $function_calls[$function_call_match[1]] = $function_call_match[1];
-  }
-
-  return $function_calls;
-}
-
-/**
- * Saves a documentation block to the database.
+ * Saves documentation information to the database.
  *
  * @param $docblocks
- *   An array containing information about the documentation block.
- *
- * @return
- *   The documentation ID of the inserted/updated construct.
+ *   An array containing information about API documentation items. The first
+ *   array element should be for the file as a whole, and subsequent elements
+ *   should have information for items declared in that file (if any).
  */
 function api_save_documentation($docblocks) {
-  $old_dids = array();
   $nested_groups = array();
+
+  // Make a list of the documentation IDs that were contained in this file
+  // the last time through. We'll remove any items that are not in this file
+  // any more after we get through the $docblocks array.
+  $old_dids = array();
   $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d AND file_name = '%s'", $docblocks[0]['branch']->branch_id, $docblocks[0]['file_name']);
   while ($object = db_fetch_object($result)) {
     $old_dids[] = $object->did;
@@ -293,7 +285,7 @@ function api_save_documentation($docblocks) {
       $docblock['content'] = preg_replace('/' . API_RE_TAG_START . '(ingroup|addtogroup).*?\n/', '', $docblock['content']);
     }
 
-    // Handle nested function groups.
+    // Handle nested groups.
     if (!isset($nested_groups[$docblock['class']])) {
       $nested_groups[$docblock['class']] = array();
     }
@@ -360,7 +352,7 @@ function api_save_documentation($docblocks) {
       }
       $docblock['see'] = api_format_documentation($docblock['see']);
 
-      // Find @var, a class name
+      // Find @var, a class or variable type name.
       $docblock['var'] = '';
       if (preg_match('/' . API_RE_TAG_START . 'var\s(.*?)(?=\n' . API_RE_TAG_START . '|$)/s', $docblock['content'], $match)) {
         $docblock['content'] = str_replace($match[0], '', $docblock['content']);
@@ -374,6 +366,7 @@ function api_save_documentation($docblocks) {
         $docblock['throws'] = api_format_documentation($match[1]);
       }
 
+      // Format everything remaining as the main documentation.
       $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
     $docblock['summary'] = api_documentation_summary($docblock['documentation']);
@@ -408,18 +401,14 @@ function api_save_documentation($docblocks) {
         _api_add_text_defaults($docblock, 'api_function');
         drupal_write_record('api_function', $docblock);
 
-        if (!empty($docblock['code'])) {
-          db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type = 'function' AND from_did = %d", $docblocks[0]['branch']->branch_id, $docblock['did']);
-          foreach (api_parse_function_calls($docblock['code']) as $function_name) {
-            api_reference($docblocks[0]['branch'], 'function', $function_name, $docblock['did']);
-          }
-        }
+        api_replace_references($docblocks[0]['branch'], $docblock['did'], $docblock['object_name'], $docblock['references']);
         break;
 
       case 'file':
         // Note that this will set the 'queued' field back to zero, since
         // $docblock['queued'] is set to 0 up at the top of api_parse_file().
         drupal_write_record('api_file', $docblock, 'did');
+        api_replace_references($docblock['branch'], $docblock['did'], $docblock['object_name'], $docblock['references']);
         break;
 
       case 'interface':
@@ -455,6 +444,30 @@ function api_save_documentation($docblocks) {
   }
 
   api_schedule_shutdown();
+}
+
+/**
+ * Replaces any existing references for function/hook calls with new ones.
+ *
+ * @param $branch
+ *   Branch object for the item making the calls.
+ * @param $did
+ *   Documentation ID of the item making the calls.
+ * @param $name
+ *   Name of the item making the calls.
+ * @param $references
+ *   Array of references set up by api_format_php().
+ */
+function api_replace_references($branch, $did, $name, $references) {
+  // First, remove any existing references.
+  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type IN ('function', 'potential hook', 'potential theme', 'potential alter', 'potentail field_hook', 'potential node_hook') AND from_did = %d", $branch->branch_id, $did);
+  foreach ($references as $type => $list) {
+    // Don't save a reference to the item itself.
+    unset($list[$name]);
+    foreach ($list as $call) {
+      api_reference($branch, $type, $call, $did);
+    }
+  }
 }
 
 /**
@@ -569,7 +582,8 @@ function api_autop($text) {
  * Regular expression callback for \@code tags in api_format_documentation().
  */
 function api_format_embedded_php($matches) {
-  return "\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">") ."\n";
+  $references = array();
+  return "\n". api_format_php("<?php". decode_entities($matches[1]) ."?".">", $references, FALSE, FALSE) ."\n";
 }
 
 /**
@@ -673,19 +687,26 @@ function api_documentation_summary($documentation) {
 }
 
 /**
- * Colorizes and formats PHP code.
+ * Colorizes and formats PHP code, and finds references in it.
  *
  * @param $code
  *   PHP code to format. Note that any actual PHP code needs to be enclosed in
  *   PHP start/end tags to be formatted correctly.
+ * @param $references
+ *   Array to return references in, if $track_references is TRUE. References
+ *   are hook invocations, function calls, etc. $references is an associative
+ *   array where the keys are the types of references ('function', 'potential hook',
+ *   etc.), and the values are arrays of the names of this type.
  * @param $number
  *   FALSE to not number the lines (default). TRUE to number the lines, or an
  *   integer to start numbering at that line number.
+ * @param $track_references
+ *   TRUE (default) to track references, FALSE to skip reference tracking.
  *
  * @return
  *   HTML-formatted code, with spans enclosing various PHP elements.
  */
-function api_format_php($code, $number = FALSE) {
+function api_format_php($code, &$references, $number = FALSE, $track_references = TRUE) {
   $output = '';
 
   if (!defined('T_ML_COMMENT')) {
@@ -697,11 +718,25 @@ function api_format_php($code, $number = FALSE) {
 
   $tokens = token_get_all($code);
 
-  // Keep track of if we are inside a string. Also if this code started/ended
-  // with PHP open/close tags and didn't have any additional ones later,
-  // we will remove them from the code.
+  // Keep track of if we are inside a double-quoted string, hook invoke call,
+  // or theme call. Also if this code started/ended with PHP open/close tags
+  // and didn't have any additional ones later, we will remove them from the
+  // code, so keep track of these open/close tags too.
 
   $in_string = FALSE;
+
+  $in_type = '';
+  $paren_count = 0;
+  $target_paren_count = 0;
+  if ($track_references) {
+    $references = array(
+      'function' => array(),
+      'potential hook' => array(),
+      'potential theme' => array(),
+      'potential alter' => array(),
+    );
+  }
+
   $open_count = 0;
   $close_count = 0;
   $open_size = 0;
@@ -709,6 +744,8 @@ function api_format_php($code, $number = FALSE) {
 
   foreach ($tokens as $token) {
     $close_size = 0;
+
+    // Take care of double-quoted strings.
     if ($in_string) {
       if ($token == '"') {
         $output .= '"</span>';
@@ -763,12 +800,46 @@ function api_format_php($code, $number = FALSE) {
           break;
 
         case T_CONSTANT_ENCAPSED_STRING:
+          // This is a string like 'foo'. If we're in a call of some sort,
+          // then this is a potential function, hook, etc. name.
+          $class = 'php-string';
+          if ($in_type != '') {
+            $class .= ' potential-' . $in_type;
+            if ($track_references) {
+              $references['potential ' . $in_type][$value] = $value;
+            }
+          }
+
+          $output .= '<span class="' . $class . '">'. $value .'</span>';
+          break;
+
         case T_INLINE_HTML:
           $output .= '<span class="php-string">'. $value .'</span>';
           break;
 
         case T_STRING:
+          // This is a function, constant, etc. being declared or used.
           $output .= '<span class="php-function-or-constant">'. $value .'</span>';
+
+          // Save $in_type state.
+          if ($value == 'theme') {
+            $in_type = 'theme';
+            $target_paren_count = $paren_count + 1;
+          }
+          elseif (in_array($value, array('module_invoke', 'module_invoke_all', 'module_implements', 'module_hook', '_field_invoke', '_field_invoke_multiple', '_field_invoke_default', '_field_invoke_multiple_default', 'node_invoke', 'user_module_invoke'))) {
+            $in_type = 'hook';
+            $target_paren_count = $paren_count + 1;
+          }
+          elseif ($value == 'drupal_alter') {
+            $in_type = 'alter';
+            $target_paren_count = $paren_count + 1;
+          }
+
+          // Save references.
+          if ($track_references) {
+            $references['function'][$value] = $value;
+          }
+
           break;
 
         case T_LNUMBER:
@@ -797,6 +868,19 @@ function api_format_php($code, $number = FALSE) {
       }
     }
     else {
+      // Keep track of parentheses for whether we are in a hook/theme/alter
+      // call.
+      if ($token == '(') {
+        $paren_count++;
+      }
+      elseif ($token == ')') {
+        $paren_count--;
+        // See if we've reached the end of this function call.
+        if ($paren_count < $target_paren_count) {
+          $in_type = '';
+        }
+      }
+
       $output .= $token;
     }
   }
@@ -823,12 +907,11 @@ function api_format_php($code, $number = FALSE) {
 }
 
 /**
- * Keeps track of references while parsing API files.
+ * Adds a reference to the {api_reference_storage} table.
  *
  * Since we may parse a file containing a reference before we have parsed the
  * file containing the referenced object, we keep track of the references
- * using a scratch table and save the references to the database table after the
- * referenced object has been parsed.
+ * using a scratch table.
  *
  * @param $branch
  *   Object representing the branch the reference is in.
@@ -842,6 +925,7 @@ function api_format_php($code, $number = FALSE) {
 function api_reference($branch, $to_type, $to_name, $from_did) {
   static $is_php_function = array();
 
+  // Don't make references to built-in PHP functions.
   if ($to_type == 'function' && !isset($is_php_function[$to_name])) {
     $is_php_function[$to_name] = (db_result(db_query_range("SELECT 1 FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_name = '%s'", $to_name, 1, 1)));
   }
@@ -1040,6 +1124,7 @@ function api_update_branch_php($branch) {
         'object_name' => $function_match[1],
         'title' => $function_match[1],
         'documentation' => $function_match[0],
+        'references' => array(),
         'content' => '',
         'class' => '',
       );
