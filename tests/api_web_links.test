@@ -33,11 +33,10 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
       'DUPLICATE_CONSTANT' => 'search/' . $this->branch_info['branch_name'] . '/DUPLICATE_CONSTANT',
     );
 
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
+
     foreach ($links as $text => $url) {
-      $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
-      $this->assertLink($text, 0, 'Link to ' . $text . ' exists');
-      $this->clickLink($text);
-      $this->assertTrue(strpos($this->url, $url) !== FALSE, $text . ' link went to right place');
+      $this->assertLinkURLSubstring($text, $url, 'Link to ' . $text . ' exists', $text . ' link went to right place');
     }
 
     // Test for text that should be there but not linked.
@@ -51,6 +50,7 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
     foreach ($no_links as $text) {
       $this->assertText($text, $text . ' is present');
+      $this->assertNoLink($text, $text . ' is not a link');
     }
   }
 
@@ -61,19 +61,15 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
     // Test a variety of links on the documentation page for sample_function().
     $links = array(
       'duplicate_function' => 'search/' . $this->branch_info['branch_name'] . '/duplicate_function',
-      'http://example.com' => 'NO',
-      'this is a link for the parameter' => 'NO',
+      'http://example.com' => 'http://example.com',
+      'this is a link for the parameter' => 'http://php.net',
       'SAMPLE_CONSTANT' => 'sample.php/constant/SAMPLE_CONSTANT',
       'Samples' => 'sample.php/group/samp_GRP-6.x',
     );
 
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
     foreach ($links as $text => $url) {
-      $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
-      $this->assertLink($text, 0, 'Link to ' . $text . ' exists');
-      if ($url != 'NO') {
-        $this->clickLink($text);
-        $this->assertTrue(strpos($this->url, $url) !== FALSE, $text . ' link went to right place');
-      }
+      $this->assertLinkURLSubstring($text, $url, 'Link to ' . $text . ' exists', $text . ' link went to right place');
     }
 
     // Test some links on the duplicate_function() page.
@@ -84,11 +80,9 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
       'newsletter issues' => 'classes.php/group/class_samples',
     );
 
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
     foreach ($links as $text => $url) {
-      $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/duplicate_function');
-      $this->assertLink($text, 0, 'Link to ' . $text . ' exists');
-      $this->clickLink($text);
-      $this->assertTrue(strpos($this->url, $url) !== FALSE, $text . ' link went to right place');
+      $this->assertLinkURLSubstring($text, $url, 'Link to ' . $text . ' exists', $text . ' link went to right place');
     }
   }
 
@@ -100,7 +94,6 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
       'Sample::foo' => 'api/' . $this->branch_info['project'] . '/classes.php/function/Sample::foo',
       'Sample::baz' => 'api/' . $this->branch_info['project'] . '/classes.php/function/Sample::baz',
       'SubSample::bar' => 'api/' . $this->branch_info['project'] . '/classes.php/function/SubSample::bar',
-
     );
 
     $links = array(
@@ -143,9 +136,7 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
 
     foreach ($links as $item) {
       $this->drupalGet($pages[$item['page']]);
-      $this->assertLink($item['text'], 0, 'Link to ' . $item['text'] . ' exists');
-      $this->clickLink($item['text']);
-      $this->assertTrue(strpos($this->url, $item['url']) !== FALSE, $item['text'] . ' link went to right place');
+      $this->assertLinkURLSubstring($item['text'], $item['url'], 'Link to ' . $item['text'] . ' exists', $item['text'] . ' link went to right place');
     }
 
     $no_links = array(
@@ -155,9 +146,10 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
       ),
     );
 
-    foreach ($no_links as $text) {
+    foreach ($no_links as $item) {
       $this->drupalGet($pages[$item['page']]);
       $this->assertText($item['text'], $item['text'] . ' is present');
+      $this->assertNoLink($item['text'], $item['text'] . ' is not a link');
     }
   }
 }

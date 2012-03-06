@@ -312,6 +312,28 @@ class ApiWebPagesBaseTest extends ApiTestCase {
   }
 
   /**
+   * Asserts that a link exists, with substring matching on the URL.
+   *
+   * @param $label
+   *   Label of the link to find.
+   * @param $url
+   *   URL to match. The test passes if $url is a substring of the link's URL.
+   * @param $message_link
+   *   Message to use in link exist assertion.
+   * @param $message_url
+   *   Message to use for URL matching assertion.
+   */
+  protected function assertLinkURLSubstring($label, $url, $message_link, $message_url) {
+    // Code follows DrupalWebTestCase::clickLink() and assertLink().
+    $links = $this->xpath('//a[text()="' . $label . '"]');
+    $this->assert(isset($links[0]), $message_link);
+    if (isset($links[0])) {
+      $url_target = $this->getAbsoluteUrl($links[0]['href']);
+      $this->assertTrue(strpos($url_target, $url) !== FALSE, $message_url);
+    }
+  }
+
+  /**
    * Asserts that the current page's title contains a string.
    *
    * @param $string
@@ -322,5 +344,17 @@ class ApiWebPagesBaseTest extends ApiTestCase {
   protected function assertTitleContains($string, $message) {
     $title = current($this->xpath('//title'));
     $this->assertTrue(strpos($title, $string) !== FALSE, $message);
+  }
+
+  /**
+   * Asserts that the current page's URL contains a string.
+   *
+   * @param $string
+   *   String to match in the URL.
+   * @param $message
+   *   Message to print.
+   */
+  protected function assertURLContains($string, $message) {
+    $this->assertTrue(strpos($this->url, $string) !== FALSE, $message);
   }
 }
