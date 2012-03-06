@@ -91,4 +91,73 @@ class ApiWebLinksTestCase extends ApiWebPagesBaseTest {
       $this->assertTrue(strpos($this->url, $url) !== FALSE, $text . ' link went to right place');
     }
   }
+
+  /**
+   * Tests a variety of class member links.
+   */
+  function testClassLinks() {
+    $pages = array(
+      'Sample::foo' => 'api/' . $this->branch_info['project'] . '/classes.php/function/Sample::foo',
+      'Sample::baz' => 'api/' . $this->branch_info['project'] . '/classes.php/function/Sample::baz',
+      'SubSample::bar' => 'api/' . $this->branch_info['project'] . '/classes.php/function/SubSample::bar',
+
+    );
+
+    $links = array(
+      array(
+        'page' => 'Sample::foo',
+        'text' => 'baz',
+        'url' => 'classes.php/function/Sample',
+      ),
+      array(
+        'page' => 'Sample::foo',
+        'text' => 'property',
+        'url' => 'classes.php/property/Sample',
+      ),
+      array(
+        'page' => 'Sample::foo',
+        'text' => 'constant',
+        'url' => 'classes.php/constant/Sample',
+      ),
+      array(
+        'page' => 'Sample::baz',
+        'text' => 'foo',
+        'url' => 'classes.php/function/Sample',
+      ),
+      array(
+        'page' => 'Sample::baz',
+        'text' => 'bar',
+        'url' => 'search/' . $this->branch_info['branch_name'] . '/bar',
+      ),
+      array(
+        'page' => 'SubSample::bar',
+        'text' => 'foo',
+        'url' => 'classes.php/function/Sample',
+      ),
+      array(
+        'page' => 'SubSample::bar',
+        'text' => 'baz',
+        'url' => 'classes.php/function/Sample',
+      ),
+    );
+
+    foreach ($links as $item) {
+      $this->drupalGet($pages[$item['page']]);
+      $this->assertLink($item['text'], 0, 'Link to ' . $item['text'] . ' exists');
+      $this->clickLink($item['text']);
+      $this->assertTrue(strpos($this->url, $item['url']) !== FALSE, $item['text'] . ' link went to right place');
+    }
+
+    $no_links = array(
+      array(
+        'page' => 'Sample::foo',
+        'text' => 'bar',
+      ),
+    );
+
+    foreach ($no_links as $text) {
+      $this->drupalGet($pages[$item['page']]);
+      $this->assertText($item['text'], $item['text'] . ' is present');
+    }
+  }
 }

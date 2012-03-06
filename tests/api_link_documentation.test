@@ -53,15 +53,9 @@ class ApiLinkDocumentationTest extends ApiTestCase {
         'expected' => '<a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">Sample::foo</a>(',
       ),
       array(
-        'message' => 'Method name linking without explicit class',
+        'message' => 'Method name linking without explicit class -- should not link',
         'data' => 'foo(',
-        'expected' => '<a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a>(',
-      ),
-      array(
-        'message' => 'Method name linking without explicit class, but in class context',
-        'data' => 'foo(',
-        'expected' => '<a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a>(',
-        'class_did' => $class->did,
+        'expected' => 'foo(',
       ),
       array(
         'message' => 'Class constant @link',

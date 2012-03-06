@@ -716,18 +716,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
     define('T_DOC_COMMENT', T_COMMENT);
   }
 
-  $tokens = token_get_all($code);
-
-  // Keep track of if we are inside a double-quoted string, hook invoke call,
-  // or theme call. Also if this code started/ended with PHP open/close tags
-  // and didn't have any additional ones later, we will remove them from the
-  // code, so keep track of these open/close tags too.
-
-  $in_string = FALSE;
-
-  $in_type = '';
-  $paren_count = 0;
-  $target_paren_count = 0;
+  // Set up to track references, if we are tracking them.
   if ($track_references) {
     $references = array(
       'function' => array(),
@@ -737,16 +726,39 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
     );
   }
 
+  // Keep track of:
+  // - Are we in a double-quoted string?
+  // - Are we in the parameters for a hook or theme invocation?
+  // - How many PHP start/end tags we found (will remove at end if there is
+  //   only one set).
+  // - Class members: $foo->bar or Foo::bar.
+
+  // Double-quoted strings.
+  $in_string = FALSE;
+
+  // Hook/theme invokes.
+  $invoke_type = '';
+  $paren_count = 0;
+  $target_paren_count = 0;
+
+  // PHP open/close tag counts and string size.
   $open_count = 0;
   $close_count = 0;
   $open_size = 0;
   $close_size = 0;
 
+  // Class members.
+  $in_member = FALSE;
+  $member_of = '';
+
+  // Split the code into tokens.
+  $tokens = token_get_all($code);
   foreach ($tokens as $token) {
     $close_size = 0;
 
     // Take care of double-quoted strings.
     if ($in_string) {
+      $in_member = FALSE;
       if ($token == '"') {
         $output .= '"</span>';
         $in_string = FALSE;
@@ -759,6 +771,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
     elseif ($token == '"') {
       $output .= '<span class="php-string">"';
       $in_string = TRUE;
+      $in_member = FALSE;
       continue;
     }
 
@@ -768,6 +781,8 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
 
       switch ($type) {
         case T_OPEN_TAG:
+          $in_member = FALSE;
+          $member_of = '';
           $to_add = '<span class="php-boundry">'. $value .'</span>';
           $open_count++;
           if (strlen($output) == 0) {
@@ -780,6 +795,8 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           break;
 
         case T_CLOSE_TAG:
+          $in_member = FALSE;
+          $member_of = '';
           $to_add = '<span class="php-boundry">'. $value .'</span>';
           $close_count++;
           // Save the size of the closing tag here. If we didn't encounter
@@ -792,21 +809,27 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
         case T_COMMENT:
         case T_ML_COMMENT:
         case T_DOC_COMMENT:
+          $in_member = FALSE;
+          $member_of = '';
           $output .= '<span class="php-comment">'. $value .'</span>';
           break;
 
         case T_VARIABLE:
+          $in_member = FALSE;
+          $member_of = $value;
           $output .= '<span class="php-variable">'. $value .'</span>';
           break;
 
         case T_CONSTANT_ENCAPSED_STRING:
+          $in_member = FALSE;
+          $member_of = '';
           // This is a string like 'foo'. If we're in a call of some sort,
           // then this is a potential function, hook, etc. name.
           $class = 'php-string';
-          if ($in_type != '' && preg_match('|' . API_RE_HOOK_NAME . '|', $value)) {
-            $class .= ' potential-' . $in_type;
+          if ($invoke_type != '' && preg_match('|' . API_RE_HOOK_NAME . '|', $value)) {
+            $class .= ' potential-' . $invoke_type;
             if ($track_references) {
-              $references['potential ' . $in_type][$value] = $value;
+              $references['potential ' . $invoke_type][$value] = $value;
             }
           }
 
@@ -814,24 +837,47 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           break;
 
         case T_INLINE_HTML:
+          $in_member = FALSE;
+          $member_of = '';
           $output .= '<span class="php-string">'. $value .'</span>';
           break;
 
         case T_STRING:
           // This is a function, constant, etc. being declared or used.
-          $output .= '<span class="php-function-or-constant">'. $value .'</span>';
+          $class = 'php-function-or-constant';
+          if ($in_member) {
+            if ($member_of == 'parent') {
+              $class .= ' member-of-parent';
+            }
+            elseif ($member_of == '$this' || $member_of == 'self') {
+              $class .= ' member-of-self';
+            }
+            elseif (strpos($member_of, '$') === 0) {
+              $class .= ' member-of-variable';
+            }
+            elseif (strlen($member_of) > 0) {
+              $class .= ' member-of-class-' . $member_of;
+            }
+            else {
+              $class .= ' member-of-variable';
+            }
+          }
 
-          // Save $in_type state.
+          $output .= '<span class="' . $class . '">'. $value .'</span>';
+          $in_member = FALSE;
+          $member_of = $value;
+
+          // Save $invoke_type state.
           if ($value == 'theme') {
-            $in_type = 'theme';
+            $invoke_type = 'theme';
             $target_paren_count = $paren_count + 1;
           }
           elseif (in_array($value, array('module_invoke', 'module_invoke_all', 'module_implements', 'module_hook', '_field_invoke', '_field_invoke_multiple', '_field_invoke_default', '_field_invoke_multiple_default', 'node_invoke', 'user_module_invoke'))) {
-            $in_type = 'hook';
+            $invoke_type = 'hook';
             $target_paren_count = $paren_count + 1;
           }
           elseif ($value == 'drupal_alter') {
-            $in_type = 'alter';
+            $invoke_type = 'alter';
             $target_paren_count = $paren_count + 1;
           }
 
@@ -844,6 +890,8 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
 
         case T_LNUMBER:
         case T_DNUMBER:
+          $in_member = FALSE;
+          $member_of = '';
           $output .= '<span class="php-constant">'. $value .'</span>';
           break;
 
@@ -860,14 +908,26 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
         case T_REQUIRE_ONCE: case T_REQUIRE: case T_RETURN: case T_STATIC:
         case T_STRING_CAST: case T_SWITCH: case T_UNSET_CAST: case T_UNSET:
         case T_USE: case T_VAR: case T_WHILE:
+          $in_member = FALSE;
+          $member_of = '';
           $output .= '<span class="php-keyword">'. $value .'</span>';
           break;
 
+        case T_OBJECT_OPERATOR: case T_DOUBLE_COLON:
+          $output .= $value;
+          $in_member = TRUE;
+          break;
+
         default:
+          $in_member = FALSE;
+          $member_of = '';
           $output .= $value;
       }
     }
     else {
+      $in_member = FALSE;
+      $member_of = '';
+
       // Keep track of parentheses for whether we are in a hook/theme/alter
       // call.
       if ($token == '(') {
@@ -877,7 +937,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
         $paren_count--;
         // See if we've reached the end of this function call.
         if ($paren_count < $target_paren_count) {
-          $in_type = '';
+          $invoke_type = '';
         }
       }
 
@@ -956,12 +1016,12 @@ function api_schedule_shutdown() {
  * the cache.
  */
 function api_shutdown() {
-  // Figure out all the dids of the object/branch/types.
+  // Figure out all the dids of the object/branch/types in reference storage.
   db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
 
-  // Save overrides
+  // Save overrides.
   $changed_classes = array();
-  $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did LEFT JOIN {api_function} af ON af.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
+  $result = db_query("SELECT ad.did, ad.object_type, ad.member_name, ad.class_did, ad.documentation, af.parameters, af.return_value, ad.see, ad.throws, ad.var, ad.code FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did LEFT JOIN {api_function} af ON af.did = ad.did WHERE ad.class_did <> 0 AND ao.did IS NULL");
   while ($object = db_fetch_object($result)) {
     $changed_classes[$object->class_did] = TRUE;
     $override = array(
@@ -985,13 +1045,9 @@ function api_shutdown() {
           }
           if ($override['documented_did'] === 0 && api_has_documentation($parent_class)) {
             $override['documented_did'] = $parent_class->did;
-            // Save the inherited summary
-            $inherited_summary = array(
-              'summary' => $parent_class->summary,
-              'did' => $object->did,
-            );
-            _api_add_text_defaults($inherited_summary, 'api_documentation');
-            drupal_write_record('api_documentation', $inherited_summary, 'did');
+            // Add the inherited summary to the existing record.
+            $object->summary = $parent_class->summary;
+            drupal_write_record('api_documentation', $object, 'did');
           }
           $override['root_did'] = $parent_class->did;
         }

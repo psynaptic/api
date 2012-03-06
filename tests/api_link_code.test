@@ -21,6 +21,7 @@ class ApiLinkCodeTest extends ApiTestCase {
     $branch = $this->getBranch();
     $interface = api_object_load('SampleInterface', $branch, 'interface', 'classes.php');
     $class = api_object_load('Sample', $branch, 'class', 'classes.php');
+    $subclass = api_object_load('SubSample', $branch, 'class', 'classes.php');
 
     $tests = array(
       // Should be linked
@@ -30,27 +31,21 @@ class ApiLinkCodeTest extends ApiTestCase {
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/sample.php/function/sample_function/6') .'" title="A sample function." class="local">sample_function</a></span>',
       ),
       array(
-        'message' => 'Linking to method defined in multiple classes',
-        'data' => '<span class="php-function-or-constant">foo</span>',
-        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
-      ),
-      array(
-        'message' => 'Linking to method defined in multiple classes from class',
-        'data' => '<span class="php-function-or-constant">foo</span>',
+        'message' => 'Linking to method defined in multiple classes from self',
+        'data' => '<span class="php-function-or-constant member-of-self">foo</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a></span>',
         'class_did' => $class->did,
       ),
       array(
-        'message' => 'Linking to method defined in multiple classes from interface',
-        'data' => '<span class="php-function-or-constant">foo</span>',
-        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/SampleInterface::foo/6') .'" title="Implement this API." class="local">foo</a></span>',
-        'class_did' => $interface->did,
+        'message' => 'Linking to method defined in multiple classes as parent',
+        'data' => '<span class="php-function-or-constant member-of-parent">foo</span>',
+        'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a></span>',
+        'class_did' => $subclass->did,
       ),
       array(
-        'message' => 'Linking to method defined in multiple subclasses from interface',
-        'data' => '<span class="php-function-or-constant">baz</span>',
+        'message' => 'Linking to method defined in multiple subclasses',
+        'data' => '<span class="php-function-or-constant member-of-variable">baz</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/'. $branch->branch_name . '/baz') .'" title="Multiple implementations exist." class="local">baz</a></span>',
-        'class_did' => $interface->did,
       ),
       array(
         'message' => 'Marked-up class name linking',

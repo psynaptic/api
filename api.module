@@ -1642,7 +1642,7 @@ function api_cron() {
  *   Code with function names formatted as links.
  */
 function api_link_code($code, $branch, $class_did = NULL) {
-  return _api_link_documentation($code, $branch, $class_did, array('code hook name', 'code alter hook name', 'code theme hook name', 'code function', 'code string'));
+  return _api_link_documentation($code, $branch, $class_did, array('code hook name', 'code alter hook name', 'code theme hook name', 'code function', 'code member', 'code string'));
 }
 
 /**
@@ -1710,6 +1710,7 @@ function api_filter_documentation($text, $branch, $class_did = NULL, $aggressive
  *   Code with function names formatted as links.
  *
  * @see api_link_code()
+ * @see api_link_name()
  */
 function _api_link_documentation($documentation, $branch, $class_did = NULL, $stages = array()) {
 
@@ -1792,6 +1793,12 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       $prepend_if_not_found = '<span class="php-string">\'';
       $use_php = FALSE;
       $type = 'theme';
+      break;
+
+    case 'code member':
+      // Works like 'code hook name' above, but for class members.
+      $callback_match = 'api_link_member_name';
+      $pattern = '!(<span class="php-function-or-constant member-of-[^"]+">' . API_RE_PHP_FUNCTION . '</span>)!';
       break;
 
     case 'file':
@@ -1882,14 +1889,14 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  * @param $append
  *   Text to append on the link.
  * @param $class_did
- *   Documentation ID of the class this is part of (if any).
+ *   (unused) Documentation ID of the class this is part of (if any).
  * @param $text
  *   Link text. If omitted, uses $name.
  * @param $is_link
  *   TRUE if this was inside a @link.
  * @param $use_php
  *   TRUE if links to PHP functions should be made; FALSE if only Drupal
- *   objects, and only if they are not part of classes.
+ *   objects.
  * @param $prepend_if_not_found
  *   Text to prepend if object is not found (defaults to $prepend).
  * @param $append_if_not_found
@@ -1905,133 +1912,22 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  *   The text as a link to the object page.
  */
 function api_link_name($name, $branch, $prepend = '', $append = '', $class_did = NULL, $text = NULL, $is_link = FALSE, $use_php = TRUE, $prepend_if_not_found = NULL, $append_if_not_found = NULL, $type = '') {
-  static $local_objects = array();
-  static $zero_built = FALSE;
-  static $local_objects_no_class = array();
-  static $php_functions;
-
-  //  @todo - This function is implicitly assuming that $branch->branch_id is
-  // never changing throughout this web request. That is probably OK, but...
-  // really this function should probably at least check that or store the
-  // branch_id value in its statics.
-
-  if (!$zero_built) {
-    // No matter what $class_did is the first time this function is called,
-    // we definitely need to make sure that the $class_did == 0 case is built,
-    // because we will need it.
-    $zero_built = 1;
-    api_link_name('foo', $branch);
-  }
-
-  if (!isset($local_objects[$class_did])) {
-    $result = db_query("SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.class_did, (ao.did IS NULL OR ao.root_did = ao.did) is_root FROM {api_documentation} ad LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE ad.branch_id = %d", $branch->branch_id);
-    $local_objects[$class_did] = array(
-      'group' => array(),
-      'item' => array(),
-    );
-    while ($object = db_fetch_object($result)) {
-      $link = array(
-        'url' => api_url($object),
-        'options' => array(
-          'attributes' => array(
-            // l() will recode these entities.
-            'title' => api_entity_decode($object->summary),
-            'class' => 'local',
-          ),
-        ),
-      );
-
-      switch ($object->object_type) {
-        case 'file':
-          $local_objects[$class_did]['item'][basename($object->object_name)] = $link;
-          $local_objects_no_class[basename($object->object_name)] = $link;
-          break;
-
-        case 'group':
-          $local_objects[$class_did][$object->object_type][$object->object_name] = $link;
-          break;
-
-        default:
-          if ($object->class_did != 0) {
-            $member_name = preg_replace('/^.*::/', '', $object->title);
-            if ($object->class_did === $class_did) {
-              // The member is from the current class, it is preferred.
-              $local_objects[$class_did]['item'][$member_name] = $link;
-              $local_objects[$class_did]['item'][$member_name]['preferred'] = TRUE;
-            }
-            if ($object->is_root && (!isset($local_objects[$class_did]['item'][$member_name]) || !isset($local_objects[$class_did]['item'][$member_name]['preferred']))) {
-              if (isset($local_objects[$class_did]['item'][$member_name])) {
-                // If more than one root, link to search.
-                $local_objects[$class_did]['item'][$member_name] = array(
-                  'url' => 'api/search/' . $branch->branch_name . '/' . $member_name,
-                  'options' => array(
-                    'attributes' => array(
-                      'title' => t('Multiple implementations exist.'),
-                      'class' => 'local',
-                    ),
-                  ),
-                );
-              }
-              else {
-                // Otherwise, use the top of the tree.
-                $local_objects[$class_did]['item'][$member_name] = $link;
-              }
-            }
-          }
-
-          if (isset($local_objects[$class_did]['item'][$object->object_name])) {
-            // Link to search results for multiple options.
-            $local_objects[$class_did]['item'][$object->object_name] = array(
-              'url' => 'api/search/' . $branch->branch_name . '/' . $object->object_name,
-              'options' => array(
-                'attributes' => array(
-                  'title' => t('Multiple implementations exist.'),
-                  'class' => 'local',
-                ),
-              ),
-            );
-          }
-          else {
-            $local_objects[$class_did]['item'][$object->object_name] = $link;
-          }
-
-          if ((!isset($class_did) || $class_did == 0 ) && $object->class_did == 0) {
-            if (isset($local_objects_no_class[$object->object_name])) {
-              // Link to search results for multiple options.
-              $local_objects_no_class[$object->object_name] = array(
-                'url' => 'api/search/' . $branch->branch_name . '/' . $object->object_name,
-                'options' => array(
-                  'attributes' => array(
-                    'title' => t('Multiple implementations exist.'),
-                    'class' => 'local',
-                  ),
-                ),
-              );
-            }
-            else {
-              $local_objects_no_class[$object->object_name] = $link;
-            }
-          }
-          break;
-      }
-    }
-  }
-
-  if (is_null($php_functions)) {
-    $result = db_query("SELECT d.object_name, d.summary, b.data FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function'");
-    $php_functions = array();
-    while ($function = db_fetch_object($result)) {
-      $php_functions[$function->object_name] = $function;
-    }
-  }
 
   if (is_null($text)) {
     $text = $name;
   }
 
-  if ($is_link && isset($local_objects[$class_did]['group'][$name])) {
-    return $prepend . l($text, $local_objects[$class_did]['group'][$name]['url'], $local_objects[$class_did]['group'][$name]['options']) . $append;
+  $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.object_name = '%s'";
+
+  // See if this is a link to a group/topic.
+  if ($is_link) {
+    $result = db_query($query . " AND ad.object_type = 'group'", $branch->branch_id, $name);
+    if ($object = db_fetch_object($result)) {
+      return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'))) . $append;
+    }
   }
+
+  // Figure out what potential names we should match on.
 
   $potential_names = array($name);
   if ($type == 'hook') {
@@ -2047,8 +1943,9 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   }
   elseif ($type == 'theme') {
     $potential_names = array();
-    // Iteratively strip everything after the last '__' delimiter, until an
-    // implementation is found.
+    // Potential matches are the whole theme call, or with stripped off pieces
+    // separated by __. And we look for template files preferably over
+    // functions.
     $hook_elements = explode('__', $name);
     while (count($hook_elements) > 0) {
       $hook = implode('__', $hook_elements);
@@ -2058,32 +1955,161 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     }
   }
 
-  if (!$use_php) {
-    foreach ($potential_names as $possible_name) {
-      if (isset($local_objects_no_class[$possible_name])) {
-        return $prepend . l($text, $local_objects_no_class[$possible_name]['url'], $local_objects_no_class[$possible_name]['options']) . $append;
+  foreach ($potential_names as $possible_name) {
+    $url = NULL;
+    $options = array();
+    // See if there are any matches for this name.
+    $result = db_query($query, $branch->branch_id, $possible_name);
+    while ($object = db_fetch_object($result)) {
+      if (isset($url)) {
+        // This is the second match, so make this a search.
+        $url = 'api/search/' . $branch->branch_name . '/' . $possible_name;
+        $options = array(
+          'attributes' => array(
+            'title' => t('Multiple implementations exist.'),
+            'class' => 'local',
+          ),
+        );
+        break;
+      }
+      else {
+        $url = api_url($object);
+        $options = array(
+          'attributes' => array(
+            'title' => api_entity_decode($object->summary),
+            'class' => 'local',
+          ),
+        );
       }
     }
-  }
-  elseif ($use_php && isset($local_objects[$class_did]['item'][$name])) {
-    return $prepend . l($text, $local_objects[$class_did]['item'][$name]['url'], $local_objects[$class_did]['item'][$name]['options']) . $append;
-  }
-  elseif ($use_php && isset($php_functions[$name])) {
-    $info = $php_functions[$name];
-    $data = unserialize($info->data);
-    $link = strtr($data['path'], array('!function' => $name));
-    return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($info->summary), 'class' => 'php-manual'))) . $append;
+
+    // See if we found a match.
+    if (isset($url)) {
+      return $prepend . l($text, $url, $options) . $append;
+    }
   }
 
-  // Fallback: if we get here, no matching documentation link has been found, so
-  // nothing has been returned yet. Return the non-linked text.
+  // If we get here, there wasn't a match. Try PHP functions.
+  if ($use_php) {
+    $result = db_query("SELECT d.object_name, d.summary, b.data FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function' AND d.object_name = '%s'", $name);
+    while ($info = db_fetch_object($result)) {
+      $data = unserialize($info->data);
+      $link = strtr($data['path'], array('!function' => $name));
+      return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($info->summary), 'class' => 'php-manual'))) . $append;
+    }
+  }
+
+  // If we get here, there still wasn't a match, so return non-linked text.
   if (isset($prepend_if_not_found)) {
     $prepend = $prepend_if_not_found;
   }
   if (isset($append_if_not_found)) {
     $append = $append_if_not_found;
   }
+
   return $prepend . $text . $append;
+}
+
+/**
+ * Links text to an appropriate class member variable, constant, or function.
+ *
+ * @param $text
+ *   Text matched by the regular expression.
+ * @param $branch
+ *   Branch object indicating which branch to make the link in.
+ * @param $prepend
+ *   Unused.
+ * @param $append
+ *   Unused.
+ * @param $class_did
+ *   Documentation ID of the class this is part of (if any).
+ */
+function api_link_member_name($text, $branch, $prepend = '', $append = '', $class_did = NULL) {
+
+  // The pattern matched to get here contains the entire span with all of its
+  // classes. Parse it out.
+  $matches = array();
+  preg_match('!<span class="php-function-or-constant member-of-([^"]+)">(' . API_RE_PHP_FUNCTION . ')</span>!', $text, $matches);
+  $name = $matches[2];
+  $member_type = $matches[1];
+  $prepend = '<span class="php-function-or-constant">';
+  $append = '</span>';
+
+  // Figure out what class we're looking for a member of, and build a query.
+  // $member_type is one of: parent, self, variable, or class-NAME.
+  $result = NULL;
+
+  if ($member_type == 'parent') {
+    // We're looking for a member of the parent class. Find the class doc ID.
+    if ($item = db_fetch_object(db_query("SELECT ad.did FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $class_did))) {
+      $class_did = $item->did;
+      $member_type = 'self';
+    }
+    else {
+      // There is no parent class recorded (probably a built-in PHP class).
+      $member_type = 'none';
+    }
+  }
+  elseif (strpos($member_type, 'class-') === 0) {
+    // We're looking for a specific class. Find the class doc ID.
+    $class_name = substr($member_type, 6);
+    if ($item = db_fetch_object(db_query("SELECT ad.did FROM {api_documentation} ad WHERE ad.object_type = 'class' AND ad.branch_id = %d AND ad.object_name = '%s'", $branch->branch_id, $class_name))) {
+      $class_did = $item->did;
+      $member_type = 'self';
+    }
+    else {
+      // Class name doesn't exist (probably a built-in PHP class).
+      $member_type = 'none';
+    }
+  }
+
+  if ($member_type == 'self') {
+    // Looking for a member of a particular class. Note that we use the
+    // {api_members} table here, since it includes members inherited from
+    // parent classes.
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did FROM {api_members} am INNER JOIN {api_documentation} ad ON am.did = ad.did WHERE am.class_did = %d AND ad.member_name = '%s'", $class_did, $name);
+  }
+  elseif ($member_type == 'variable') {
+    // This was some kind of a variable like $foo->member(). So match any member
+    // of any class.
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did FROM {api_documentation} ad WHERE ad.member_name = '%s'", $name);
+  }
+
+  // See if we have one result, more than one result, or no results.
+  $url = NULL;
+  $options = array();
+  if (isset($result)) {
+    while ($object = db_fetch_object($result)) {
+      if (strlen($url)) {
+        // This is the second match, so make this a search.
+        $url = 'api/search/' . $branch->branch_name . '/' . $name;
+        $options = array(
+          'attributes' => array(
+            'title' => t('Multiple implementations exist.'),
+            'class' => 'local',
+          ),
+        );
+        break;
+      }
+      else {
+        $url = api_url($object);
+        $options = array(
+          'attributes' => array(
+            'title' => api_entity_decode($object->summary),
+            'class' => 'local',
+          ),
+        );
+      }
+    }
+
+    // See if we found a match.
+    if (isset($url)) {
+      return $prepend . l($name, $url, $options) . $append;
+    }
+  }
+
+  // If we got here, we didn't have a match.
+  return $prepend . $name . $append;
 }
 
 /**
