@@ -998,7 +998,7 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
   if (!is_array($object_type)) {
     $object_type = array($object_type);
   }
-  $key = $object_name_or_did .':'. implode('-', $object_type) .':'. $branch->branch_id;
+  $key = $object_name_or_did . ':' . implode('-', $object_type) . ':' . $branch->branch_id . ':' . $file_name;
 
   // See if we have this cached.
   if (isset($cache[$key])) {

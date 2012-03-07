@@ -333,66 +333,91 @@ function api_page_function($function) {
   $last_signature = '';
   $signatures = array();
   $n = 0;
-  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' ORDER BY b.weight", $function->title);
+  $result = db_query("SELECT d.branch_id, d.file_name, d.object_type, d.object_name, f.signature, d.class_did FROM {api_documentation} d INNER JOIN {api_function} f ON f.did = d.did INNER JOIN {api_branch} b ON d.branch_id = b.branch_id WHERE d.object_type = 'function' AND d.title = '%s' AND b.status = 1 ORDER BY b.weight", $function->title);
   while ($signature = db_fetch_object($result)) {
-      $signature_branch = $branches[$signature->branch_id];
-      if (!$signature_branch->status) {
-        continue;
-      }
+    $signature_branch = $branches[$signature->branch_id];
+    $branch_label = $signature_branch->branch_name . ' ' . basename($signature->file_name);
+    $active = ($signature->branch_id === $function->branch_id && $signature->file_name == $function->file_name);
 
-      $tokens = token_get_all('<?php '. $signature->signature);
-      // Remove <?php
+    // Build up the function prefix/class/name. Note that token_get_all() does
+    // not work unless the code starts with the open PHP token.
+    $tokens = token_get_all('<' . '?php '. $signature->signature);
+
+    // Remove open PHP token.
+    array_shift($tokens);
+
+    // Get the prefix -- everything up to the function name, such as "public",
+    // etc.
+    $name = '';
+    while ($tokens[1] !== '(') {
+      if (is_array($tokens[0])) {
+        $name .= $tokens[0][1];
+      }
+      else {
+        $name .= $tokens[0];
+      }
       array_shift($tokens);
-      // Get function name
-      $name = '';
-      while ($tokens[1] !== '(') {
-        if (is_array($tokens[0])) {
-          $name .= $tokens[0][1];
-        }
-        else {
-          $name .= $tokens[0];
-        }
-        array_shift($tokens);
+    }
+
+    // Add the class name, if there is one. This is not part of the signature.
+    if ($signature->class_did !== '0') {
+      $class = api_object_load((int) $signature->class_did, $signature_branch, array('interface', 'class'), $signature->file_name);
+      if (isset($class)) {
+        $name .= l($class->object_name, api_url($class)) . '::';
       }
-      if ($signature->class_did !== '0') {
-        $class = api_object_load((int) $signature->class_did, $signature_branch, array('interface', 'class'), $signature->file_name);
-        if (isset($class)) {
-          $name .= l($class->object_name, api_url($class)) . '::';
-        }
-      }
+    }
+
+    // Add the actual function name, plain (active branch) or link (not
+    // active branch).
+    if ($active) {
       $name .= $tokens[0][1];
-      $signature_info[$n] = array(
-        'object' => $signature,
-        'max object' => $signature, // Keep track of the most-recent branch
-        'active' => ($signature->branch_id === $function->branch_id && $signature->file_name == $function->file_name),
-        'arguments' => array(),
-        'other' => array(),
-      );
-      $start = TRUE;
-      $d = 0;
-      $a = -1;
-      $signature_info[$n]['other'][$a] = '';
-      foreach ($tokens as $token) {
-        $d += in_array($token, array('(', '{', '[')) - in_array($token, array(')', '}', ']'));
-        if ($d == 1 && $start && is_array($token) && $token[0] == T_VARIABLE) {
-          // New argument
-          $a += 1;
-          $signature_info[$n]['arguments'][$a] = $token[1];
-          $signature_info[$n]['other'][$a] = '';
-          $start = FALSE;
-        }
-        elseif ($d >= 1 && is_array($token)) {
-          $signature_info[$n]['other'][$a] .= $token[1];
-        }
-        elseif ($d >= 1) {
-          $signature_info[$n]['other'][$a] .= $token;
-          // Start looking for a new argument if we see a comma.
-          $start = $start || ($d == 1 && $token == ',');
-        }
+    }
+    else {
+      $name .= l($tokens[0][1], api_url($signature));
+    }
+
+    // Store this much for the second pass.
+    $signature_info[$n] = array(
+      'branch_label' => $branch_label,
+      'object' => $signature,
+      'active' => $active,
+      'arguments' => array(),
+      'other' => array(),
+      'name' => $name,
+    );
+
+    // Collect the argument list, separating it out into the argument names
+    // and other info (such as default values).
+    $start = TRUE;
+    $depth = 0;
+    $arg_index = -1;
+    $signature_info[$n]['other'][$arg_index] = '';
+    foreach ($tokens as $token) {
+      $depth += in_array($token, array('(', '{', '[')) - in_array($token, array(')', '}', ']'));
+      if ($depth == 1 && $start && is_array($token) && $token[0] == T_VARIABLE) {
+        // New argument
+        $arg_index += 1;
+        $signature_info[$n]['arguments'][$arg_index] = $token[1];
+        $signature_info[$n]['other'][$arg_index] = '';
+        $start = FALSE;
       }
-      $last_signature = $signature->signature;
-      $n += 1;
+      elseif ($depth >= 1 && is_array($token)) {
+        // Non-arg other information.
+        $signature_info[$n]['other'][$arg_index] .= $token[1];
+      }
+      elseif ($depth >= 1) {
+        // Non-arg other information.
+        $signature_info[$n]['other'][$arg_index] .= $token;
+        // Start looking for a new argument if we see a comma.
+        $start = $start || ($depth == 1 && $token == ',');
+      }
+    }
+    $last_signature = $signature->signature;
+    $n++;
   }
+
+  // Format the argument lists, keeping track of when arguments come and go
+  // through the branches.
   foreach ($signature_info as $n => $info) {
     $new = array();
     if (isset($signature_info[$n - 1])) {
@@ -402,12 +427,8 @@ function api_page_function($function) {
     if (isset($signature_info[$n + 1])) {
       $old = array_diff($info['arguments'], $signature_info[$n + 1]['arguments']);
     }
-    $branch_label = $branches[$info['object']->branch_id]->branch_name .
-      ' ' . basename($info['object']->file_name);
-    if ($info['object']->branch_id !== $info['max object']->branch_id) {
-      $branch_label .= ' – '. $branches[$info['max object']->branch_id]->branch_name;
-    }
-    $signature = $name . $info['other'][-1];
+
+    $signature = $info['name'] . $info['other'][-1];
     foreach ($signature_info[$n]['arguments'] as $key => $argument) {
       if (in_array($argument, $old)) {
         $signature .= '<del>'. $argument .'</del>';
@@ -421,11 +442,10 @@ function api_page_function($function) {
       $signature .= $info['other'][$key];
     }
     $signature .= ')';
-    $signatures[$branch_label] = array(
+    $signatures[$info['branch_label']] = array(
       'signature' => $signature,
-      'url' => api_url($info['max object']),
       'active' => $info['active'],
-      'status' => $branches[$info['max object']->branch_id]->status,
+      'url' => api_url($info['object']),
     );
   }
 

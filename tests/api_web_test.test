@@ -187,7 +187,7 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText("function duplicate_function() {", 'Code is present on function page');
     $this->assertLink('sample.php', 0, 'Link to file is present on function page');
     $this->assertLink($this->branch_info['branch_name'] . ' duplicates.php', 0, 'Link to other version is present on function page');
-    $this->assertLink('duplicate_function()', 0, 'Second link to other version is present on function page');
+    $this->assertLink('duplicate_function', 0, 'Second link to other version is present on function page');
     $this->assertLink('1 function calls duplicate_function()', 0, 'Link to calling functions page is present');
 
     // Test the links made with @link on this function.
@@ -759,7 +759,7 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_function');
     $this->assertRaw($this->branch_info_2['branch_name'] . ' sample2.php', 'Other sample file and branch are shown');
-    $this->assertLink('sample_function()', 0, 'Other sample link is there');
+    $this->assertLink('sample_function', 0, 'Other sample link is there');
 
     // Test constant-style linking.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/constant/DUPLICATE_CONSTANT');
@@ -777,6 +777,11 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::foo');
     $this->assertRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
     $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    // Make sure the links go to the right place.
+    $this->assertLinkURLSubstring('foo', 'extras.php/function/Sample', 'foo link exists', 'foo link went to the right place');
+    // Note that there is also one Sample link in the breadcrumb.
+    $this->assertLinkURLSubstring('Sample',  'classes.php/class/Sample', 'First Sample link exists', 'First Sample link went to the right place', 1);
+    $this->assertLinkURLSubstring('Sample', 'extras.php/class/Sample', 'Second Sample link exists', 'Second Sample link went to the right place', 2);
 
     // Now visit the class page in the other branch. Click through to the
     // method and verify that it doesn't show the DifferentClassName::foo()

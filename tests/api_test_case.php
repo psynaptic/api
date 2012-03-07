@@ -322,13 +322,15 @@ class ApiWebPagesBaseTest extends ApiTestCase {
    *   Message to use in link exist assertion.
    * @param $message_url
    *   Message to use for URL matching assertion.
+   * @param $index
+   *   Index of the link on the page, like assertLink().
    */
-  protected function assertLinkURLSubstring($label, $url, $message_link, $message_url) {
+  protected function assertLinkURLSubstring($label, $url, $message_link, $message_url, $index = 0) {
     // Code follows DrupalWebTestCase::clickLink() and assertLink().
     $links = $this->xpath('//a[text()="' . $label . '"]');
-    $this->assert(isset($links[0]), $message_link);
-    if (isset($links[0])) {
-      $url_target = $this->getAbsoluteUrl($links[0]['href']);
+    $this->assert(isset($links[$index]), $message_link);
+    if (isset($links[$index])) {
+      $url_target = $this->getAbsoluteUrl($links[$index]['href']);
       $this->assertTrue(strpos($url_target, $url) !== FALSE, $message_url);
     }
   }
