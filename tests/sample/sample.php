@@ -114,6 +114,12 @@ function sample_class_function($parameter) {
  * a @link samp_GRP-6.x subscription @endlink. Nodes of enabled content types
  * are @link class_samples newsletter issues @endlink. These are then sent to
  * the subscribers of the newsletter the issue is attached to.
+ *
+ * And here is a test of a link with an apostrophe in it, and how about some
+ * double quotes for good measure?
+ *
+ * @link class_samples Won't the apostophe "just work" here? @endlink
+ * @link http://example.com Won't the apostophe "just work" here too? @endlink
  */
 function duplicate_function() {
 }

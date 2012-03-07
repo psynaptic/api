@@ -192,8 +192,9 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
 
     // Test the links made with @link on this function.
     $this->assertLinkURLSubstring('Subscribers', $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x', 'Subscribers link exists', 'Subscribers link went to the right place');
+    $this->assertLinkURLSubstring('subscription', $this->branch_info['project'] . '/sample.php/group/samp_GRP-6.x', 'Subscribers link exists', 'Subscribers link went to the right place');
     $this->assertLinkURLSubstring('newsletter issues', $this->branch_info['project'] . '/classes.php/group/class_samples', 'Newsletter link exists', 'Newsletter link went to the right place');
-
+    $this->assertLinkURLSubstring('newsletters (categories)', $this->branch_info['project'] . '/classes.php/group/class_samples', 'Newsletter categories link exists', 'Newsletter categories link went to the right place');
 
     // Click the automatically-generated links on the page and verify.
     $this->assertLinkURLSubstring($this->branch_info['branch_name'] . ' duplicates.php', $this->branch_info['project'] . '/duplicates.php/function/duplicate_function', 'Other version link exists', 'Other version link went to the right place');

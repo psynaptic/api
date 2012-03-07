@@ -1923,7 +1923,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   if ($is_link) {
     $result = db_query($query . " AND ad.object_type = 'group'", $branch->branch_id, $name);
     if ($object = db_fetch_object($result)) {
-      return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'))) . $append;
+      // Note: Use html = TRUE here because the @link stuff was check_plained
+      // during parsing. If we run it through check_plain() again, we get double
+      // encoding of entities.
+      return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'), 'html' => TRUE)) . $append;
     }
   }
 
