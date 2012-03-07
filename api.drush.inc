@@ -21,19 +21,26 @@ function api_drush_help($section) {
 function api_drush_command() {
   return array(
     'api-reparse' => array(
-      'callback' => 'api_drush_reparse',
-      'description' => 'Mark files to reparse.',
+      'description' => 'Mark API files to reparse',
       'arguments' => array(
-        'branch_or_file' => 'Optional branch identifier or file path relative to the common directory of its branch.',
+        'branch_or_file' => 'Optional branch ID number or file path relative to the common directory of its branch; omitted means mark everything',
       ),
     ),
     'api-list-branches' => array(
-      'callback' => 'api_drush_list_branches',
-      'description' => 'List API branches.',
+      'description' => 'List API branches',
     ),
     'api-reset-queue' => array(
-      'callback' => 'api_drush_reset_queue',
-      'description' => 'Reset the parsing queue.',
+      'description' => 'Reset the API parsing queue',
+    ),
+    'api-add-branch' => array(
+      'description' => 'Add a branch to API',
+      'arguments' => array(
+        'project' => 'Project name',
+        'project_title' => 'Project title',
+        'branch' => 'Branch name',
+        'branch_title' => 'Branch title',
+        'directory' => 'Project directory',
+      ),
     ),
   );
 }
@@ -47,7 +54,7 @@ function api_drush_command() {
  *   the path relative to the common path to the directories indexed by this
  *   branch.
  */
-function api_drush_reparse($branch_or_file = NULL) {
+function drush_api_reparse($branch_or_file = NULL) {
   $num = api_mark_for_reparse($branch_or_file);
 
   drush_log(dt('Marked @number files for reparsing.', array('@number' => $num)), 'ok');
@@ -56,7 +63,7 @@ function api_drush_reparse($branch_or_file = NULL) {
 /**
  * Resets the parsing queue.
  */
-function api_drush_reset_queue() {
+function drush_api_reset_queue() {
   api_reset_parse_queue();
 
   drush_log(dt('API parse queue reset. Necessary jobs will be added in the next cron run'), 'ok');
@@ -65,10 +72,9 @@ function api_drush_reset_queue() {
 /**
  * List all branches.
  */
-function api_drush_list_branches() {
+function drush_api_list_branches() {
   $branches = api_get_branches();
-  drush_log(dt('API Branches:'), 'ok');
-  $rows = array(array(dt('ID'), dt('Project'), dt('Title'), dt('Name'), dt('Type'), dt('Location'), dt('Status')));
+  $rows = array(array(dt('ID'), dt('Project'), dt('Name'), dt('Type'), dt('Location')));
   foreach ($branches as $branch) {
     if (isset($branch->directories)) {
       $location = $branch->directories;
@@ -78,12 +84,44 @@ function api_drush_list_branches() {
     $rows[] = array(
       $branch->branch_id,
       $branch->project,
-      $branch->title,
       $branch->branch_name,
       $branch->type,
       $location,
-      $branch->status ? dt('Enabled') : dt('Disabled'),
     );
   }
   drush_print_table($rows, TRUE);
+}
+
+/**
+ * Drush command to add or update an API branch.
+ */
+function drush_api_add_branch($project, $project_title, $branch_name, $branch_title, $directory) {
+  // Try to load the branch if possible.
+  $branch = api_get_branch_by_name($project, $branch_name);
+  if ($branch) {
+    if (!empty($branch->data)) {
+      $branch->data = unserialize($branch->data);
+    }
+    else {
+      $branch->data = array();
+    }
+    // This is an update.
+    $branch->project_title = $project_title;
+    $branch->title = $branch_title;
+    $branch->data['directories'] = $directory;
+  }
+  else {
+    // This is a new branch.
+    $branch = new stdClass();
+    $branch->branch_id = 0;
+    $branch->type = 'files';
+    $branch->project = $project;
+    $branch->project_title = $project_title;
+    $branch->branch_name = $branch_name;
+    $branch->title = $branch_title;
+    $branch->data['directories'] = $directory;
+    $branch->status = TRUE;
+  }
+  api_save_branch($branch);
+  drush_log(dt('Saved branch.'), 'ok');
 }
