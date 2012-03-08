@@ -11,6 +11,7 @@
  * - $logged_in: True or false.
  * - $user: user object.
  * - $defined: Location of the file.
+ * - $call_links: Links to calling functions (for theme templates).
  *
  * Available variables in the $object object:
  * - $object->title: Display name.
@@ -32,6 +33,8 @@
 <?php } ?>
 
 <?php print $objects; ?>
+
+<?php foreach ($call_links as $link) { print $link; } ?>
 
 <h3><?php print t('File'); ?></h3>
  <?php print $defined; ?>

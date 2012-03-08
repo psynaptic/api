@@ -121,10 +121,10 @@ function api_parse_php_file($docblock) {
     return;
   }
 
-  // Reserve the first array slot for the file documentation block. Don't track
-  // references in this though.
+  // Reserve the first array slot for the file documentation block. Note that
+  // we might or might not keep the references we parsed out.
   $references = array();
-  $docblock['code'] = api_format_php($docblock['source'], $references, TRUE, FALSE);
+  $docblock['code'] = api_format_php($docblock['source'], $references, TRUE);
   $docblocks = array($docblock);
 
   // Set default documentation block array for items other than the file.
@@ -142,6 +142,15 @@ function api_parse_php_file($docblock) {
 
   // Free up memory.
   $reader->reset();
+
+  // If this file only contains a docblock for itself, plus maybe one @file
+  // block, then any references we found above should be saved for the file.
+  // This is usually the case for theme templates.
+  if (count($references) > 0 &&
+     (count($docblocks) == 1 ||
+       (count($docblocks) == 2 && $docblocks[1]['object_type'] = '' && strpos($docblocks[1]['content'], '@file') !== FALSE))) {
+    $docblocks[0]['references'] = $references;
+  }
 
   api_save_documentation($docblocks);
 }
@@ -460,7 +469,7 @@ function api_save_documentation($docblocks) {
  */
 function api_replace_references($branch, $did, $name, $references) {
   // First, remove any existing references.
-  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type IN ('function', 'potential hook', 'potential theme', 'potential alter', 'potentail field_hook', 'potential node_hook') AND from_did = %d", $branch->branch_id, $did);
+  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type IN ('function', 'potential hook', 'potential theme', 'potential alter', 'potential callback') AND from_did = %d", $branch->branch_id, $did);
   foreach ($references as $type => $list) {
     // Don't save a reference to the item itself.
     unset($list[$name]);
@@ -695,8 +704,9 @@ function api_documentation_summary($documentation) {
  * @param $references
  *   Array to return references in, if $track_references is TRUE. References
  *   are hook invocations, function calls, etc. $references is an associative
- *   array where the keys are the types of references ('function', 'potential hook',
- *   etc.), and the values are arrays of the names of this type.
+ *   array where the keys are the types of references ('function',
+ *   'potential hook', etc.), and the values are arrays of the names of this
+ *   type that were found.
  * @param $number
  *   FALSE to not number the lines (default). TRUE to number the lines, or an
  *   integer to start numbering at that line number.
@@ -723,6 +733,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
       'potential hook' => array(),
       'potential theme' => array(),
       'potential alter' => array(),
+      'potential callback' => array(),
     );
   }
 
@@ -826,11 +837,16 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           // This is a string like 'foo'. If we're in a call of some sort,
           // then this is a potential function, hook, etc. name.
           $class = 'php-string';
-          if ($invoke_type != '' && preg_match('|' . API_RE_HOOK_NAME . '|', $value)) {
+          if ($invoke_type != '' && preg_match("|^'" . API_RE_HOOK_NAME . "'$|", $value)) {
             $class .= ' potential-' . $invoke_type;
             if ($track_references) {
-              $references['potential ' . $invoke_type][$value] = $value;
+              $newname = str_replace("'", '', $value);
+              $references['potential ' . $invoke_type][$newname] = $newname;
             }
+          }
+          if ($track_references && preg_match("|^'" . API_RE_PHP_FUNCTION . "'$|", $value)) {
+            $newname = str_replace("'", '', $value);
+            $references['potential callback'][$newname] = $newname;
           }
 
           $output .= '<span class="' . $class . '">'. $value .'</span>';

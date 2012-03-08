@@ -392,6 +392,15 @@ function api_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'api.pages.inc',
   );
+  $items['api/%/%api_filename/theme_invokes'] = array(
+    'title' => 'File',
+    'load arguments' => array(1, 4), // project, branch
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(2, 'theme_invokes'),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
 
   // Items
   $items['api/%/%/function/%api_item'] = array(
@@ -408,7 +417,7 @@ function api_menu() {
     'title' => 'Function calls',
     'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
     'page callback' => 'api_page_function_calls',
-    'page arguments' => array(5),
+    'page arguments' => array(5, 'calls'),
     'access arguments' => array('access API reference'),
     'type' => MENU_CALLBACK,
     'file' => 'api.pages.inc',
@@ -416,8 +425,35 @@ function api_menu() {
   $items['api/%/%/function/implementations/%api_item'] = array(
     'title' => 'Function implementations',
     'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
-    'page callback' => 'api_page_hook_implementations',
-    'page arguments' => array(5),
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5, 'implementations'),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+  $items['api/%/%/function/references/%api_item'] = array(
+    'title' => 'Function references',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5, 'references'),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+  $items['api/%/%/function/invokes/%api_item'] = array(
+    'title' => 'Hook invocations',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5, 'invokes'),
+    'access arguments' => array('access API reference'),
+    'type' => MENU_CALLBACK,
+    'file' => 'api.pages.inc',
+  );
+  $items['api/%/%/function/theme_invokes/%api_item'] = array(
+    'title' => 'Theme invokes',
+    'load arguments' => array(1, 6, 2, 3), // project, branch, filename, type
+    'page callback' => 'api_page_function_calls',
+    'page arguments' => array(5, 'theme_invokes'),
     'access arguments' => array('access API reference'),
     'type' => MENU_CALLBACK,
     'file' => 'api.pages.inc',
@@ -1104,11 +1140,10 @@ function api_theme() {
         'parameters' => NULL,
         'return' => NULL,
         'related_topics' => NULL,
-        'call' => NULL,
+        'call_links' => array(),
         'code' => NULL,
         'see' => NULL,
         'throws' => NULL,
-        'hook_implementations' => NULL,
       ),
       'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
@@ -1184,6 +1219,7 @@ function api_theme() {
         'see' => NULL,
         'related_topics' => NULL,
         'defined' => '',
+        'call_links' => array(),
       ),
       'preprocess functions' => array('api_preprocess_api_object_page'),
       'path' => drupal_get_path('module', 'api') . '/templates',
@@ -1956,6 +1992,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
       $potential_names[] = 'theme_' . $hook;
       array_pop($hook_elements);
     }
+    // Because this needs to match theme files, change the query to match on
+    // object title (which is the file base name).
+    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.title = '%s'";
+
   }
 
   foreach ($potential_names as $possible_name) {

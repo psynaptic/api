@@ -85,7 +85,7 @@ class ApiLinkCodeTest extends ApiTestCase {
       array(
         'message' => 'String that is theme hook linking to template when function also exists',
         'data' => '<span class="php-function-or-constant">theme</span>(<span class="php-string potential-theme">\'sample_two\'</span>',
-        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/sample-two.tpl.php/6') .'" title="Displays a sample." class="local">sample_two</a>\'</span>',
+        'expected' => '<span class="php-function-or-constant">theme</span>(<span class="php-function-or-constant">\'<a href="'. url('api/test/subdirectory!sample-two.tpl.php/6') .'" title="Displays a sample." class="local">sample_two</a>\'</span>',
       ),
       array(
         'message' => 'String that is theme hook with base linking to function',

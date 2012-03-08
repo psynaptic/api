@@ -213,7 +213,14 @@ function api_page_file($file) {
 
   $objects = api_render_listing(db_query("SELECT branch_id, title, object_name, summary, object_type, file_name, did FROM {api_documentation} WHERE file_name = '%s' AND branch_id = %d AND object_type IN ('constant', 'global', 'function', 'interface', 'class') AND class_did = 0 ORDER BY title", $file->object_name, $file->branch_id));
 
-  $output = theme('api_file_page', $file, $documentation, $objects, $code, $see, $related_topics, $defined);
+  // If this is a theme template, make reference link.
+  $links = array();
+  $theme_count = api_find_references($file->title, $branch, 'theme_invokes');
+  if ($theme_count > 0) {
+    $links[] = theme('api_function_reference_link', 'theme_invokes', $theme_count, $file);
+  }
+
+  $output = theme('api_file_page', $file, $documentation, $objects, $code, $see, $related_topics, $defined, $links);
   $output .= _api_add_comments($file);
   return $output;
 }
@@ -458,29 +465,160 @@ function api_page_function($function) {
   $code = api_link_code($function->code, $branch, $function->class_did);
   $related_topics = api_related_topics($function->did, $branch);
 
-  // If any functions call this one, display a link to the page listing calls of
-  // this function.
-  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d", $function->object_name, $branch->branch_id));
-  $call = '';
-  if ($call_count > 0) {
-    $call = theme('api_function_reference_link', 'calls', $call_count, $function);
-  }
-
-  // If this is a hook, display a link to the page listing implementations of
-  // this hook.
-  $hook_implementations = '';
-  if (strpos($function->title, 'hook_') === 0) {
-    $hook_name = substr($function->title, 5);
-    $hook_count = db_result(db_query("SELECT count(*) from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d AND d.object_type = 'function'", $hook_name, $function->branch_id, $function->did));
-    if ($hook_count > 0) {
-      $hook_implementations = theme('api_function_reference_link', 'implementations', $hook_count, $function);
+  // Build reference links.
+  $links = array();
+  foreach (array('calls', 'references', 'implementations', 'invokes', 'theme_invokes') as $type) {
+    $call_count = api_find_references($function->object_name, $branch, $type, TRUE, $function->did);
+    if ($call_count > 0) {
+      $links[] = theme('api_function_reference_link', $type, $call_count, $function);
     }
   }
 
   // Put it all together and theme the output.
-  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $call, $code, $see, $throws, $hook_implementations);
+  $output = theme('api_function_page', $branch, $function, $signatures, $documentation, $parameters, $return, $related_topics, $links, $code, $see, $throws);
   $output .= _api_add_comments($function);
   return $output;
+}
+
+/**
+ * Counts or lists references to a function or file.
+ *
+ * @param $name
+ *   Name of the function/file to check (see $type).
+ * @param $branch
+ *   Object representing the branch to check.
+ * @param $type
+ *   Type of reference. One of:
+ *   - 'calls': $name is the name of a function, find function calls.
+ *   - 'implementations': $name is the name of a hook, find implementations.
+ *   - 'invokes': $name is the name of a hook, find invocations.
+ *   - 'theme_invokes': $name is the name of a theme function or file, find
+ *     theme calls.
+ *   - 'references': $name is the name of a function, find string references.
+ * @param $count
+ *   If TRUE (default), return a count. If FALSE, return an array.
+ * @param $exclude_did
+ *   (optional) Document ID to exclude from the query.
+ *
+ * @return
+ *   The number of references or an array of references.
+ */
+function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did = 0) {
+  $branch_id = $branch->branch_id;
+  $base_query = '';
+  $args = array();
+
+  if ($type == 'calls') {
+    // Use reference storage to find functions that call this one.
+    $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.object_type = 'function' AND r.object_name = '%s' AND d.branch_id = %d AND d.did <> %d";
+    $args = array($name, $branch_id, $exclude_did);
+  }
+  if ($type == 'references') {
+    // Use reference storage to find functions that use this name as a string.
+    $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.object_type = 'potential callback' AND r.object_name = '%s' AND d.branch_id = %d AND d.did <> %d";
+    $args = array($name, $branch_id, $exclude_did);
+  }
+  elseif ($type == 'implementations') {
+    // Use pattern matching to find functions that look like implementations of
+    // this one.
+    if (strpos($name, 'hook_') === 0) {
+      $hook_name = substr($name, 5);
+      $base_query = "FROM {api_documentation} d WHERE d.object_name LIKE '%%\_%s' AND d.branch_id = %d AND d.did <> %d AND d.object_type = 'function'";
+      $args = array($hook_name, $branch_id, $exclude_did);
+    }
+  }
+  elseif ($type == 'theme_invokes') {
+    // Use reference storage to find functions that call this theme.
+    $theme_name = '';
+    if (strpos($name, 'theme_') === 0) {
+      // It's presumably a theme function.
+      $theme_name = substr($name, 6);
+    }
+    elseif (strpos($name, '.tpl.php') == strlen($name) - 8) {
+      // It's presumably a theme template file.
+      $name = basename($name);
+      $theme_name = str_replace('-', '_', substr($name, 0, strlen($name) - 8));
+    }
+
+    if (strlen($theme_name) > 0) {
+      // We could have calls to things like theme('name') or theme('name__sub')
+      // recorded in the references. Match either.
+      $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE (r.object_name = '%s' OR r.object_name LIKE '%s\_\_%%') AND r.object_type = 'potential theme' AND d.branch_id = %d AND d.did <> %d";
+      $args = array($theme_name, $theme_name, $branch_id, $exclude_did);
+    }
+  }
+  elseif ($type == 'invokes') {
+    // Use reference storage to find functions that invoke this hook.
+    // The reference storage holds the string that was actually found inside
+    // the invoking function. So $name could be "hook_$string",
+    // "hook_field_$string", "field_default_$string", "hook_user_$string", or
+    // "hook_$string_alter". In all cases but the last, {reference_storage} has
+    // object_type 'potential hook'; in the last case it is 'potential alter'.
+    // So, we need to build a query that will find these matches between
+    // $string (field object_name) and $name (passed into this function).
+    $or_clauses = array();
+    $args = array($branch_id, $exclude_did);
+
+    if (strpos($name, 'hook_') === 0) {
+      $hook_name = substr($name, 5);
+      $or_clauses[] = "( r.object_type = 'potential hook' AND r.object_name = '%s' )";
+      $args[] = $hook_name;
+      if (strpos($hook_name, 'user_') === 0) {
+        $sub_hook_name = substr($hook_name, 5);
+        $or_clauses[] = "( r.object_type = 'potential hook' AND r.object_name = '%s' )";
+        $args[] = $sub_hook_name;
+      }
+      elseif (strpos($hook_name, 'field_') === 0) {
+        $sub_hook_name = substr($hook_name, 6);
+        $or_clauses[] = "( r.object_type = 'potential hook' AND r.object_name = '%s' )";
+        $args[] = $sub_hook_name;
+      }
+      elseif (strrpos($hook_name, '_alter') === strlen($hook_name) - 6) {
+        $sub_hook_name = substr($hook_name, 0, strlen($hook_name) - 6);
+        $or_clauses[] = "( r.object_type = 'potential alter' AND r.object_name = '%s' )";
+        $args[] = $sub_hook_name;
+      }
+    }
+    elseif (strpos($name, 'field_default_') === 0) {
+      $hook_name = substr($name, 14);
+      $or_clauses[] = "( r.object_type = 'potential hook' AND r.object_name = '%s' )";
+      $args[] = $hook_name;
+    }
+
+    // If we found at least one match, run this query we've built.
+    if (count($or_clauses)) {
+      $base_query = " FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE d.branch_id = %d AND d.did <> %d AND (" . implode(' OR ', $or_clauses) . ")";
+    }
+  }
+
+  // See if we built a query to execute.
+  if (!strlen($base_query)) {
+    if ($count) {
+      return 0;
+    }
+    else {
+      return array();
+    }
+  }
+
+  // Execute the query.
+  if ($count) {
+    // If we want a count, just return it.
+    return db_result(db_query("SELECT COUNT(*) $base_query", $args));
+  }
+
+  // If we get here, we want to return a list.
+  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type $base_query", $args);
+  $list = array();
+  while ($object = db_fetch_object($result)) {
+    $list[] = array(
+      'function' => l($object->title, api_url($object)),
+      'file' => api_file_link($object),
+      'description' => api_link_documentation($object->summary, $branch),
+    );
+  }
+
+  return $list;
 }
 
 /**
@@ -488,65 +626,28 @@ function api_page_function($function) {
  *
  * @param $function
  *   Documentation object representing the function to display.
+ * @param $type
+ *   Type of page to generate, one of:
+ *   - 'calls': Functions that call this function.
+ *   - 'implementations': Functions that implement this hook.
+ *   - 'theme_invokes': Functions that invoke this theme hook.
+ *   - 'invokes': Functions that invoke this hook.
  */
-function api_page_function_calls($function) {
-  $branches = api_get_branches();
-  $branch = $branches[$function->branch_id];
+function api_page_function_calls($function, $type) {
+  $branch = api_get_branch_by_id($function->branch_id);
 
-  $call_count = db_result(db_query("SELECT count(*) FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d", $function->object_name, $branch->branch_id));
-
-  // Build the list of functions that call this one, from the records added
-  // during parsing. Note that in the case of duplicate function names, we
-  // can't assume the {api_reference_storage}.to_did field matches this
-  // documentation object, so we match on the function name instead.
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did AND d.object_type = 'function' WHERE r.object_name = '%s' AND d.branch_id = %d ORDER BY d.title", $function->object_name, $branch->branch_id);
-  $call_functions = array();
-  while ($object = db_fetch_object($result)) {
-    $call_functions[] = array(
-      'function' => l($object->title, api_url($object)),
-      'file' => api_file_link($object),
-      'description' => api_link_documentation($object->summary, $branch),
-    );
-  }
-
-  $call_title = format_plural($call_count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
-
+  $call_count = api_find_references($function->object_name, $branch, $type, TRUE, $function->did);
+  $call_title = api_reference_text($type, $call_count, $function);
   api_object_title_and_breadcrumb($branch, $function, $call_title, TRUE);
 
-  return theme('api_functions', $call_functions);
-}
+  $call_functions = api_find_references($function->object_name, $branch, $type, FALSE, $function->did);
 
-/**
- * Page callback that displays a list of implementations of a hook.
- *
- * @param $function
- *   Documentation object representing the function to display.
- */
-function api_page_hook_implementations($function) {
-  $branches = api_get_branches();
-  $branch = $branches[$function->branch_id];
-
-  // Make a list of functions that appear to be implementations of this hook.
-  $hook_functions = array();
-  if (strpos($function->title, 'hook_') === 0) {
-    $hook_name = substr($function->title, 5);
-    $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did from {api_documentation} d WHERE d.object_name LIKE '%%_%s' AND d.branch_id = %d AND d.did <> %d AND d.object_type = 'function' ORDER BY d.title", $hook_name, $function->branch_id, $function->did);
-    while ($object = db_fetch_object($result)) {
-      $hook_functions[] = array(
-        'function' => l($object->title, api_url($object)),
-        'file' => api_file_link($object),
-        'description' => api_link_documentation($object->summary, $branch),
-      );
-    }
+  $note = '';
+  if ($type == 'implementations') {
+    $note = '<p>' . t('Note: this list is generated by pattern matching, so it may include some functions that are not actually implementations of this hook.') . '</p>';
   }
 
-  $hook_title = format_plural(count($hook_functions), '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
-
-  api_object_title_and_breadcrumb($branch, $function, $hook_title, TRUE);
-
-  $note = '<p>' . t('Note: this list is generated by pattern matching, so it may include some functions that are not actually implementations of this hook.') . '</p>';
-
-  return $note . theme('api_functions', $hook_functions);
+  return $note . theme('api_functions', $call_functions);
 }
 
 /**
@@ -714,7 +815,7 @@ function api_preprocess_api_object_page(&$variables) {
     }
 
     // Construct link label.
-    $label = $branches[$alternative->branch_id]->branch_name . ' ' . basename($alternative->file_name);
+    $label = $branches[$alternative->branch_id]->branch_name . ' ' . $alternative->file_name;
 
     $alternatives[$branches[$alternative->branch_id]->project][] = array(
       '#prefix' => '<li>',
@@ -968,7 +1069,6 @@ function api_file_link($object) {
   return str_replace('/', '/<wbr>', dirname($object->file_name)) . '/<wbr>' . l(basename($object->file_name), api_url($object, TRUE));
 }
 
-
 /**
  * Theme function to generate reference links on function pages.
  *
@@ -976,11 +1076,16 @@ function api_file_link($object) {
  * functions implement hook()" links on function pages.
  *
  * @param $type
- *   The type of reference link, either 'calls' or 'implementations'.
+ *   The type of reference link, one of:
+ *   - 'calls': Function calls.
+ *   - 'implementations': Hook implementations.
+ *   - 'theme_invokes': Theme calls to a function or file.
+ *   - 'invokes': Calls to module_invokes and similar functions.
+ *   - 'references': String references to a function name.
  * @param $count
  *   The number of referenced items.
  * @param $function
- *   The function object being referenced.
+ *   The function or file object being referenced.
  *
  * @return
  *   Markup for a link to the reference listing pages.
@@ -990,19 +1095,65 @@ function theme_api_function_reference_link($type, $count, $function) {
     return '';
   }
 
-  $branch = api_get_branch_by_id($function->branch_id);
-
-  // Create the link title.
-  if ($type == 'calls') {
-    $link_title = format_plural($count, '1 function calls @name()', '@count functions call @name()', array('@name' => $function->title));
-  }
-  else {
-    $link_title = format_plural($count, '1 function implements @name()', '@count functions implement @name()', array('@name' => $function->title));
-  }
+  $link_title = api_reference_text($type, $count, $function);
 
   // Create the link path.
-  $replaced_string = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
-  $link_path = 'api/'. $branch->project .'/'. $replaced_string .'/function/'. $type .'/'. $function->object_name .'/'. $branch->branch_name;
+  $processed_file_name = str_replace(API_FILEPATH_SEPARATOR, API_FILEPATH_SEPARATOR_REPLACEMENT, $function->file_name);
+  $branch = api_get_branch_by_id($function->branch_id);
+
+  if ($function->object_type == 'file') {
+    $link_path = 'api/' . $branch->project . '/' . $processed_file_name . '/' . $type . '/'. $branch->branch_name;
+  }
+  else {
+    $link_path = 'api/' . $branch->project . '/' . $processed_file_name . '/function/' . $type . '/' . $function->object_name . '/' . $branch->branch_name;
+  }
 
   return '<h3>'. l($link_title, $link_path) .'</h3>';
+}
+
+/**
+ * Returns the page title or link text for a references page/link.
+ *
+ * @param $type
+ *   The type of reference link, one of:
+ *   - 'calls': Function calls.
+ *   - 'implementations': Hook implementations.
+ *   - 'theme_invokes': Theme calls to a function or file.
+ *   - 'invokes': Calls to module_invokes and similar functions.
+ *   - 'references': String references to a function name.
+ * @param $count
+ *   The number of referenced items.
+ * @param $function
+ *   The function or file object being referenced.
+ *
+ * @return
+ *   Text to be used as the link to the reference listing page, or the title
+ *   of the page.
+ */
+function api_reference_text($type, $count, $function) {
+  $name_to_use = check_plain($function->title);
+  if ($type == 'references') {
+    $name_to_use = "'" . $name_to_use . "'";
+  }
+  elseif ($function->object_type == 'function') {
+    $name_to_use .= '()';
+  }
+
+  if ($type == 'calls') {
+    return format_plural($count, '1 call to !name', '@count calls to !name', array('!name' => $name_to_use));
+  }
+  elseif ($type == 'implementations') {
+    return format_plural($count, '1 function implements !name', '@count functions implement !name', array('!name' => $name_to_use));
+  }
+  elseif ($type == 'theme_invokes') {
+    return format_plural($count, '1 theme call to !name', '@count theme calls to !name', array('!name' => $name_to_use));
+  }
+  elseif ($type == 'invokes') {
+    return format_plural($count, '1 invocation of !name', '@count invocations of !name', array('!name' => $name_to_use));
+  }
+  if ($type == 'references') {
+    return format_plural($count, '1 string reference to !name', '@count string references to !name', array('!name' => $name_to_use));
+  }
+
+  return '';
 }

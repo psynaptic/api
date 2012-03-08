@@ -9,3 +9,4 @@
  */
 ?>
 <p>Foo: <?php print $foo; ?></p>
+<?php print theme('sample_one'); ?>
