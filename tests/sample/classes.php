@@ -15,7 +15,7 @@
 /**
  * Sample class.
  */
-class Sample implements SampleInterface {
+class Sample extends ClassNotDefinedHere implements SampleInterface {
   /**
    * A class constant.
    */
@@ -74,7 +74,7 @@ interface SampleInterface {
  *
  * @see Sample::foo() should be a link
  */
-class SubSample extends Sample implements SampleInterfaceTwo {
+class SubSample extends Sample implements SampleInterfaceTwo, InterfaceNotDefinedHere {
   // Not documented (this is intentional for testing).
   public function bar() {
     // This should link to parent method.

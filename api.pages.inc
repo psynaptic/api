@@ -972,22 +972,38 @@ function api_object_title_and_breadcrumb($branch, $object, $title = NULL, $objec
  *   HTML string.
  */
 function api_class_hierarchy($class) {
-  // Find parent interfaces
   $interfaces = $classes = array();
-  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'interface' GROUP BY ars.to_did ORDER BY ad.object_name", $class->did);
+
+  // Find parent interfaces.
+  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name as object_name, ars.object_name as ref_name FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'interface' GROUP BY ars.to_did ORDER BY ad.object_name", $class->did);
   while ($object = db_fetch_object($result)) {
-    $interfaces[] = l($object->object_name, api_url($object));
+    if (isset($object->did) && $object->did) {
+      // Exists as an object in the database, make a link.
+      $interfaces[] = l($object->object_name, api_url($object));
+    }
+    else {
+      // Declared to implement this interface but didn't get defined (probably
+      // a built-in PHP interface or from another project).
+      $interfaces[] = $object->ref_name;
+    }
   }
 
-  // Find child classes
+  // Find child classes.
   $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'class' GROUP BY ars.from_did ORDER BY ad.object_name", $class->did);
   while ($object = db_fetch_object($result)) {
     $classes[] = api_class_hierarchy($object);
   }
 
-  $output = l($class->object_name, api_url($class));
+  // See if this class extends another class that isn't defined in our DB.
+  $parent = db_fetch_object(db_query_range("SELECT ad.did, ars.object_name FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $class->did, 0, 1));
+  $extends = '';
+  if (isset($parent) && is_object($parent) && is_null($parent->did)) {
+    $extends = ' extends ' . $parent->object_name;
+  }
+
+  $output = l($class->object_name, api_url($class)) . $extends;
   if (count($interfaces) > 0) {
-    $output .= ' ' . t('implements') . ' ' . implode(', ', $interfaces);
+    $output .= ' implements ' . implode(', ', $interfaces);
   }
   if (count($classes) > 0) {
     $output .= theme('item_list', $classes);
