@@ -520,10 +520,12 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
   }
   elseif ($type == 'implementations') {
     // Use pattern matching to find functions that look like implementations of
-    // this one.
+    // this one. i.e. something_hookname, where "something" doesn't start with
+    // an underscore. Note that LIKE uses _ as "match any one character", so
+    // _ has to be escaped in this query.
     if (strpos($name, 'hook_') === 0) {
       $hook_name = substr($name, 5);
-      $base_query = "FROM {api_documentation} d WHERE d.object_name LIKE '%%\_%s' AND d.branch_id = %d AND d.did <> %d AND d.object_type = 'function'";
+      $base_query = "FROM {api_documentation} d WHERE d.object_name LIKE '%%\_%s' AND d.object_name NOT LIKE '\_%%' AND d.branch_id = %d AND d.did <> %d AND d.object_type = 'function'";
       $args = array($hook_name, $branch_id, $exclude_did);
     }
   }
@@ -542,7 +544,8 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
 
     if (strlen($theme_name) > 0) {
       // We could have calls to things like theme('name') or theme('name__sub')
-      // recorded in the references. Match either.
+      // recorded in the references. Match either. Note _ escaping for LIKE
+      // queries.
       $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE (r.object_name = '%s' OR r.object_name LIKE '%s\_\_%%') AND r.object_type = 'potential theme' AND d.branch_id = %d AND d.did <> %d";
       $args = array($theme_name, $theme_name, $branch_id, $exclude_did);
     }
@@ -608,7 +611,7 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
   }
 
   // If we get here, we want to return a list.
-  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type $base_query", $args);
+  $result = db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type $base_query ORDER BY d.title", $args);
   $list = array();
   while ($object = db_fetch_object($result)) {
     $list[] = array(
