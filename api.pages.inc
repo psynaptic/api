@@ -716,17 +716,11 @@ function api_page_class($class) {
   $code = api_link_code($class->code, $branch, $class->did);
   $see = api_link_documentation($class->see, $branch, $class->did, TRUE);
 
+  // Figure out the class hierarchy, and what classes implement if this is
+  // an interface.
+  $hierarchy = api_class_hierarchy($class);
   $implements = array();
-  $hierarchy = '';
-  if ($class->object_type === 'class') {
-    // Walk up the hierarchy
-    $root = $parent = $class;
-    while ($parent = db_fetch_object(db_query_range("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $parent->did, 0, 1))) {
-      $root = $parent;
-    }
-    $hierarchy = theme('item_list', array(api_class_hierarchy($root)));
-  }
-  elseif ($class->object_type === 'interface') {
+  if ($class->object_type === 'interface') {
     $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'interface' GROUP BY ad.did ORDER BY ad.object_name", $class->did);
     while ($object = db_fetch_object($result)) {
       $implements[] = l($object->object_name, api_url($object));
@@ -962,51 +956,129 @@ function api_object_title_and_breadcrumb($branch, $object, $title = NULL, $objec
 }
 
 /**
- * Render a class hierarchy.
+ * Renders a class hierarchy, showing ancestors, siblings, and direct children.
  *
  * @param $class
  *   Class object with at least did, branch_id, file_name, object_type, and
- *   object_name.
+ *   object_name properties.
  *
  * @return
- *   HTML string.
+ *   HTML string containing the class hierarchy, or an empty string if the
+ *   only thing to display would be the class itself.
  */
 function api_class_hierarchy($class) {
-  $interfaces = $classes = array();
+  // Keep track of whether this class has anything interesting in the
+  // hierarchy.
+  $interesting = FALSE;
 
-  // Find parent interfaces.
+  // See if this class has any children.
+  $child_output = '';
+  $children = api_class_children($class);
+  if (count($children)) {
+    $child_output = theme('item_list', $children);
+    $interesting = TRUE;
+  }
+
+  // Find the direct-line extends ancestors of this class.
+  $parent = $class;
+  $first_parent = NULL;
+  $parents = array();
+  while ($parent = db_fetch_object(db_query_range("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name as object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $parent->did, 0, 1))) {
+    $interesting = TRUE;
+    if (!isset($first_parent)) {
+      $first_parent = $parent;
+    }
+    $parents[] = api_class_hierarchy_line($parent);
+  }
+
+  // If there was a parent class, find all of its children. These are this
+  // class's siblings.
+  if (isset($first_parent)) {
+    $siblings = api_class_children($first_parent);
+  }
+  else {
+    $siblings = array($class->did => api_class_hierarchy_line($class, $interesting));
+    // Check and see if there was anything interesting to display.
+    if (!strlen($siblings[$class->did])) {
+      return '';
+    }
+  }
+
+  // Add this class's children to this class's line in the siblings.
+  $siblings[$class->did] .= $child_output;
+
+  // Put it all together as a set of nested lists.
+  $output = theme('item_list', $siblings);
+  foreach ($parents as $parent) {
+    $output = theme('item_list', array( $parent . $output));
+  }
+
+  return $output;
+}
+
+/**
+ * Finds and renders the children of a class.
+ *
+ * @param $class
+ *   Documentation object for the class.
+ *
+ * @return
+ *   Array of children. Keys are class names, and values are output
+ *   of api_class_hierarchy_line().
+ */
+function api_class_children($class) {
+  $children = array();
+  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'class' GROUP BY ars.from_did ORDER BY ad.object_name", $class->did);
+  while ($object = db_fetch_object($result)) {
+    $children[$object->did] = api_class_hierarchy_line($object);
+  }
+
+  return $children;
+}
+
+/**
+ * Renders the class hierarchy line for a single class.
+ *
+ * @param $class
+ *   Documentation object for the class to render.
+ * @param $even_if_uninteresting
+ *   If TRUE (default), generate a line even if it only displays this class.
+ *   If FALSE, return an empty string if there is only this class to display.
+ *
+ * @return
+ *   HTML for this class in the class hierarchy.
+ */
+function api_class_hierarchy_line($class, $even_if_uninteresting = TRUE) {
+  // See if this class implements any interfaces.
+  $interfaces = array();
   $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name as object_name, ars.object_name as ref_name FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'interface' GROUP BY ars.to_did ORDER BY ad.object_name", $class->did);
   while ($object = db_fetch_object($result)) {
     if (isset($object->did) && $object->did) {
-      // Exists as an object in the database, make a link.
+      // Interface exists as an object in the database, make a link.
       $interfaces[] = l($object->object_name, api_url($object));
     }
     else {
-      // Declared to implement this interface but didn't get defined (probably
-      // a built-in PHP interface or from another project).
+      // This class was declared to implement this interface, but it didn't get
+      // defined (probably a built-in PHP interface or from another project).
+      // So just display the name.
       $interfaces[] = $object->ref_name;
     }
   }
 
-  // Find child classes.
-  $result = db_query("SELECT ad.did, ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_reference_storage} ars INNER JOIN {api_documentation} ad ON ad.did = ars.from_did WHERE ars.to_did = %d AND ars.object_type = 'class' GROUP BY ars.from_did ORDER BY ad.object_name", $class->did);
-  while ($object = db_fetch_object($result)) {
-    $classes[] = api_class_hierarchy($object);
-  }
-
   // See if this class extends another class that isn't defined in our DB.
-  $parent = db_fetch_object(db_query_range("SELECT ad.did, ars.object_name FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $class->did, 0, 1));
   $extends = '';
+  $parent = db_fetch_object(db_query_range("SELECT ad.did, ars.object_name FROM {api_reference_storage} ars LEFT JOIN {api_documentation} ad ON ad.did = ars.to_did WHERE ars.from_did = %d AND ars.object_type = 'class'", $class->did, 0, 1));
   if (isset($parent) && is_object($parent) && is_null($parent->did)) {
     $extends = ' extends ' . $parent->object_name;
+  }
+
+  if (!$even_if_uninteresting && !strlen($extends) && !count($interfaces)) {
+    return '';
   }
 
   $output = l($class->object_name, api_url($class)) . $extends;
   if (count($interfaces) > 0) {
     $output .= ' implements ' . implode(', ', $interfaces);
-  }
-  if (count($classes) > 0) {
-    $output .= theme('item_list', $classes);
   }
 
   return $output;
