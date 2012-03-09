@@ -380,6 +380,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('A sample group of classes.', 'Topic description appears on the class page');
     $this->assertLink('SampleInterface', 0, 'Link to interface appears on class page');
     $this->assertLink('SubSample', 0, 'Link to subclass appears on class page');
+    $this->assertLink('SampleInterfaceTwo', 0, 'Link to subclass interface appears on class page');
     $this->assertLink('Sample::$property', 0, 'Link to property appears on class page');
     $this->assertText('A property.', 'Property description appears on class page');
     $this->assertLink('Sample::baz', 0, 'Link to method appears on class page');
@@ -389,6 +390,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('Sample::constant', 0, 'Link to constant appears on class page');
     $this->assertText('A class constant.', 'Constant description appears on class page');
     $this->assertText('* Only implemented in children.', 'Source code appears on class page');
+    $this->assertText('implements InterfaceNotDefinedHere', 'Off-site interface listed in hierarchy');
 
     // Click the links on the page and verify.
     $this->assertLinkURLSubstring('classes.php', $this->branch_info['project'] . '/classes.php', 'classes.php link exists', 'classes.php link went to the right place');
@@ -424,6 +426,11 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTitleContains('Sample::constant', 'Constant page title includes constant name');
     $this->assertText('constant value', 'Code appears on the constant page');
     $this->assertText('A class constant', 'Description appears on constant page');
+
+    // Visit the subclass page and verify the extends info is in the hierarchy.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/SubSample');
+    $this->assertText('extends ClassNotDefinedHere', 'Class hierarchy includes extend off-site');
+    $this->assertLink('SampleInterface', 0, 'Class hierarchy shows implements of parent');
 
     // Visit a class in a subdirectory and verify.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SampleInSubDir');
