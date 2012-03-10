@@ -1063,11 +1063,11 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
 
   if (in_array('function', $object_type)) {
     $tables[] = 'LEFT JOIN {api_function} af ON af.did = ad.did';
-    $fields[] = 'af.*';
+    $fields[] = 'af.signature, af.parameters, af.return_value';
   }
   elseif (in_array('file', $object_type)) {
     $tables[] = 'LEFT JOIN {api_file} af ON af.did = ad.did';
-    $fields[] = 'af.*';
+    $fields[] = 'af.modified, af.queued';
   }
 
   // Now build the object. Don't store a NULL or FALSE result in the cache in
@@ -1075,9 +1075,8 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
   $result_object =  db_fetch_object(db_query_range('SELECT '. implode(', ', $fields) .' FROM '. implode(' ', $tables) .' '. $where, $arguments, 0, 1));
 
   if (isset($result_object) && $result_object) {
-
     // Grab documentation from documented parent.
-    if (!empty($result_object->documented_did) && !empty($result_object->did) && $result_object->documented_did !== $result_object->did) {
+    if (!empty($result_object->documented_did) && $result_object->documented_did !== $result_object->did) {
       $documented_object = api_object_load((int) $result_object->documented_did, $branch, $object_type);
       if (isset($documented_object)) {
         foreach (array('documentation', 'parameters', 'return_value', 'see', 'throws', 'var') as $member) {
