@@ -289,6 +289,10 @@ function api_page_listing($branch, $object_type, $switch_link = TRUE) {
     $show_headings = TRUE;
     $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND (object_type = 'class' OR object_type = 'interface') AND class_did = 0 ORDER BY title", 50, 0, NULL, $branch->branch_id);
   }
+  elseif ($object_type === 'file') {
+    // Order by path + file name, not base name of file.
+    $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 ORDER BY object_name", 50, 0, NULL, $branch->branch_id, $object_type);
+  }
   else {
     $result = pager_query("SELECT * FROM {api_documentation} WHERE branch_id = %d AND object_type = '%s' AND class_did = 0 ORDER BY title", 50, 0, NULL, $branch->branch_id, $object_type);
   }
@@ -862,7 +866,11 @@ function api_render_listing($result, $empty_message = NULL, $show_headings = TRU
   foreach ($list as $type => $objects) {
     $rows = array();
     foreach ($objects as $object) {
-      $row = array(l($object->title, api_url($object)));
+      $title = $object->title;
+      if ($type == 'file') {
+        $title = $object->object_name;
+      }
+      $row = array(l($title, api_url($object)));
       if ($link_file) {
         $row[] = '<small>' . api_file_link($object) . '</small>';
       }

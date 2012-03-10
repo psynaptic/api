@@ -90,7 +90,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/files');
     $this->assertLink('sample.php', 0, 'sample.php file name is on files list page');
     $this->assertLink('duplicates.php', 0, 'duplicates.php file name is on files list page');
-    $this->assertLink('classes-subdir.php', 0, 'sub-directory file name is on files list page');
+    $this->assertLink('subdirectory/classes-subdir.php', 0, 'sub-directory file name is on files list page');
     $this->assertText('A sample file', 'sample.php file description is on files list page');
     $this->assertText('Object-oriented tests', 'classes.php file description is on files list page');
     $this->assertNoRaw('excluded.php', 'Excluded file is not shown on files list page');
@@ -101,7 +101,7 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     // Verify file links.
     $this->assertLinkURLSubstring('classes.php', $this->branch_info['project'] . '/classes.php', 'classes.php link exists', 'classes.php link went to the right place');
     $this->assertLinkURLSubstring('sample--doubledash.tpl.php', $this->branch_info['project'] . '/sample--doubledash.tpl.php', 'doubledash link exists', 'doubledash link went to the right place');
-    $this->clickLink('classes-subdir.php');
+    $this->clickLink('subdirectory/classes-subdir.php');
     $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
     $this->assertText('Another Sample interface in a subdirectory', 'Classes file link went to right place');
 
