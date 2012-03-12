@@ -44,7 +44,7 @@ class ApiDotDotTestCase extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 56, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 59, 'Found ' . $count . ' documentation objects.');
 
     // Verify that the top-level directory was parsed.
 

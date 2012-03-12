@@ -38,6 +38,7 @@ class SampleInSubDir implements SampleInterface {
    * @throws SampleException when it all goes wrong.
    */
   public function foo() {
+    $x = 'hi';
   }
 
   /**
@@ -58,11 +59,29 @@ interface SampleInSubDirInterface {
 }
 
 /**
- * Subclass in a subdirectory.
+ * Subclass in a subdirectory, which tests overrides of parent class.
  */
 class SubInSubDirSample extends SampleInSubDir implements SampleInterfaceTwo {
   // Not documented.
   public function bar() {
+  }
+
+  /**
+   * Overrides parent constant.
+   */
+  const constant = 'different constant value';
+
+  /**
+   * Overrides parent property.
+   */
+  public $property_in_sub_dir = 'other variable value';
+
+  /**
+   * Overrides parent function.
+   */
+  public function foo() {
+    // Different function body.
+    $y = 'hello';
   }
 }
 
@@ -82,7 +101,8 @@ class Sample2InSubDir implements SampleInSubDirInterface {
   }
 
   /**
-   * implements foo2
+   * Implements foo2.
+   *
    * @see SampleInSubDirInterface::foo2()
    */
   public function foo2() {
