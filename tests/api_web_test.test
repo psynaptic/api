@@ -444,22 +444,32 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
 
     // Visit the class that is for overrides testing.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SubInSubDirSample');
-    // Properties.
+    // Verify override links for properties.
     $this->assertLink('SubInSubDirSample::$property_in_sub_dir', 0, 'Override property link is there');
     $this->assertText('Overrides parent property', 'Override property description is there');
     $this->assertLink('SampleInSubDir::$property_in_sub_dir', 0, 'Overriden property link is there');
     $this->assertText('A protected property for testing', 'Non-overridden property description is there');
-    // Methods.
+    $this->clickLink('SubInSubDirSample::$property_in_sub_dir');
+    $this->assertLink('SampleInSubDir::$property_in_sub_dir', 0, 'Overriden property link is on property page');
+
+    // Verify override links for methods.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SubInSubDirSample');
     $this->assertLink('SampleInSubDir::baz', 0, 'Non-overridden function link is there');
     $this->assertLink('SubInSubDirSample::bar', 0, 'Overridden function link is there');
     $this->assertText('A public method', 'Override method without doc inherits doc from parent');
     $this->assertText('Overrides parent function', 'Override method with doc overrides parent doc');
     $this->assertLink('SubInSubDirSample::foo', 0, 'Link to override method is there');
     $this->assertLink('SampleInSubDir::foo', 0, 'Link to overridden method is there');
-    // Constants.
+    $this->clickLink('SubInSubDirSample::foo');
+    $this->assertLink('SampleInSubDir::foo', 0, 'Link to overridden method is on method page');
+
+    // Verify override links for constants.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SubInSubDirSample');
     $this->assertLink('SubInSubDirSample::constant', 0, 'Override constant link is there');
     $this->assertText('Overrides parent constant', 'Override constant description is there');
     $this->assertLink('SampleInSubDir::constant', 0, 'Overridden constant link is there');
+    $this->clickLink('SubInSubDirSample::constant');
+    $this->assertLink('SampleInSubDir::constant', 0, 'Overridden constant link is on constant page');
   }
 
   /**

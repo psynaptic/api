@@ -791,6 +791,7 @@ function api_preprocess_api_object_page(&$variables) {
   }
 
   // Find alternative versions in different files and branches.
+  $object = $variables['object'];
   $branches = api_get_branches();
   $alternatives = array(
     '#prefix' => '<ol id="api-alternatives">',
@@ -799,7 +800,7 @@ function api_preprocess_api_object_page(&$variables) {
   // Try to find objects of the same type with the same object name. But for
   // files, the object name includes the path, so the matching needs to go on
   // the title instead of the object_name.
-  if ($variables['object']->object_type == 'file') {
+  if ($object->object_type == 'file') {
     $result = db_query("SELECT ad.branch_id, ad.file_name, ad.object_type, ad.object_name FROM {api_documentation} ad WHERE ad.object_type = '%s' AND ad.title = '%s'", $variables['object']->object_type, $variables['object']->title);
   }
   else {
@@ -826,6 +827,15 @@ function api_preprocess_api_object_page(&$variables) {
     );
   }
   $variables['alternatives'] = drupal_render($alternatives);
+
+  // See if this is an override of another method/etc.
+  $variables['override'] = '';
+  if (!empty($object->overrides_did)) {
+    $overrides = api_object_load((int) $object->overrides_did, $branches[$object->branch_id], array('function', 'property', 'constant'));
+    if (isset($overrides)) {
+      $variables['override'] = '<p class="api-override">' . t('Overrides !link', array('!link' => l($overrides->title, api_url($overrides)))) . '</p>';
+    }
+  }
 }
 
 /**

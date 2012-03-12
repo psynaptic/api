@@ -6,6 +6,7 @@
  *
  * Available variables:
  * - $documentation: Documentation from the comment header of the constant.
+ * - $override: If this is an override, the text to show for that.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the constant.
  * - $defined: HTML reference to file that defines this class.
@@ -33,6 +34,8 @@
 <?php print $alternatives; ?>
 
 <?php print $documentation ?>
+
+<?php print $override; ?>
 
 <?php if (!empty($see)) { ?>
 <h3><?php print t('See also') ?></h3>

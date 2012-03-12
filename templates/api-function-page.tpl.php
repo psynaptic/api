@@ -13,6 +13,7 @@
  * - $see: See also documentation.
  * - $related_topics: Related topics documentation.
  * - $call_links: Links to calling functions, hook implementations, etc.
+ * - $override: If this is an override, the text to show for that.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
@@ -72,6 +73,8 @@
 <h3><?php print t('Return value') ?></h3>
 <?php print $return ?>
 <?php } ?>
+
+<?php print $override; ?>
 
 <?php if (!empty($throws)) { ?>
   <h3><?php print t('Throws') ?></h3>

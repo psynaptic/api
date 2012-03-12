@@ -6,6 +6,7 @@
  *
  * Available variables:
  * - $documentation: Documentation from the comment header of the function.
+ * - $override: If this is an override, the text to show for that.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
@@ -40,6 +41,8 @@
 <?php if (!empty($var)) { ?>
   <p><strong><?php print t('Type') ?>:</strong> <?php print $var; ?></p>
 <?php } ?>
+
+<?php print $override; ?>
 
 <?php if (!empty($see)) { ?>
 <h3><?php print t('See also') ?></h3>
