@@ -228,6 +228,10 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('Implements hook_sample_name().', 'Implementing function description is present');
     $this->assertLinkURLSubstring('hook_sample_name', $this->branch_info['project'] . '/sample.php/function/hook_sample_name', 'Breadcrumb link exists', 'Breadcrumb link went to the right place');
 
+    // Verify that the wrong-case text did not turn into links.
+    $this->assertNoLink('SAMPLE_FUNCTION', 'Wrong-case function did not turn into a link');
+    $this->assertNoLink('sample_constant', 'Wrong-case constant did not turn into a link');
+
     // Test the hook invocations link and page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
     $this->clickLink('sample_name');
@@ -335,6 +339,10 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText($this->branch_info['project_title'], 'Project title is on global page');
     $this->assertLink('Samples', 0, 'Topic link appears on the global page');
     $this->assertText('A sample group.', 'Topic description appears on the global page');
+
+    // Verify that the wrong-case text did not turn into links.
+    $this->assertNoLink('SAMPLE_FUNCTION', 'Wrong-case function did not turn into a link');
+    $this->assertNoLink('sample_constant', 'Wrong-case constant did not turn into a link');
 
     // Click the links on the page and verify.
     $this->assertLinkURLSubstring('sample.php', $this->branch_info['project'] . '/sample.php', 'sample.php link exists', 'sample.php link went to the right place');

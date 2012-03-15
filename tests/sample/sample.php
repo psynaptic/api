@@ -15,6 +15,9 @@
 
 /**
  * A sample global.
+ *
+ * This should not link to SAMPLE_FUNCTION(). And this should not link to
+ * sample_constant.
  */
 global $sample_global;
 
@@ -135,6 +138,9 @@ define('DUPLICATE_CONSTANT', 12);
  * This hook is for testing hook linking.
  */
 function hook_sample_name() {
+  // Verify that wrong-case links are not made.
+  $x = SAMPLE_FUNCTION();
+  $y = sample_constant;
 }
 
 /**

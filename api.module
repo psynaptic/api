@@ -1778,6 +1778,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       // '('.
       $append = '(';
       $pattern = '!(?<=^|\s)(' . API_RE_PHP_FUNCTION_IN_TEXT . ')\(!';
+      $type = 'function';
       break;
 
     case 'code function':
@@ -1797,6 +1798,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       $append = '\'</span>';
       $prepend_if_not_found = '<span class="php-string">\'';
       $use_php = FALSE;
+      $type = 'function';
       break;
 
     case 'code hook name':
@@ -1841,16 +1843,19 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
       // Find file names, which are an arbitrary number of strings joined with
       // '.'
       $pattern = '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%';
+      $type = 'file';
       break;
 
     case 'constant':
       // Find constants, UPPERCASE_LETTERS_WITH_UNDERSCORES.
       $pattern = '/\b([A-Z_]+)\b/';
+      $type = 'constant';
       break;
 
     case 'class':
       // Find class names, which have a capital letter.
       $pattern = '/\b(' . API_RE_CLASS_NAME_TEXT . ')\b/';
+      $type = 'class';
       break;
   }
 
@@ -1943,6 +1948,8 @@ function api_split($pattern, $subject, $callback_match = NULL, $callback_match_a
  *   - 'hook': $name is a hook name.
  *   - 'alter hook': $name is an alter hook name.
  *   - 'theme': $name is a theme hook name.
+ *   - 'function': $name is specifically a function ('file', 'constant', etc.
+ *     also are supported).
  *
  * @return
  *   The text as a link to the object page.
@@ -1953,16 +1960,19 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     $text = $name;
   }
 
-  $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.object_name = '%s'";
+  $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.object_name as match_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.object_name = '%s'";
 
   // See if this is a link to a group/topic.
   if ($is_link) {
     $result = db_query($query . " AND ad.object_type = 'group'", $branch->branch_id, $name);
-    if ($object = db_fetch_object($result)) {
-      // Note: Use html = TRUE here because the @link stuff was check_plained
-      // during parsing. If we run it through check_plain() again, we get double
-      // encoding of entities.
-      return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'), 'html' => TRUE)) . $append;
+    while ($object = db_fetch_object($result)) {
+      // MySQL is not case-sensitive, so check the match for exact string.
+      if ($object->match_name == $name) {
+        // Note: Use html = TRUE here because the @link stuff was check_plained
+        // during parsing. If we run it through check_plain() again, we get
+        // double encoding of entities.
+        return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'), 'html' => TRUE)) . $append;
+      }
     }
   }
 
@@ -1976,9 +1986,11 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
       'field_default_' . $name,
       'hook_user_' . $name,
     );
+    $query .= " AND ad.object_type = 'function'";
   }
   elseif ($type == 'alter hook') {
     $potential_names = array('hook_' . $name . '_alter');
+    $query .= " AND ad.object_type = 'function'";
   }
   elseif ($type == 'theme') {
     $potential_names = array();
@@ -1994,8 +2006,21 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     }
     // Because this needs to match theme files, change the query to match on
     // object title (which is the file base name).
-    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.title = '%s'";
-
+    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.title as match_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.title = '%s' AND (ad.object_type = 'file' OR ad.object_type = 'function')";
+  }
+  elseif ($type == 'function') {
+    $query .= " AND ad.object_type = 'function'";
+  }
+  elseif ($type == 'file') {
+    // Because this needs to match files, change the query to match on
+    // object title (which is the file base name).
+    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.title as match_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.title = '%s' AND ad.object_type = 'file'";
+  }
+  elseif ($type == 'constant') {
+    $query .= " AND ad.object_type = 'constant'";
+  }
+  elseif ($type == 'class') {
+    $query .= " AND (ad.object_type = 'class' OR ad.object_type = 'interface')";
   }
 
   foreach ($potential_names as $possible_name) {
@@ -2004,6 +2029,10 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
     // See if there are any matches for this name.
     $result = db_query($query, $branch->branch_id, $possible_name);
     while ($object = db_fetch_object($result)) {
+      // MySQL is not case-sensitive, so check the match for exact string.
+      if ($object->match_name != $possible_name) {
+        continue;
+      }
       if (isset($url)) {
         // This is the second match, so make this a search.
         $url = 'api/search/' . $branch->branch_name . '/' . $possible_name;
@@ -2036,6 +2065,11 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   if ($use_php) {
     $result = db_query("SELECT d.object_name, d.summary, b.data FROM {api_documentation} d INNER JOIN {api_branch} b ON b.branch_id = d.branch_id AND b.type = 'php' WHERE d.object_type = 'function' AND d.object_name = '%s'", $name);
     while ($info = db_fetch_object($result)) {
+      // MySQL is not case-sensitive, so check the match for exact string.
+      if ($info->object_name != $name) {
+        continue;
+      }
+
       $data = unserialize($info->data);
       $link = strtr($data['path'], array('!function' => $name));
       return $prepend . l($text, $link, array('attributes' => array('title' => api_entity_decode($info->summary), 'class' => 'php-manual'))) . $append;
@@ -2110,12 +2144,12 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
     // Looking for a member of a particular class. Note that we use the
     // {api_members} table here, since it includes members inherited from
     // parent classes.
-    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did FROM {api_members} am INNER JOIN {api_documentation} ad ON am.did = ad.did WHERE am.class_did = %d AND ad.member_name = '%s'", $class_did, $name);
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_members} am INNER JOIN {api_documentation} ad ON am.did = ad.did WHERE am.class_did = %d AND ad.member_name = '%s'", $class_did, $name);
   }
   elseif ($member_type == 'variable') {
     // This was some kind of a variable like $foo->member(). So match any member
     // of any class.
-    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did FROM {api_documentation} ad WHERE ad.member_name = '%s'", $name);
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_documentation} ad WHERE ad.member_name = '%s'", $name);
   }
 
   // See if we have one result, more than one result, or no results.
@@ -2123,6 +2157,10 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
   $options = array();
   if (isset($result)) {
     while ($object = db_fetch_object($result)) {
+      // MySQL is not case-sensitive, so check the match for exact string.
+      if ($object->member_name != $name) {
+        continue;
+      }
       if (strlen($url)) {
         // This is the second match, so make this a search.
         $url = 'api/search/' . $branch->branch_name . '/' . $name;
@@ -2135,6 +2173,7 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
         break;
       }
       else {
+        // This is the first match, make a link.
         $url = api_url($object);
         $options = array(
           'attributes' => array(

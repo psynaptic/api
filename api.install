@@ -232,6 +232,8 @@ function api_schema() {
     'fields' => array(
       'object_name' => array(
         'type' => 'varchar',
+        'mysql_type' => 'varbinary',
+        'pgsql_type' => 'bytea',
         'length' => '127',
         'not null' => TRUE,
         'default' => '',
@@ -948,6 +950,24 @@ function api_update_6110() {
 function api_update_6111() {
   $return = array();
   return _api_update_force_all_reparse($return);
+}
+
+/**
+ * Modify {api_reference_storage}.object_name to use binary collation.
+ */
+function api_update_6112() {
+  $return = array();
+
+  db_change_field($return, 'api_reference_storage', 'object_name', 'object_name', array(
+      'type' => 'varchar',
+      'mysql_type' => 'varbinary',
+      'pgsql_type' => 'bytea',
+      'length' => '255',
+      'not null' => TRUE,
+      'default' => '',
+    ));
+
+  return $return;
 }
 
 /**
