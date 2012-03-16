@@ -454,6 +454,8 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('SampleInSubDir', 'Class name appears on subdirectory class page');
     $this->assertText('subdirectory/', 'Subdirectory name appears on subdirectory class page');
     $this->assertLink('classes-subdir.php', 0, 'classes-subdir.php file name is on subdirectory class page');
+    $this->assertLinkURLSubstring('SampleInSubDir::$foo', 'classes-subdir.php/property/SampleInSubDir', 'foo property link is present', 'foo property link goes to right place');
+    $this->assertLinkURLSubstring('SampleInSubDir::foo', 'classes-subdir.php/function/SampleInSubDir', 'foo function link is present', 'foo function link goes to right place');
     $this->clickLink('classes-subdir.php');
     $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
     $this->assertText('Another Sample interface in a subdirectory.', 'Classes file link went to right place');

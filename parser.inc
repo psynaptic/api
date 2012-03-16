@@ -1112,28 +1112,40 @@ function api_shutdown() {
     while ($child = db_fetch_object($result_chidren)) {
       $changed_classes[$child->from_did] = TRUE;
     }
-    // Walk up the tree to find members
-    $members = array('');
+    // Walk up the tree to find members. Since methods, properties, and
+    // constants can share names, do each separately.
+    $all_members = array(
+      'function' => array(''),
+      'property' => array(''),
+      'constant' => array(''),
+    );
     $parents = array($class_did);
     while ($parent = array_shift($parents)) {
+      // Add this class's parents to the list.
       $result_parents = db_query("SELECT ars.to_did FROM {api_reference_storage} ars WHERE ars.from_did = %d AND ars.object_type IN ('class', 'interface') AND ars.to_did <> 0", $parent);
       while ($object = db_fetch_object($result_parents)) {
         $parents[] = $object->to_did;
       }
-      $result_members = db_query("SELECT did, member_name FROM {api_documentation} WHERE class_did = %d AND member_name NOT IN (" . db_placeholders($members, 'text') . ")", array_merge(array($parent), array_keys($members)));
-      while ($member = db_fetch_object($result_members)) {
-        $members[$member->member_name] = $member->did;
+      // Find members of each type.
+      foreach ($all_members as $type => $members) {
+        $result_members = db_query("SELECT did, member_name FROM {api_documentation} WHERE class_did = %d AND object_type = '%s' AND member_name NOT IN (" . db_placeholders($members, 'text') . ")", array_merge(array($parent, $type), array_keys($members)));
+        while ($member = db_fetch_object($result_members)) {
+          $members[$member->member_name] = $member->did;
+        }
+        $all_members[$type] = $members;
       }
     }
     // Save them
-    array_shift($members);
     db_query("DELETE FROM {api_members} WHERE class_did = %d", $class_did);
-    foreach ($members as $did) {
-      $api_member = array(
-        'class_did' => $class_did,
-        'did' => $did,
-      );
-      drupal_write_record('api_members', $api_member);
+    foreach ($all_members as $type => $members) {
+      array_shift($members);
+      foreach ($members as $did) {
+        $api_member = array(
+          'class_did' => $class_did,
+          'did' => $did,
+        );
+        drupal_write_record('api_members', $api_member);
+      }
     }
   }
 

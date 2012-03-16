@@ -33,6 +33,11 @@ class SampleInSubDir implements SampleInterface {
   protected $protected_property_in_sub_dir = 'variable value';
 
   /**
+   * A property that matches a function name.
+   */
+  public $foo = 'something';
+
+  /**
    * Metasyntatic member function.
    *
    * @throws SampleException when it all goes wrong.
