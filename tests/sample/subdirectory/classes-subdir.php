@@ -45,6 +45,8 @@ class SampleInSubDir implements SampleInterface {
    * Only implemented in children.
    */
   public function baz() {
+    // Make sure this doesn't appear in the other sample class as a reference.
+    $y = $this->foo();
   }
 }
 
