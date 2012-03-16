@@ -468,11 +468,19 @@ function api_save_documentation($docblocks) {
  *   Array of references set up by api_format_php().
  */
 function api_replace_references($branch, $did, $name, $references) {
+  // Find the name without class prefix, if any.
+  $shortname = $name;
+  if (($pos = strpos($name, '::')) !== FALSE && $pos > 1) {
+    $shortname = substr($name, $pos + 2);
+  }
+
   // First, remove any existing references.
-  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type IN ('function', 'potential hook', 'potential theme', 'potential alter', 'potential callback') AND from_did = %d", $branch->branch_id, $did);
+  db_query("DELETE FROM {api_reference_storage} WHERE branch_id = %d AND object_type IN ('function', 'potential hook', 'potential theme', 'potential alter', 'potential callback', 'member-parent','member-self', 'member', 'member-class') AND from_did = %d", $branch->branch_id, $did);
   foreach ($references as $type => $list) {
     // Don't save a reference to the item itself.
-    unset($list[$name]);
+    if ($type == 'function' || $type == 'potential callback' || $type == 'member-self') {
+      unset($list[$shortname]);
+    }
     foreach ($list as $call) {
       api_reference($branch, $type, $call, $did);
     }
@@ -734,6 +742,10 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
       'potential theme' => array(),
       'potential alter' => array(),
       'potential callback' => array(),
+      'member-parent' => array(),
+      'member-self' => array(),
+      'member' => array(),
+      'member-class' => array(),
     );
   }
 
@@ -770,6 +782,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
     // Take care of double-quoted strings.
     if ($in_string) {
       $in_member = FALSE;
+      $member_of = '';
       if ($token == '"') {
         $output .= '"</span>';
         $in_string = FALSE;
@@ -783,6 +796,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
       $output .= '<span class="php-string">"';
       $in_string = TRUE;
       $in_member = FALSE;
+      $member_of = '';
       continue;
     }
 
@@ -861,27 +875,51 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
         case T_STRING:
           // This is a function, constant, etc. being declared or used.
           $class = 'php-function-or-constant';
+          $reference_type = 'function';
+          $reference = $value;
           if ($in_member) {
             if ($member_of == 'parent') {
               $class .= ' member-of-parent';
+              $reference_type = 'member-parent';
             }
             elseif ($member_of == '$this' || $member_of == 'self') {
               $class .= ' member-of-self';
+              $reference_type = 'member-self';
             }
             elseif (strpos($member_of, '$') === 0) {
               $class .= ' member-of-variable';
+              $reference_type = 'member';
             }
             elseif (strlen($member_of) > 0) {
               $class .= ' member-of-class-' . $member_of;
+              $reference_type = 'member-class';
+              $reference = $member_of . '::' . $value;
             }
             else {
               $class .= ' member-of-variable';
+              $reference_type = 'member';
             }
           }
 
           $output .= '<span class="' . $class . '">'. $value .'</span>';
+
+          // Save references.
+          if ($track_references) {
+            $references[$reference_type][$value] = $reference;
+          }
+
+          // Update $in_member/$member_of status.
+          if ($in_member) {
+            // If we were already in a member chain, clear $member_of, because
+            // we won't know what the next type is if -> comes next.
+            $member_of = '';
+          }
+          else {
+            // We were not already in a member chain. So save this keyword
+            // in case it is the start of a chain.
+            $member_of = $value;
+          }
           $in_member = FALSE;
-          $member_of = $value;
 
           // Save $invoke_type state.
           if ($value == 'theme') {
@@ -895,11 +933,6 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           elseif ($value == 'drupal_alter') {
             $invoke_type = 'alter';
             $target_paren_count = $paren_count + 1;
-          }
-
-          // Save references.
-          if ($track_references) {
-            $references['function'][$value] = $value;
           }
 
           break;
@@ -1103,6 +1136,18 @@ function api_shutdown() {
       drupal_write_record('api_members', $api_member);
     }
   }
+
+  // Figure out the member-self references in reference storage. Basically,
+  // ChildClass::foo() calls $this->bar(). We need to figure out the ID of
+  // $this->bar(), which could be on ChildClass::bar() or ParentClass::bar().
+  // The {api_methods} table keeps track of this.
+  db_query("DELETE FROM {api_reference_storage} WHERE object_type = 'computed-member'");
+  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT memberd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, m.did as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN ({api_members} m INNER JOIN {api_documentation} memberd ON m.did = memberd.did) ON memberd.member_name = r.object_name AND m.class_did = d.class_did WHERE r.object_type = 'member-self')");
+
+  // Do the same for member-parent references, where ChildClass::foo() calls
+  // parent::bar(). {api_reference} keeps track of parent classes, with parent
+  // class in to_did, and extending child class on from_did.
+  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT parentd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, parentd.did as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN {api_reference_storage} parentr ON parentr.from_did = d.class_did AND parentr.object_type = 'class' INNER JOIN {api_members} parentm ON parentr.to_did = parentm.class_did INNER JOIN {api_documentation} parentd ON parentd.did = parentm.did AND parentd.member_name = r.object_name WHERE r.object_type = 'member-parent')");
 
   // Save JSON autocomplete cache
   $directory = file_directory_path();

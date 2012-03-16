@@ -236,26 +236,28 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
     $this->clickLink('sample_name');
     $this->assertURLContains('api/' . $this->branch_info['project'] . '/sample.php/function/hook_sample_name', 'URL is correct for hook link');
-    $this->assertLink('1 invocation of hook_sample_name()', 0, 'Link to invokes page is present');
-    $this->clickLink('1 invocation of hook_sample_name()');
+    $this->assertLink('2 invocations of hook_sample_name()', 0, 'Link to invokes page is present');
+    $this->clickLink('2 invocations of hook_sample_name()');
     $this->assertURLContains($this->branch_info['project'] . '/sample.php/function/invokes/hook_sample_name', 'Link to invoking functions page went to the right place');
-    $this->assertText('1 invocation of hook_sample_name()', 'Title of invokes listing page is correct');
+    $this->assertText('2 invocations of hook_sample_name()', 'Title of invokes listing page is correct');
     $this->assertLink('sample_in_code_links', 0, 'Link to invoking function page is present');
     $this->assertText('Does something interesting', 'Invoking function description is present');
+    $this->assertLink('sample_name', 0, 'Link to second invoking function page is present');
     $this->assertLinkURLSubstring('hook_sample_name', $this->branch_info['project'] . '/sample.php/function/hook_sample_name', 'Breadcrumb link exists', 'Breadcrumb link went to the right place');
 
     // Test hook invocation links for alter hook.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
     $this->clickLink('another_sample');
     $this->assertURLContains('api/' . $this->branch_info['project'] . '/sample.php/function/hook_another_sample_alter', 'URL is correct for hook link');
-    $this->assertLink('1 invocation of hook_another_sample_alter()', 0, 'Link to invokes page is present');
+    $this->assertLink('2 invocations of hook_another_sample_alter()', 0, 'Link to invokes page is present');
 
     // Test the theme invokes page.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample.php/function/sample_in_code_links');
     $this->clickLink('sample_one');
-    $this->clickLink('1 theme call to theme_sample_one()');
-    $this->assertText('1 theme call to theme_sample_one()', 'Page title is present');
+    $this->clickLink('2 theme calls to theme_sample_one()');
+    $this->assertText('2 theme calls to theme_sample_one()', 'Page title is present');
     $this->assertLink('sample_in_code_links', 0, 'Link to theme calling function is present');
+    $this->assertLink('sample_one', 0, 'Link to second theme calling function is present');
     $this->assertLink('theme_sample_one', 0, 'Breadcrumb link is present');
 
     // Test the theme invokes page from a template.
@@ -426,6 +428,12 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertTitleContains('Sample::baz', 'Method page title includes method name');
     $this->assertText('public function', 'Code appears on the method page');
     $this->assertText('Only implemented in children', 'Description appears on method page');
+    $this->assertLink('2 calls to Sample::baz()', 0, 'Calling functions link is there');
+    $this->clickLink('2 calls to Sample::baz()');
+    $this->assertLink('Sample::baz', 0, 'Breadcrumb link is there');
+    $this->assertLink('Sample::foo', 0, 'Calling function 1 is there');
+    $this->assertLink('SubSample::bar', 0, 'Calling function 2 link is there');
+    $this->assertText('2 calls to Sample::baz()', 'Page title is correct');
 
     $this->drupalGet('api/' . $this->branch_info['project'] . '/classes.php/class/Sample');
     $this->clickLink('Sample::constant');
@@ -865,11 +873,18 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
     $this->clickLink('Sample::foo');
     $this->assertRaw($this->branch_info['branch_name'] . ' classes.php', 'This file name and branch are shown');
     $this->assertRaw($this->branch_info_2['branch_name'] . ' extras.php', 'Other sample file and branch name are shown');
+    $this->assertLink('2 calls to Sample::foo()', 0, 'Calling functions link is there');
     // Make sure the links go to the right place.
     $this->assertLinkURLSubstring('foo', 'extras.php/function/Sample', 'foo link exists', 'foo link went to the right place');
     // Note that there is also one Sample link in the breadcrumb.
     $this->assertLinkURLSubstring('Sample',  'classes.php/class/Sample', 'First Sample link exists', 'First Sample link went to the right place', 1);
     $this->assertLinkURLSubstring('Sample', 'extras.php/class/Sample', 'Second Sample link exists', 'Second Sample link went to the right place', 2);
+    // Test the calling page.
+    $this->clickLink('2 calls to Sample::foo()');
+    $this->assertLink('Sample::baz', 0, 'Link to first calling function is there');
+    $this->assertLink('SubSample::bar', 0, 'Link to second calling function is there');
+    $this->assertLink('Sample::foo', 0, 'Breadcrumb link is there');
+    $this->assertText('2 calls to Sample::foo()', 'Page title is there');
 
     // Now visit the class page in the other branch. Click through to the
     // method and verify that it doesn't show the DifferentClassName::foo()

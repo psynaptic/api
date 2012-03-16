@@ -85,6 +85,9 @@ define('SAMPLE_CONSTANT', 7);
  * @see SAMPLE_CONSTANT
  */
 function sample_function($parameter, $complex_parameter) {
+  // Have this function call itself, to verify that it doesn't come up counted
+  // as a function call.
+  $foo = sample_function();
 }
 
 /**
@@ -254,4 +257,31 @@ function sample_in_code_links() {
  * pages.
  */
 function foo_sample_name() {
+}
+
+/**
+ * Function with same name as a hook.
+ */
+function sample_name() {
+  // This should turn into a link to the hook, and the hook should reference
+  // this function as an invoker.
+  module_invoke_all('sample_name');
+}
+
+/**
+ * Function with same name as an alter hook.
+ */
+function another_sample() {
+  // This should turn into a link to the hook, and the hook should reference
+  // this function as an invoker.
+  drupal_alter('another_sample');
+}
+
+/**
+ * Function with the same name as a theme hook.
+ */
+function sample_one() {
+  // This should turn into a link to the theme function, , and the theme
+  // function should reference this function as an invoker.
+  theme('sample_one');
 }

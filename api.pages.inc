@@ -514,10 +514,10 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
 
   if ($type == 'calls') {
     // Use reference storage to find functions that call this one.
-    $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.object_type = 'function' AND r.object_name = '%s' AND d.branch_id = %d AND d.did <> %d";
-    $args = array($name, $branch_id, $exclude_did);
+    $base_query = "FROM {api_reference_storage} r LEFT JOIN {api_documentation} d ON r.from_did = d.did WHERE d.branch_id = %d AND d.did <> %d AND (r.object_type = 'function' OR r.object_type = 'member-class' OR r.object_type = 'computed-member') AND r.object_name = '%s'";
+    $args = array($branch_id, $exclude_did, $name);
   }
-  if ($type == 'references') {
+  elseif ($type == 'references') {
     // Use reference storage to find functions that use this name as a string.
     $base_query = "FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.object_type = 'potential callback' AND r.object_name = '%s' AND d.branch_id = %d AND d.did <> %d";
     $args = array($name, $branch_id, $exclude_did);
