@@ -32,19 +32,19 @@ class ApiLinkCodeTest extends ApiTestCase {
       ),
       array(
         'message' => 'Linking to method defined in multiple classes from self',
-        'data' => '<span class="php-function-or-constant member-of-self">foo</span>',
+        'data' => '<span class="php-function-or-constant function member-of-self">foo</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a></span>',
         'class_did' => $class->did,
       ),
       array(
         'message' => 'Linking to method defined in multiple classes as parent',
-        'data' => '<span class="php-function-or-constant member-of-parent">foo</span>',
+        'data' => '<span class="php-function-or-constant function member-of-parent">foo</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/test/classes.php/function/Sample::foo/6') .'" title="Metasyntatic member function." class="local">foo</a></span>',
         'class_did' => $subclass->did,
       ),
       array(
         'message' => 'Linking to method defined in multiple subclasses',
-        'data' => '<span class="php-function-or-constant member-of-variable">baz</span>',
+        'data' => '<span class="php-function-or-constant function member-of-variable">baz</span>',
         'expected' => '<span class="php-function-or-constant"><a href="'. url('api/search/'. $branch->branch_name . '/baz') .'" title="Multiple implementations exist." class="local">baz</a></span>',
       ),
       array(

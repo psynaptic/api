@@ -44,13 +44,16 @@ class SampleInSubDir implements SampleInterface {
    */
   public function foo() {
     $x = 'hi';
+    // foo should link to the member property here, not method.
+    $y = $this->foo->baz();
   }
 
   /**
    * Only implemented in children.
    */
   public function baz() {
-    // Make sure this doesn't appear in the other sample class as a reference.
+    // Make sure this doesn't appear in the other sample class as a reference,
+    // and that it links to the method, not property.
     $y = $this->foo();
   }
 }

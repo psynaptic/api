@@ -776,7 +776,7 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
 
   // Split the code into tokens.
   $tokens = token_get_all($code);
-  foreach ($tokens as $token) {
+  foreach ($tokens as $array_index => $token) {
     $close_size = 0;
 
     // Take care of double-quoted strings.
@@ -877,7 +877,18 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
           $class = 'php-function-or-constant';
           $reference_type = 'function';
           $reference = $value;
+
+          // See if this is a function call or not, by looking ahead to the
+          // next token and seeing if it is an open paren.
+          $is_function = (isset($tokens[$array_index + 1]) && !is_array($tokens[$array_index + 1]) && $tokens[$array_index + 1] == '(');
+
           if ($in_member) {
+            if ($is_function) {
+              $class .= ' function';
+            }
+            else {
+              $class .= ' property';
+            }
             if ($member_of == 'parent') {
               $class .= ' member-of-parent';
               $reference_type = 'member-parent';
@@ -903,8 +914,8 @@ function api_format_php($code, &$references, $number = FALSE, $track_references 
 
           $output .= '<span class="' . $class . '">'. $value .'</span>';
 
-          // Save references.
-          if ($track_references) {
+          // Save references -- only for functions.
+          if ($track_references && $is_function) {
             $references[$reference_type][$value] = $reference;
           }
 
@@ -1065,8 +1076,11 @@ function api_schedule_shutdown() {
  * the cache.
  */
 function api_shutdown() {
+  // We will be re-computing this below.
+  db_query("DELETE FROM {api_reference_storage} WHERE object_type = 'computed-member'");
+
   // Figure out all the dids of the object/branch/types in reference storage.
-  db_query('UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did');
+  db_query("UPDATE {api_reference_storage} r INNER JOIN {api_documentation} d ON r.object_name = d.object_name AND r.branch_id = d.branch_id AND r.object_type = d.object_type SET r.to_did = d.did WHERE r.object_type  IN ('class', 'group',  'interface')");
 
   // Save overrides.
   $changed_classes = array();
@@ -1153,13 +1167,12 @@ function api_shutdown() {
   // ChildClass::foo() calls $this->bar(). We need to figure out the ID of
   // $this->bar(), which could be on ChildClass::bar() or ParentClass::bar().
   // The {api_methods} table keeps track of this.
-  db_query("DELETE FROM {api_reference_storage} WHERE object_type = 'computed-member'");
-  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT memberd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, m.did as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN ({api_members} m INNER JOIN {api_documentation} memberd ON m.did = memberd.did) ON memberd.member_name = r.object_name AND m.class_did = d.class_did WHERE r.object_type = 'member-self')");
+  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT memberd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, 0 as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN ({api_members} m INNER JOIN {api_documentation} memberd ON m.did = memberd.did) ON memberd.member_name = r.object_name AND m.class_did = d.class_did WHERE r.object_type = 'member-self' AND memberd.object_type = 'function')");
 
   // Do the same for member-parent references, where ChildClass::foo() calls
   // parent::bar(). {api_reference} keeps track of parent classes, with parent
   // class in to_did, and extending child class on from_did.
-  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT parentd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, parentd.did as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN {api_reference_storage} parentr ON parentr.from_did = d.class_did AND parentr.object_type = 'class' INNER JOIN {api_members} parentm ON parentr.to_did = parentm.class_did INNER JOIN {api_documentation} parentd ON parentd.did = parentm.did AND parentd.member_name = r.object_name WHERE r.object_type = 'member-parent')");
+  db_query("INSERT INTO {api_reference_storage} (object_name, branch_id, object_type, from_did, to_did) (SELECT parentd.object_name, r.branch_id, 'computed-member' as object_type, r.from_did, parentd.did as to_did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did INNER JOIN {api_reference_storage} parentr ON parentr.from_did = d.class_did AND parentr.object_type = 'class' INNER JOIN {api_members} parentm ON parentr.to_did = parentm.class_did INNER JOIN {api_documentation} parentd ON parentd.did = parentm.did AND parentd.member_name = r.object_name WHERE r.object_type = 'member-parent' AND parentd.object_type = 'function')");
 
   // Save JSON autocomplete cache
   $directory = file_directory_path();

@@ -1836,7 +1836,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     case 'code member':
       // Works like 'code hook name' above, but for class members.
       $callback_match = 'api_link_member_name';
-      $pattern = '!(<span class="php-function-or-constant member-of-[^"]+">' . API_RE_PHP_FUNCTION . '</span>)!';
+      $pattern = '!(<span class="php-function-or-constant [^"]+ member-of-[^"]+">' . API_RE_PHP_FUNCTION . '</span>)!';
       break;
 
     case 'file':
@@ -2106,9 +2106,17 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
   // The pattern matched to get here contains the entire span with all of its
   // classes. Parse it out.
   $matches = array();
-  preg_match('!<span class="php-function-or-constant member-of-([^"]+)">(' . API_RE_PHP_FUNCTION . ')</span>!', $text, $matches);
-  $name = $matches[2];
-  $member_type = $matches[1];
+  preg_match('!<span class="php-function-or-constant ([^"]+) member-of-([^"]+)">(' . API_RE_PHP_FUNCTION . ')</span>!', $text, $matches);
+  $name = $matches[3];
+  $member_type = $matches[2];
+  $object_type = $matches[1];
+
+  if ($object_type == 'function') {
+    $object_type_where = " AND ad.object_type = 'function'";
+  }
+  else {
+    $object_type_where = " AND ad.object_type <> 'function'";
+  }
   $prepend = '<span class="php-function-or-constant">';
   $append = '</span>';
 
@@ -2144,12 +2152,12 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
     // Looking for a member of a particular class. Note that we use the
     // {api_members} table here, since it includes members inherited from
     // parent classes.
-    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_members} am INNER JOIN {api_documentation} ad ON am.did = ad.did WHERE am.class_did = %d AND ad.member_name = '%s'", $class_did, $name);
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_members} am INNER JOIN {api_documentation} ad ON am.did = ad.did WHERE am.class_did = %d AND ad.member_name = '%s'" . $object_type_where, $class_did, $name);
   }
   elseif ($member_type == 'variable') {
     // This was some kind of a variable like $foo->member(). So match any member
     // of any class.
-    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_documentation} ad WHERE ad.member_name = '%s'", $name);
+    $result = db_query("SELECT ad.branch_id, ad.title, ad.object_name, ad.summary, ad.object_type, ad.file_name, ad.did, ad.member_name FROM {api_documentation} ad WHERE ad.member_name = '%s'" . $object_type_where, $name);
   }
 
   // See if we have one result, more than one result, or no results.

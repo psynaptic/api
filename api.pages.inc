@@ -758,7 +758,7 @@ function api_page_group($group) {
   $documentation = api_link_documentation($group->documentation, $branch);
   $see = api_link_documentation($group->see, $branch, NULL, TRUE);
 
-  $objects = api_render_listing(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.to_did = %d ORDER BY d.object_name", $group->did));
+  $objects = api_render_listing(db_query("SELECT d.branch_id, d.object_name, d.title, d.summary, d.file_name, d.object_type, d.did FROM {api_reference_storage} r INNER JOIN {api_documentation} d ON r.from_did = d.did WHERE r.object_type = 'group' AND r.to_did = %d ORDER BY d.object_name", $group->did));
 
   $output = theme('api_group_page', $branch, $group, $documentation, $objects, $see);
   $output .= _api_add_comments($group);

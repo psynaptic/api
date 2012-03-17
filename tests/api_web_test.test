@@ -460,6 +460,14 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertText('Classes in a subdirectory test', 'Classes file link went to right place');
     $this->assertText('Another Sample interface in a subdirectory.', 'Classes file link went to right place');
 
+    // Visit the two methods and verify the links.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SampleInSubDir');
+    $this->clickLink('SampleInSubDir::baz');
+    $this->assertLinkURLSubstring('foo', 'classes-subdir.php/function/SampleInSubDir', 'foo function link is present', 'foo function link goes to right place');
+    $this->clickLink('foo');
+    $this->assertLinkURLSubstring('foo', 'classes-subdir.php/property/SampleInSubDir', 'foo property link is present', 'foo property link goes to right place');
+    $this->assertLink('1 call to SampleInSubDir::foo()', 0, 'Calling functions link is present');
+
     // Visit the class that is for overrides testing.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!classes-subdir.php/class/SubInSubDirSample');
     // Verify override links for properties.
