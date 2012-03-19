@@ -1414,9 +1414,14 @@ function api_scan_directories($directories, $excluded_directories) {
     foreach ($directory_array as $directory) {
       $directory_components = array();
       $parts = explode(DIRECTORY_SEPARATOR, $directory);
+      $starts_with_sep = (strpos($directory, DIRECTORY_SEPARATOR) === 0);
       foreach ($parts as $part) {
         if (strlen($part)) {
-          array_unshift($directory_components, reset($directory_components) . DIRECTORY_SEPARATOR . $part);
+          $previous = reset($directory_components);
+          if (strlen($previous) > 0 || $starts_with_sep) {
+            $previous .= DIRECTORY_SEPARATOR;
+          }
+          array_unshift($directory_components, $previous . $part);
         }
       }
       $directories_components[] = $directory_components;
