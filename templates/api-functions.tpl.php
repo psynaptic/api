@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @file api-functions.tpl.php
- * Theme implementation to show a list of functions, their source and description.
+ * @file
+ * Theme implementation: shows a list of functions, with source and description.
  *
  * Available variables:
  * - $function['function']: Function link.

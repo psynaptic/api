@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-constant-page.tpl.php
+ * @file
  * Theme implementation to display a constant overview.
  *
  * Available variables:
@@ -28,7 +28,7 @@
  * - $object->code: Escaped source code.
  * - $object->see: HTML index of additional references.
  *
- * @see api_preprocess_api_object_page().
+ * @see api_preprocess_api_object_page()
  */
 ?>
 <?php print $alternatives; ?>

@@ -78,7 +78,8 @@ function drush_api_list_branches() {
   foreach ($branches as $branch) {
     if (isset($branch->directories)) {
       $location = $branch->directories;
-    } else {
+    }
+    else {
       $location = isset($branch->summary) ? $branch->summary : '';
     }
     $rows[] = array(

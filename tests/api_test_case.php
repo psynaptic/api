@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Base classes for tests for the API module.
+ */
+
+/**
  * Provides a base class for testing the API module.
  */
 class ApiTestCase extends DrupalWebTestCase {

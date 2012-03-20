@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-function-page.tpl.php
+ * @file
  * Theme implementation to display a function overview.
  *
  * Available variables:
@@ -40,7 +40,7 @@
  * - $object->see: HTML index of additional references.
  * - $object->throws: Paragraph describing possible exceptions.
  *
- * @see api_preprocess_api_object_page().
+ * @see api_preprocess_api_object_page()
  */
 ?>
 
@@ -52,7 +52,8 @@
           <td class="branch"><?php print $branch; ?></td>
           <td class="signature"><code><?php print $signature['signature']; ?></code></td>
         </tr>
-      <?php } else { ?>
+      <?php }
+            else { ?>
         <tr>
           <td class="branch"><?php print l($branch, $signature['url'], array('html' => TRUE)); ?></td>
           <td class="signature"><code><?php print $signature['signature']; ?></code></td>
@@ -91,7 +92,10 @@
 <?php print $related_topics ?>
 <?php } ?>
 
-<?php foreach ($call_links as $link) { print $link; } ?>
+<?php
+foreach ($call_links as $link) {
+  print $link;
+} ?>
 
 <h3><?php print t('File'); ?></h3>
  <?php print $defined; ?>

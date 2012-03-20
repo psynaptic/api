@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-file-page.tpl.php
+ * @file
  * Theme implementation for the summary page of a file.
  *
  * Available variables:
@@ -28,13 +28,17 @@
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>
-<h3><?php print t('See also') ?></h3>
-<?php print $see ?>
+  <h3><?php print t('See also') ?></h3>
+  <?php print $see ?>
 <?php } ?>
 
 <?php print $objects; ?>
 
-<?php foreach ($call_links as $link) { print $link; } ?>
+<?php
+foreach ($call_links as $link) {
+  print $link;
+}
+?>
 
 <h3><?php print t('File'); ?></h3>
  <?php print $defined; ?>

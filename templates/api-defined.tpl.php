@@ -1,6 +1,6 @@
 <?php
 /**
- * @file api-defined.tpl.php
+ * @file
  * Theme implementation to show which object an api object is defined in.
  *
  * Available variables:

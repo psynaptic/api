@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Tests for the api_link_code() function of the API module.
+ */
+
 
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 

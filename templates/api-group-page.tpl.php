@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-group-page.tpl.php
+ * @file
  * Theme implementation for summarizing code that in a group.
  *
  * Available variables:

@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file
+ * Tests for branch and object creation functionality of the API module.
+ */
+
+
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
 /**
@@ -34,7 +40,7 @@ class ApiBranchCreation extends ApiTestCase {
     $object = api_object_load('sample_function', $branch, 'function', 'sample.php');
     $this->assertEqual($object->summary, 'A sample function.', 'sample_function() has summary ' . $object->summary);
 
-    // Check that documentation includes text after first \@see directive
+    // Check that documentation includes text after first @see directive
     $this->assertTrue(strpos($object->documentation, 'Use for sample-related purposes.') !== FALSE, 'sample_function() documentation includes text after \@see directive.');
 
     // Check @see directives

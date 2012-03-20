@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-related-topics.tpl.php
+ * @file
  * Theme implementation to provide related topics
  *
  * Available variables:

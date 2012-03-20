@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-branch-default.tpl.php
+ * @file
  * Theme implementation to display a branch overview.
  *
  * Available variables:

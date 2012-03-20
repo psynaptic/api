@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Tests various web pages of the API module.
+ */
+
 
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 

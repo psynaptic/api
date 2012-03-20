@@ -435,7 +435,7 @@ function api_branch_delete_form_submit($form, &$form_state) {
  *
  * Page callback for path admin/settings/api/comments.
  *
- * @see api_comments_settings_form_submit().
+ * @see api_comments_settings_form_submit()
  */
 function api_comments_settings_form(&$form_state) {
   $type = new stdClass();

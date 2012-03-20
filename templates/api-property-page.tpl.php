@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file api-property-page.tpl.php
+ * @file
  * Theme implementation to display a function overview.
  *
  * Available variables:
@@ -30,7 +30,7 @@
  * - $object->see: HTML index of additional references.
  * - $object->var: Type of property.
  *
- * @see api_preprocess_api_object_page().
+ * @see api_preprocess_api_object_page()
  */
 ?>
 

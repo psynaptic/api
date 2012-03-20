@@ -615,7 +615,7 @@ function api_update_27() {
 }
 
 /**
- * Add separate column for @see.
+ * Add separate column for see references.
  */
 function api_update_28() {
   $return = array();

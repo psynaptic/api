@@ -147,8 +147,8 @@ function api_parse_php_file($docblock) {
   // block, then any references we found above should be saved for the file.
   // This is usually the case for theme templates.
   if (count($references) > 0 &&
-     (count($docblocks) == 1 ||
-       (count($docblocks) == 2 && $docblocks[1]['object_type'] = '' && strpos($docblocks[1]['content'], '@file') !== FALSE))) {
+    (count($docblocks) == 1 ||
+      (count($docblocks) == 2 && $docblocks[1]['object_type'] = '' && strpos($docblocks[1]['content'], '@file') !== FALSE))) {
     $docblocks[0]['references'] = $references;
   }
 
@@ -1120,7 +1120,7 @@ function api_shutdown() {
   }
 
   // Save members
-  while (list($class_did,) = each($changed_classes)) {
+  while (list($class_did, ) = each($changed_classes)) {
     // Add child classes to $changed_classes
     $result_chidren = db_query("SELECT ars.from_did FROM {api_reference_storage} ars WHERE ars.to_did = %d AND ars.object_type IN ('class', 'interface') AND ars.from_did <> 0", $class_did);
     while ($child = db_fetch_object($result_chidren)) {
@@ -1440,7 +1440,7 @@ function api_scan_directories($directories, $excluded_directories) {
   // directories.
   $source_files = array();
   $todo = $directory_array;
-  while(count($todo) > 0) {
+  while (count($todo) > 0) {
     $directory = array_shift($todo);
     $files = file_scan_directory($directory, '.*', array('.', '..', 'CVS'), 0, FALSE);
     foreach ($files as $path => $file) {
