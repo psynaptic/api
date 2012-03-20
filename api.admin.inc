@@ -25,10 +25,11 @@ function api_page_admin_overview() {
 }
 
 /**
- * Generates the branches list form for the API module.
+ * Form constructor for the API branches list form.
  *
  * @see theme_api_branch_table()
  * @see api_page_admin_form_submit()
+ * @ingroup forms
  */
 function api_page_admin_form() {
   $branches = api_get_branches();
@@ -83,13 +84,12 @@ function api_page_admin_form() {
 }
 
 /**
- * Themes the table of defined branches for api_admin_form().
+ * Renders the HTML for the branches section of api_page_admin_form().
  *
  * @param $element
- *   The form element to theme.
+ *   The form element to theme, in this case containing the branches array.
  *
- * @return
- *   HTML table of the branches.
+ * @ingroup themeable
  */
 function theme_api_branch_table($element) {
   $header = array(
@@ -111,7 +111,7 @@ function theme_api_branch_table($element) {
 }
 
 /**
- * Submit callback for api_page_admin_form().
+ * Form submission handler for api_page_admin_form().
  */
 function api_page_admin_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['default_branch'])) {
@@ -125,9 +125,10 @@ function api_page_admin_form_submit($form, &$form_state) {
 }
 
 /**
- * Generates the form for resetting the API parse queue.
+ * Form constructor for resetting the API parse queue.
  *
  * @see api_reset_queue_form_submit()
+ * @ingroup forms
  */
 function api_reset_queue_form() {
 
@@ -137,7 +138,7 @@ function api_reset_queue_form() {
 }
 
 /**
- * Submission handler for api_reset_queue_form().
+ * Form submission handler for api_reset_queue_form().
  *
  * Resets the parsing queue and redirects to the API admin page.
  */
@@ -149,7 +150,10 @@ function api_reset_queue_form_submit($form, &$form_state) {
 }
 
 /**
- * Page callback for admin/settings/api/branches/new.
+ * Page callback: Generates the page that selects which type of branch to add.
+ *
+ * @return
+ *   HTML for the page.
  */
 function api_admin_new_branch_page() {
   return '<h3>' . t('Select branch type') . '</h3>' . theme('links', array(
@@ -165,7 +169,7 @@ function api_admin_new_branch_page() {
 }
 
 /**
- * Generates the edit form for a branch.
+ * Form constructor for the edit form for a branch.
  *
  * @param $branch_id
  *   ID of the branch to edit, or NULL to add a new branch.
@@ -173,7 +177,9 @@ function api_admin_new_branch_page() {
  * @see api_branch_edit_form_files()
  * @see api_branch_edit_form_php()
  * @see api_branch_edit_form_validate()
+ * @see api_check_directories()
  * @see api_branch_edit_form_submit()
+ * @ingroup forms
  */
 function api_branch_edit_form($form_state, $branch_id = NULL) {
   if (is_numeric($branch_id)) {
@@ -249,13 +255,14 @@ function api_branch_edit_form($form_state, $branch_id = NULL) {
 }
 
 /**
- * Generates the form for editing file data for branches.
+ * Generates specific form parts for a files branch for api_branch_edit_form().
  *
+ * @param $form
+ *   Form array to add to.
  * @param $branch
  *   Object representing the branch to edit.
  *
- * This is called from api_branch_edit_form_files() if the branch type is
- * "files".
+ * @see api_check_directories()
  */
 function api_branch_edit_form_files(&$form, $branch) {
   $form['data']['directories'] = array(
@@ -278,13 +285,12 @@ function api_branch_edit_form_files(&$form, $branch) {
 }
 
 /**
- * Generates the form for editing PHP function data for branches.
+ * Generates specific form parts for a PHP branch for api_branch_edit_form().
  *
+ * @param $form
+ *   Form array to add to.
  * @param $branch
  *   Object representing the branch to edit.
- *
- * This is called from api_branch_edit_form_files() if the branch type is
- * "php".
  */
 function api_branch_edit_form_php(&$form, $branch) {
   $form[] = array('#weight' => -99, '#value' => '<p>' . t('Links to external documentation, such as the PHP manual.') . '</p>');
@@ -317,7 +323,9 @@ function api_branch_edit_form_php(&$form, $branch) {
 }
 
 /**
- * Validation callback for api_branch_edit_form().
+ * Form validation handler for api_branch_edit_form().
+ *
+ * @see api_branch_edit_form_submit()
  */
 function api_branch_edit_form_validate($form, &$form_state) {
   // Check for bad characters in branch names.
@@ -334,7 +342,7 @@ function api_branch_edit_form_validate($form, &$form_state) {
 /**
  * Verifies that all directories exist and are actually directories.
  *
- * Element validation callback for 'data'/'directories' element of
+ * Element validation callback for the 'data/directories' element of
  * api_branch_edit_form_files().
  */
 function api_check_directories($element, &$form_state) {
@@ -354,7 +362,9 @@ function api_check_directories($element, &$form_state) {
 }
 
 /**
- * Submit callback for api_branch_edit_form().
+ * Form submission handler for api_branch_edit_form().
+ *
+ * @see api_branch_edit_form_validate()
  */
 function api_branch_edit_form_submit($form, &$form_state) {
   $branch = $form['#branch'];
@@ -392,7 +402,7 @@ function api_clean_directory_list($list) {
 }
 
 /**
- * Generates the confirmation form for deleting a branch.
+ * Form constructor for the confirmation form for deleting a branch.
  *
  * @param $branch_id
  *   ID of the branch to delete.
@@ -405,7 +415,7 @@ function api_branch_delete_form($form_state, $branch_id) {
 }
 
 /**
- * Submit callback for api_branch_delete_form().
+ * Form submission handler for api_branch_delete_form().
  */
 function api_branch_delete_form_submit($form, &$form_state) {
   $result = db_query("SELECT did FROM {api_documentation} WHERE branch_id = %d", $form['#branch']->branch_id);
@@ -431,9 +441,7 @@ function api_branch_delete_form_submit($form, &$form_state) {
 }
 
 /**
- * Generates the settings form for API comments.
- *
- * Page callback for path admin/settings/api/comments.
+ * Form constructor for the settings form for API comments.
  *
  * @see api_comments_settings_form_submit()
  */
@@ -460,7 +468,7 @@ function api_comments_settings_form(&$form_state) {
 }
 
 /**
- * Submit callback for api_comments_settings_form().
+ * Form submission handler for api_comments_settings_form().
  */
 function api_comments_settings_form_submit($form, &$form_state) {
   foreach ($form_state['values'] as $key => $value) {
@@ -472,9 +480,7 @@ function api_comments_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Page callback: Marks a branch for reparsing.
- *
- * Path: admin/settings/api/reparse/%
+ * Page callback: Marks a branch for reparsing and redirects to API admin page.
  *
  * @param $branch_id
  *   ID of the branch to mark for reparsing.

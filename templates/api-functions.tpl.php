@@ -2,12 +2,16 @@
 
 /**
  * @file
- * Theme implementation: shows a list of functions, with source and description.
+ * Displays a list of function/file references.
  *
  * Available variables:
- * - $function['function']: Function link.
- * - $function['file']: File link.
- * - $function['description']: Function description.
+ * - $functions: Array of items to display. Each is an array with the following
+ *   elements:
+ *   - function: HTML-formatted link to the item.
+ *   - file: HTML-formatted link to the file is in.
+ *   - description: Description of the item.
+ *
+ * @ingroup themeable
  */
 ?>
 <dl class="api-functions">

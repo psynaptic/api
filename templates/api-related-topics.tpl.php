@@ -2,10 +2,12 @@
 
 /**
  * @file
- * Theme implementation to provide related topics
+ * Displays related topics for an API object page.
  *
  * Available variables:
  * - $topics: Array containing topic descriptions keyed on topic.
+ *
+ * @ingroup themeable
  */
 ?>
 <dl class="api-related-topics">

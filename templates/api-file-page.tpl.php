@@ -2,24 +2,38 @@
 
 /**
  * @file
- * Theme implementation for the summary page of a file.
+ * Displays an API page for a file and the objects defined in it.
  *
  * Available variables:
+ * - $alternatives: List of alternate versions (branches) of this file.
  * - $documentation: Documentation from the comment header of the file.
- * - $object: Object with information about the file.
- * - $is_admin: True or false.
- * - $logged_in: True or false.
- * - $user: user object.
- * - $defined: Location of the file.
+ * - $see: See also documentation.
+ * - $objects: List of functions, classes, etc. defined in the file.
  * - $call_links: Links to calling functions (for theme templates).
+ * - $code: Source code for the file.
+ * - $related_topics: List of related groups/topics.
+ * - $defined: Location of the file.
+ * - $branch: Object with information about the branch.
+ * - $object: Object with information about the file.
+ *
+ * Available variables in the $branch object:
+ * - $branch->project: The machine name of the branch.
+ * - $branch->title: A proper title for the branch.
+ * - $branch->directories: The local included directories.
+ * - $branch->excluded_directories: The local excluded directories.
  *
  * Available variables in the $object object:
  * - $object->title: Display name.
- * - $object->summary: Short summary.
- * - $object->documentation: HTML formatted comments.
- * - $object->code: HTML formatted source code.
- * - $object->objects: Documented objects HTML.
- * - $object->see: Related api objects.
+ * - $object->object_type: For this template it will be 'file'.
+ * - $object->branch_id: An identifier for the branch.
+ * - $object->file_name: The path to the file in the source.
+ * - $object->summary: A one-line summary of the object.
+ * - $object->code: Escaped source code.
+ * - $object->see: HTML-formatted additional references.
+ *
+ * @see api_preprocess_api_object_page()
+ *
+ * @ingroup themeable
  */
 ?>
 

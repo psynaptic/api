@@ -2,24 +2,23 @@
 
 /**
  * @file
- * Theme implementation to display a function overview.
+ * Displays an API page for a function.
  *
  * Available variables:
  * - $signatures: Function signatures for this and other branches.
  * - $documentation: Documentation from the comment header of the function.
  * - $parameters: Function parameter documentation.
  * - $return: Function return value documentation.
+ * - $override: If this is an override, the text to show for that.
  * - $throws: Documentation of thown exceptions.
  * - $see: See also documentation.
  * - $related_topics: Related topics documentation.
  * - $call_links: Links to calling functions, hook implementations, etc.
- * - $override: If this is an override, the text to show for that.
+ * - $defined: HTML reference to file that defines this function.
+ * - $code: HTML-formatted declaration and code of this function.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the function.
  * - $defined: HTML reference to file that defines this function.
- * - $code: Source code for the function.
- * - $is_admin: True or false.
- * - $logged_in: True or false.
  *
  * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
@@ -27,7 +26,7 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $object object.
+ * Available variables in the $object object:
  * - $object->title: Display name.
  * - $object->return: What the function returns.
  * - $object->parameters: The function parameters.
@@ -41,9 +40,10 @@
  * - $object->throws: Paragraph describing possible exceptions.
  *
  * @see api_preprocess_api_object_page()
+ *
+ * @ingroup themeable
  */
 ?>
-
 <table id="api-function-signature">
   <tbody>
     <?php foreach ($signatures as $branch => $signature) { ?>

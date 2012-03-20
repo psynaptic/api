@@ -2,16 +2,18 @@
 
 /**
  * @file
- * Theme implementation to display a branch overview.
+ * Displays a branch overview page.
  *
  * Available variables:
- * - $branch: Information about the current branch.
+ * - $branch: Information about the branch to display an overview of.
  *
- * The $branch contains:
+ * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
  * - $branch->title: A proper title for the branch.
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
+ *
+ * @ingroup themeable
  */
 ?>
 <?php if (!empty($branch)) {

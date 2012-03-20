@@ -2,21 +2,11 @@
 
 /**
  * @file
- * Drush commands for API module.
+ * Drush commands for the API module.
  */
 
 /**
- * Implementation of hook_drush_help().
- */
-function api_drush_help($section) {
-  switch ($section) {
-    case 'drush:api-reparse':
-      return dt('Mark a file, branch, or everything for reparsing.');
-  }
-}
-
-/**
- * Implementation of hook_drush_command().
+ * Implements hook_drush_command().
  */
 function api_drush_command() {
   return array(
@@ -46,7 +36,7 @@ function api_drush_command() {
 }
 
 /**
- * Flag a branch, or all branches, to be reparsed on the next cron run.
+ * Flags a branch, or all branches, to be reparsed on the next cron run.
  *
  * @param $branch_or_file
  *   (optional) Identifier of the branch to reparse, or name of a single file to
@@ -70,7 +60,7 @@ function drush_api_reset_queue() {
 }
 
 /**
- * List all branches.
+ * Lists all API branches.
  */
 function drush_api_list_branches() {
   $branches = api_get_branches();
@@ -94,7 +84,7 @@ function drush_api_list_branches() {
 }
 
 /**
- * Drush command to add or update an API branch.
+ * Adds or updates an API branch.
  */
 function drush_api_add_branch($project, $project_title, $branch_name, $branch_title, $directory) {
   // Try to load the branch if possible.

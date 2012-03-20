@@ -9,7 +9,14 @@
  * Provides a base class for testing the API module.
  */
 class ApiTestCase extends DrupalWebTestCase {
+  /**
+   * Default branch object.
+   */
   protected $default_branch;
+
+  /**
+   * User with permission to administer and see everything.
+   */
   protected $super_user;
 
   /**
@@ -134,8 +141,9 @@ class ApiTestCase extends DrupalWebTestCase {
   /**
    * Processes the API parse queue.
    *
-   * @verbose
+   * @param $verbose
    *   TRUE to print verbose output; FALSE (default) to omit.
+   *
    * @return
    *   Number of files parsed.
    */
@@ -184,7 +192,15 @@ class ApiTestCase extends DrupalWebTestCase {
  * Provides a base class for testing web pages (user/admin) for the API module.
  */
 class ApiWebPagesBaseTest extends ApiTestCase {
+
+  /**
+   * Array of branch information for the sample functions branch.
+   */
   protected $branch_info;
+
+  /**
+   * Array of branch information for the sample PHP functions branch.
+   */
   protected $php_branch_info;
 
   /**

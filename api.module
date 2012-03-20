@@ -4,22 +4,11 @@
  * @file
  * Generates and displays API documentation pages.
  *
- * This is an implementation of a subset of the Doxygen documentation
- * generator specification, tuned to produce output that best benefits
- * the Drupal code base.  It is designed to assume the code it
- * documents follows Drupal coding conventions, and supports the
- * following Doxygen constructs:
- *   \@mainpage
- *   \@file
- *   \@defgroup
- *   \@ingroup
- *   \@addtogroup (as a synonym of \@ ingroup)
- *   \@param
- *   \@return
- *   \@link
- *
- * See http://drupal.org/node/1354 for more information on how to document code
- * so that the API module can read it.
+ * This is an implementation of a subset of the Doxygen documentation generator
+ * specification, tuned to produce output that best benefits the Drupal code
+ * base. It is designed to assume the code it documents follows Drupal coding
+ * conventions, and supports documentation blocks in formats described on
+ * http://drupal.org/node/1354
  */
 
 /**
@@ -79,42 +68,22 @@ define('API_FILEPATH_SEPARATOR_REPLACEMENT', '!');
 define('API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT', '--');
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function api_help($path, $arg) {
   switch ($path) {
     case 'admin/help#api':
       return t('
-<p>This is an implementation of a subset of the Doxygen documentation generator specification, tuned to produce output that best benefits the Drupal code base.</p>
+<p>This is an implementation of a subset of the Doxygen documentation generator specification, tuned to produce output that best benefits the Drupal code base. It is designed to assume the code it documents follows Drupal coding conventions, and supports documentation blocks in formats described on !doxygen_link.</p>
 
-<p>It is designed to assume the code it documents follows Drupal coding conventions, and supports the following Doxygen constructs:</p>
-<ul>
-  <li>@mainpage</li>
-  <li>@file</li>
-  <li>@defgroup</li>
-  <li>@ingroup</li>
-  <li>@addtogroup (as a synonym of @ ingroup)</li>
-  <li>@param</li>
-  <li>@return</li>
-  <li>@link</li>
-  <li>@see</li>
-  <li>@{</li>
-  <li>@}</li>
-</ul>
-
-<p>The module was designed to produce the Drupal developer documentation available at !api_site.</p>
-
-<p><strong>Set up</strong><p>
+<h3>Set up</h3>
 
 <p>Visit the !api_settings_page to configure the module. You must have the relevant Drupal code base on the same machine as the site hosting the API module. Follow the descriptions in the \'Branches to index\' section to set up the code base for indexing.</p>
 
 <p>Indexing of PHP functions is also supported. If the site has internet access, then the default settings for the \'PHP Manual\' section should work fine. For local development environments that have a PHP manual installed, you can edit the paths to point to the appropriate locations.</p>
 
 <p>The module indexes code branches during cron runs, so make sure the site has cron functionality set up properly.</p>
-', array('!api_site' => l('http://api.drupal.org', 'http://api.drupal.org', array('absolute' => TRUE)), '!api_settings_page' => l(t('API settings page'), 'admin/settings/api')));
-
-    case 'admin/settings/api/refresh':
-      return t('Parse all indexed code files again, even if they have not been modified.');
+', array('!api_settings_page' => l(t('API settings page'), 'admin/settings/api'), '!doxygen_link' => l('http://drupal.org/node/1354', 'http://drupal.org/node/1354')));
   }
 }
 
@@ -143,7 +112,7 @@ function api_get_branches($_reset = FALSE) {
 }
 
 /**
- * Returns a branch, given an branch ID number.
+ * Returns a branch, given a branch ID number.
  *
  * @param $id
  *   Branch ID number.
@@ -188,7 +157,7 @@ function api_get_branch_names($_reset = FALSE) {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function api_menu() {
   $items = array();
@@ -776,7 +745,7 @@ function api_menu() {
 }
 
 /**
- * Finds objects for old URLs and returns the link.
+ * Finds objects for old URLs and returns the new URL.
  *
  * @param $object_name
  *   Name of the object to find the URL of.
@@ -858,7 +827,7 @@ function api_get_branches_by_name($branch_name) {
 }
 
 /**
- * Loads a branch given a project and branch name.
+ * Loads a branch, given a project and branch name.
  *
  * @param $project
  *   The project name matching {api_branch}.project.
@@ -890,14 +859,9 @@ function api_get_branch_by_name($project, $branch_name) {
 }
 
 /**
- * Menu object load callback for %api_item in menu paths.
+ * Loads an API object for the menu router.
  *
- * We convert all API_FILEPATH_SEPARATOR_REPLACEMENTs back to
- * API_FILEPATH_SEPARATORs to maintain the original file path information.
- * (When a URL is created for a documentation object, all
- * API_FILEPATH_SEPARATORs in the original file path are
- * replaced with API_FILEPATH_SEPARATOR_REPLACEMENTs so that
- * API_FILEPATH_SEPARATORs won't be interpreted as part the of URL.
+ * Menu object load callback for %api_item in menu paths.
  *
  * @param $object_name
  *   The object name matching {api_documentation}.object_name.
@@ -906,8 +870,13 @@ function api_get_branch_by_name($project, $branch_name) {
  * @param $branch_name
  *   The branch name matching {api_branch}.branch_name.
  * @param $file_name
- *   The name of the file the object must be in, with API_FILEPATH_SEPARATOR
- *   for path separators.
+ *   The name of the file the object is in, with API_FILEPATH_SEPARATOR for path
+ *   separators. We convert all API_FILEPATH_SEPARATOR_REPLACEMENTs back to
+ *   API_FILEPATH_SEPARATORs to maintain the original file path information.
+ *   (When a URL is created for a documentation object, all
+ *   API_FILEPATH_SEPARATORs in the original file path are replaced with
+ *   API_FILEPATH_SEPARATOR_REPLACEMENTs so that API_FILEPATH_SEPARATORs won't
+ *   be interpreted as part the of URL.
  * @param $type
  *   API item type; one of function, constant, global, property, class,
  *   interface, or group.
@@ -950,7 +919,7 @@ function api_item_load($object_name, $project, $branch_name, $file_name, $type) 
 }
 
 /**
- * Implementation of hook_cron_queue_info().
+ * Implements hook_cron_queue_info().
  */
 function api_cron_queue_info() {
   return array(
@@ -966,13 +935,14 @@ function api_cron_queue_info() {
 }
 
 /**
+ * Loads an API file object.
+ *
  * Menu object load callback for %api_filename in menu paths.
  *
  * API v 1.3 replaced all '/'s in the file path with '--' for the URL generated
- * for the file. We need to handle a URL with '--'
- * (= API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT) and redirect it to the current,
- * correct URL.
- * We now convert all '/'s (= API_FILEPATH_SEPARATOR) to
+ * for the file. We need to handle a URL with '--' (=
+ * API_v1_3_FILEPATH_SEPARATOR_REPLACEMENT) and redirected it to the current,
+ * correct URL.  We now convert all '/'s (= API_FILEPATH_SEPARATOR) to
  * API_FILEPATH_SEPARATOR_REPLACEMENT when a URL is created for a documentatio
  * object. Here we need to go back to the original filename and path.
  *
@@ -1093,14 +1063,14 @@ function api_object_load($object_name_or_did, $branch, $object_type, $file_name 
 }
 
 /**
- * Implementation of hook_perm().
+ * Implements hook_perm().
  */
 function api_perm() {
   return array('access API reference', 'administer API reference');
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function api_theme() {
   return array(
@@ -1288,7 +1258,7 @@ function api_preprocess_page(&$variables) {
 }
 
 /**
- * Implementation of hook_init().
+ * Implements hook_init().
  *
  * Adds CSS and JavaScript for the search auto-complete. Adds OpenSearch
  * autodiscovery links. Redirects nodes of type 'api' to the correct URL.
@@ -1318,7 +1288,7 @@ function api_init() {
 }
 
 /**
- * Implementation of hook_db_rewrite_sql().
+ * Implements hook_db_rewrite_sql().
  *
  * Excludes nodes of type 'api' from node queries.
  */
@@ -1329,7 +1299,7 @@ function api_db_rewrite_sql($query, $primary_table, $primary_field) {
 }
 
 /**
- * Implementation of hook_block().
+ * Implements hook_block().
  */
 function api_block($op, $delta = NULL, $edit = array()) {
   switch ($op) {
@@ -1393,7 +1363,7 @@ function api_block($op, $delta = NULL, $edit = array()) {
 }
 
 /**
- * Returns an array of the counts of each type of listing for a branch.
+ * Calculates the counts of each type of listing for a branch.
  *
  * @param $branch
  *   Object representing the branch to count.
@@ -1505,7 +1475,7 @@ function api_url($object, $file = FALSE) {
  * Saves an API branch.
  *
  * @param $branch
- *   A branch object, with branch_name, title, and directories variables.
+ *   A branch object, with branch_name, title, and directories properties.
  */
 function api_save_branch($branch) {
   $branch->data = serialize($branch->data);
@@ -1534,7 +1504,9 @@ function api_save_branch($branch) {
 }
 
 /**
- * Sort callback for sorting branches.
+ * Callback for usort() within api_save_branch().
+ *
+ * Sorts branches by type, version number, and branch name.
  */
 function api_branch_sort($a, $b) {
   // PHP type branches should come after file type branches.
@@ -1592,7 +1564,7 @@ function api_get_active_branch() {
 }
 
 /**
- * Form builder for API search form.
+ * Form constructor for the API search form.
  *
  * @param $branch
  *   Object representing the branch to build the search form for.
@@ -1657,7 +1629,7 @@ function api_autocomplete($branch_name, $page = TRUE) {
 }
 
 /**
- * Implementation of hook_cron().
+ * Implements hook_cron().
  */
 function api_cron() {
   include_once './'. drupal_get_path('module', 'api') .'/parser.inc';
@@ -1702,7 +1674,7 @@ function api_link_documentation($documentation, $branch, $class_did = NULL, $agg
 }
 
 /**
- * Turns function names into links for filter.
+ * Turns function names into links for a text filter.
  *
  * This is the process callback for the API filter supplied by api_filter().
  * It turns function names into links on output, using the currently active
@@ -2203,7 +2175,13 @@ function api_link_member_name($text, $branch, $prepend = '', $append = '', $clas
 }
 
 /**
- * Returns text with HTML entities decoded.
+ * Decodes HTML entities.
+ *
+ * @param $text
+ *   Text to decode.
+ *
+ * @return
+ *   Text with all HTML entities decoded.
  */
 function api_entity_decode($text) {
   $text = html_entity_decode($text);
@@ -2280,7 +2258,10 @@ function api_mark_for_reparse($branch_or_file = NULL, $is_branch_name = FALSE) {
 }
 
 /**
- * Parse queued files
+ * Parses a queued file.
+ *
+ * @data
+ *   Array of information about the file to be parsed.
  */
 function api_queue_parse_file($data) {
   module_load_include('inc', 'api', 'parser');
@@ -2290,10 +2271,10 @@ function api_queue_parse_file($data) {
 }
 
 /**
- * Process any file deletes to remove any obsolete js index files.
+ * Deletes an obsolete JavaScript autocomplete index file.
  *
  * @param $data
- *   Data past by queue.
+ *   Array of infomration about the file to be deleted.
  */
 function api_queue_file_delete($data) {
   file_delete($data['path']);

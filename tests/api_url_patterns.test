@@ -1,22 +1,22 @@
 <?php
 
-include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
-
 /**
  * @file
  * Tests for valid and invalid URLs (paths) for the API module.
+ */
+
+include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
+
+/**
+ * Tests URLs to make sure they are handled correctly.
  *
- * Test all valid URL patterns for the API module. See
+ * Tests all valid URL patterns for the API module. See
  * http://drupal.org/node/829662#comment-3120966 for a list of URL patterns
  * up to API 6-x-1.2. In 6.x-1.6, the file name component of URLs changed to
  * use ! as a directory separator instead of --, so that files with -- in the
  * name could be supported.
  *
  * @todo Need test for api/function_dump/%
- */
-
-/**
- * Tests URLs to make sure they are handled correctly.
  */
 class ApiURLPatternsTest extends ApiTestCase {
 

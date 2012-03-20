@@ -20,11 +20,6 @@ class ApiQueuesTestCase extends ApiTestCase {
     );
   }
 
-  /**
-   * Overrides DrupalWebTestCase::setUp().
-   *
-   * Sets up the sample branch.
-   */
   function setUp() {
     // This test takes longer than most to run, and times out on some machines.
     $this->timeLimit *= 2;

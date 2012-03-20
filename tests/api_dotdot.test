@@ -19,11 +19,6 @@ class ApiDotDotTestCase extends ApiTestCase {
     );
   }
 
-  /**
-   * Overrides ApiTestCase::setUp().
-   *
-   * Sets up the sample branch.
-   */
   function setUp() {
     $this->baseSetUp();
 

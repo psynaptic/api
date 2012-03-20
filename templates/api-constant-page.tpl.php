@@ -2,16 +2,18 @@
 
 /**
  * @file
- * Theme implementation to display a constant overview.
+ * Displays an API page for a constant.
  *
  * Available variables:
+ * - $alternatives: List of alternate versions (branches) of this constant.
  * - $documentation: Documentation from the comment header of the constant.
  * - $override: If this is an override, the text to show for that.
+ * - $see: See also documentation.
+ * - $defined: HTML reference to file that defines this constant.
+ * - $code: HTML-formatted declaration of this constant.
+ * - $related_topics: List of related groups/topics.
  * - $branch: Object with information about the branch.
  * - $object: Object with information about the constant.
- * - $defined: HTML reference to file that defines this class.
- * - $is_admin: True or false.
- * - $logged_in: True or false.
  *
  * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
@@ -19,16 +21,18 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $object object.
+ * Available variables in the $object object:
  * - $object->title: Display name.
  * - $object->object_type: For this template it will be 'constant'.
  * - $object->branch_id: An identifier for the branch.
  * - $object->file_name: The path to the file in the source.
  * - $object->summary: A one-line summary of the object.
  * - $object->code: Escaped source code.
- * - $object->see: HTML index of additional references.
+ * - $object->see: HTML-formatted additional references.
  *
  * @see api_preprocess_api_object_page()
+ *
+ * @ingroup themeable
  */
 ?>
 <?php print $alternatives; ?>
@@ -38,8 +42,8 @@
 <?php print $override; ?>
 
 <?php if (!empty($see)) { ?>
-<h3><?php print t('See also') ?></h3>
-<?php print $see ?>
+  <h3><?php print t('See also') ?></h3>
+  <?php print $see ?>
 <?php } ?>
 
 <h3><?php print t('File'); ?></h3>

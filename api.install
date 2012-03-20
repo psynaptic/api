@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function api_schema() {
   $schema['api_branch'] = array(
@@ -330,7 +330,7 @@ function api_schema() {
 }
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  */
 function api_install() {
   // Get access to api_save_branch().
@@ -343,7 +343,7 @@ function api_install() {
 }
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  */
 function api_enable() {
   // Workaround for http://drupal.org/node/200931
@@ -399,7 +399,7 @@ function api_update_14() {
 }
 
 /**
- * Add excluded_directories column.
+ * Add {api_branch}.excluded_directories field.
  */
 function api_update_15() {
   $return = array();
@@ -425,7 +425,7 @@ function api_update_16() {
 }
 
 /**
- * Update #16 left {api_reference_storage} inconsistent.
+ * Update #16 left {api_reference_storage} inconsistent; fix that.
  */
 function api_update_17() {
   $return = array();
@@ -445,7 +445,7 @@ function api_update_18() {
 }
 
 /**
- * Move start line field from {api_function} to {api_documentation} table.
+ * Move start_line field from {api_function} to {api_documentation} table.
  */
 function api_update_19() {
   $return = array();
@@ -457,7 +457,7 @@ function api_update_19() {
 }
 
 /**
- * Add project field to branch table.
+ * Add {api_branch}.project field.
  */
 function api_update_20() {
   $return = array();
@@ -487,7 +487,7 @@ function api_update_20() {
 }
 
 /**
- * Add branch ID to api_reference_storage table.
+ * Add {api_reference_storage}.branch_id field.
  */
 function api_update_21() {
   $return = array();
@@ -505,7 +505,7 @@ function api_update_21() {
 }
 
 /**
- * Add branch ID to api_documentation table.
+ * Add {api_documentation}.branch_id field.
  */
 function api_update_22() {
   $return = array();
@@ -604,7 +604,7 @@ function api_update_26() {
 }
 
 /**
- * Drop redundant column.
+ * Drop redundant field {api_documentation}.branch_name.
  */
 function api_update_27() {
   $return = array();
@@ -615,7 +615,7 @@ function api_update_27() {
 }
 
 /**
- * Add separate column for see references.
+ * Add {api_documentation}.see field.
  */
 function api_update_28() {
   $return = array();
@@ -630,7 +630,7 @@ function api_update_28() {
 }
 
 /**
- * Refer objects to the class they belong to.
+ * Add {api_documentation}.class_did field.
  */
 function api_update_29() {
   $return = array();
@@ -647,7 +647,7 @@ function api_update_29() {
 }
 
 /**
- * Add the api_overrides table.
+ * Add {api_overrides} table.
  */
 function api_update_30() {
   $return = array();
@@ -668,7 +668,7 @@ function api_update_30() {
 }
 
 /**
- * Add 'var' and 'throws' fields to the api_documentation table.
+ * Add {api_documentation}.var and {api_documentation}.throws fields.
  */
 function api_update_31() {
   $return = array();
@@ -688,7 +688,7 @@ function api_update_31() {
 }
 
 /**
- * Add member_name field to the api_documentation table.
+ * Add {api_documentation}.member_name field.
  */
 function api_update_32() {
   $return = array();
@@ -705,7 +705,7 @@ function api_update_32() {
 }
 
 /**
- * Add documented_did field to the api_overrides table.
+ * Add {api_overrides}.documented_did field.
  */
 function api_update_33() {
   $return = array();
@@ -787,7 +787,7 @@ function api_update_35() {
 }
 
 /**
- * Add project_title field to branches.
+ * Add {api_branch}.project_title field.
  */
 function api_update_36() {
   $return = array();
@@ -850,7 +850,7 @@ function api_update_6103() {
 }
 
 /**
- * Drop and add fields in {api_files} and reset parsing queue.
+ * Drop and add fields in {api_file} and reset parsing queue.
  */
 function api_update_6104() {
   $return = array();

@@ -6,7 +6,7 @@
  */
 
 /**
- * Legacy function for file redirect.
+ * Redirects legacy URLs for files.
  *
  * api/file/{directory}/{file.php}[/{branch}] ->
  * api/{project}/{directory}{separator}{file.php}/{branch}

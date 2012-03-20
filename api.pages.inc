@@ -172,6 +172,9 @@ function api_search_listing($branch_name) {
 
 /**
  * Page callback: Displays a list of links to projects using a pager.
+ *
+ * @return
+ *   Themed HTML output for the page.
  */
 function api_page_projects() {
   $num_per_page = 50;
@@ -629,7 +632,7 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
 }
 
 /**
- * Page callback that displays a list of instances where a function is called.
+ * Page callback: Displays a list of instances where a function is called.
  *
  * @param $function
  *   Documentation object representing the function to display.
@@ -639,6 +642,9 @@ function api_find_references($name, $branch, $type, $count = TRUE, $exclude_did 
  *   - 'implementations': Functions that implement this hook.
  *   - 'theme_invokes': Functions that invoke this theme hook.
  *   - 'invokes': Functions that invoke this hook.
+ *
+ * @return
+ *   HTML output for the page.
  */
 function api_page_function_calls($function, $type) {
   $branch = api_get_branch_by_id($function->branch_id);
@@ -917,7 +923,6 @@ function api_render_listing($result, $empty_message = NULL, $show_headings = TRU
   return $output;
 }
 
-
 /**
  * Sets the page title and breadcrumb for an object display page.
  *
@@ -1179,7 +1184,7 @@ function api_file_link($object) {
 }
 
 /**
- * Theme function to generate reference links on function pages.
+ * Returns HTML for a reference link on a function or file page.
  *
  * This theme hook is used for the "N functions call function()" and "N
  * functions implement hook()" links on function pages.
@@ -1196,8 +1201,7 @@ function api_file_link($object) {
  * @param $function
  *   The function or file object being referenced.
  *
- * @return
- *   Markup for a link to the reference listing pages.
+ * @ingroup themeable
  */
 function theme_api_function_reference_link($type, $count, $function) {
   if (!isset($function->branch_id)) {

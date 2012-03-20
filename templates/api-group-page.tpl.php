@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Theme implementation for summarizing code that in a group.
+ * Displays an API page for a topic/group, with list of items in that group.
  *
  * Available variables:
- * - $classes: List of classes, if any.
- * - $constants: List of constants, if any.
- * - $globals: List of globals, if any.
- * - $functions: List of functions, if any.
- * - $files: List of functions, if any.
+ * - $alternatives: List of alternate versions (branches) of this group.
+ * - $documentation: Documentation from the comment header of the constant.
+ * - $see: Related API objects.
+ * - $objects: Formatted list of member objects, if any.
  * - $defined: HTML reference to file that defines this group.
- * - $see: Related api objects.
+ *
+ * @ingroup themeable
  */
 ?>
 
@@ -20,8 +20,8 @@
 <?php print $documentation ?>
 
 <?php if (!empty($see)) { ?>
-<h3><?php print t('See also') ?></h3>
-<?php print $see ?>
+  <h3><?php print t('See also') ?></h3>
+  <?php print $see ?>
 <?php } ?>
 
 <?php print $objects; ?>

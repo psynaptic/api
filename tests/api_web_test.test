@@ -4,7 +4,6 @@
  * Tests various web pages of the API module.
  */
 
-
 include_once './'. drupal_get_path('module', 'api') .'/tests/api_test_case.php';
 
 /**
@@ -600,7 +599,7 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
 }
 
 /**
- * Tests the API module admin pages.
+ * Tests the API module administrative pages.
  */
 class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
   public static function getInfo() {
@@ -673,6 +672,9 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
  */
 class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
 
+  /**
+   * Array of information for the second sample branch.
+   */
   protected $branch_info_2;
 
   public static function getInfo() {
@@ -683,11 +685,6 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
     );
   }
 
-  /**
-   * Overrides ApiWebPagesBaseTest::setUp().
-   *
-   * Sets up two branches in two different projects using the admin interface.
-   */
   public function setUp() {
     $this->baseSetUp();
 
@@ -793,6 +790,9 @@ class ApiEmptyPageLinksTestCase extends ApiWebPagesBaseTest {
  */
 class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
 
+  /**
+   * Array of information about the second sample branch.
+   */
   protected $branch_info_2;
 
   public static function getInfo() {
@@ -803,11 +803,6 @@ class ApiMultipleBranchesTest extends ApiWebPagesBaseTest {
     );
   }
 
-  /**
-   * Overrides ApiWebPagesBaseTest::setUp().
-   *
-   * Sets up two branches in the same project using the admin interface.
-   */
   public function setUp() {
     $this->baseSetUp();
 

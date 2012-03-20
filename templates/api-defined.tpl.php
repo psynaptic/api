@@ -1,16 +1,13 @@
 <?php
 /**
  * @file
- * Theme implementation to show which object an api object is defined in.
+ * Displays the documentation for a file and line number where an object is.
  *
  * Available variables:
- * - $documentation: Documentation from the comment header of the constant.
- * - $branch: Object with information about the branch.
- * - $object: Object with information about the constant.
- * - $is_admin: True or false.
- * - $logged_in: True or false.
  * - $file_link: Themed link to the file the object is in.
  * - $file_summary: Summary line for the file the object is in.
+ * - $object: Object with information about the object being referenced.
+ * - $branch: Object with information about the branch.
  *
  * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
@@ -18,13 +15,17 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the definition $object.
+ * Available variables in the $object object:
  * - $object->title: Display name.
  * - $object->summary: Short summary.
  * - $object->documentation: HTML formatted comments.
  * - $object->code: HTML formatted source code.
  * - $object->start_line: The line number where the definition for this object
  *   starts in the containing file.
+ *
+ * @see api_preprocess_api_defined()
+ *
+ * @ingroup themeable
  */
 ?>
 <p class="api-defined">

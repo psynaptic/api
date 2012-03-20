@@ -2,16 +2,19 @@
 
 /**
  * @file
- * Theme implementation to display a function overview.
+ * Displays an API page for a class member property.
  *
  * Available variables:
- * - $documentation: Documentation from the comment header of the function.
+ * - $alternatives: List of alternate versions (branches) of this property.
  * - $override: If this is an override, the text to show for that.
+ * - $var: The data type of the property.
+ * - $documentation: Documentation from the comment header of the property.
+ * - $see: See also documentation.
+ * - $defined: HTML reference to file that defines this property.
+ * - $code: HTML-formatted declaration of this property.
+ * - $related_topics: List of related groups/topics.
  * - $branch: Object with information about the branch.
- * - $object: Object with information about the function.
- * - $defined: HTML reference to file that defines this function.
- * - $is_admin: True or false.
- * - $logged_in: True or false.
+ * - $object: Object with information about the property.
  *
  * Available variables in the $branch object:
  * - $branch->project: The machine name of the branch.
@@ -19,10 +22,10 @@
  * - $branch->directories: The local included directories.
  * - $branch->excluded_directories: The local excluded directories.
  *
- * Available variables in the $object object.
+ * Available variables in the $object object:
  * - $object->title: Display name.
  * - $object->related_topics: Related information about the function.
- * - $object->object_type: For this template it will be 'function'.
+ * - $object->object_type: For this template it will be 'property'.
  * - $object->branch_id: An identifier for the branch.
  * - $object->file_name: The path to the file in the source.
  * - $object->summary: A one-line summary of the object.
@@ -31,6 +34,8 @@
  * - $object->var: Type of property.
  *
  * @see api_preprocess_api_object_page()
+ *
+ * @ingroup themeable
  */
 ?>
 
