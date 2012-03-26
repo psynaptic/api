@@ -203,6 +203,11 @@ class ApiURLPatternsTest extends ApiTestCase {
         'text' => array('For testing duplicate function name linking'),
         'links' => array('DUPLICATE_CONSTANT', 'duplicates.php', 'duplicate_function'),
       ),
+      array(
+        'url' => 'api/search/' . $branch_name . '/foo',
+        'text' => array('Implements', 'Metasyntatic member function', 'Implements this API', 'Implements foo2.', 'A property that matches', 'Overrides parent function'),
+        'links' => array('foo_sample_name', 'sample.php', 'Sample::foo', 'SampleInterface::foo', 'classes.php', 'SampleInSubDir::$foo', 'SampleInSubDir::foo', 'SampleInSubDirInterface::foo2', 'SubInSubDirSample::foo', 'Sample2InSubDir::foo2', 'classes-subdir.php'),
+      ),
 
       // Check menu callbacks.
       array(
@@ -215,7 +220,7 @@ class ApiURLPatternsTest extends ApiTestCase {
       ),
       array(
         'url' => 'api/autocomplete/' . $branch_name,
-        'text' => array('duplicate', 'duplicates.php', 'duplicate_function', 'DUPLICATE_CONSTANT', 'Sample', 'Samples', 'Sample::baz', '$sample_global', 'SampleInterface', 'Sample::$property', 'SubInSubDirSample'),
+        'text' => array('duplicate', 'duplicates.php', 'duplicate_function', 'DUPLICATE_CONSTANT', 'Sample', 'Samples', 'Sample::baz', '$sample_global', 'SampleInterface', 'Sample::$property', 'SubInSubDirSample', 'Sample::foo', 'SampleInSubDir::foo', 'Sample2InSubDir::foo2', 'SubInSubDirSample::foo'),
       ),
       array(
         'url' => 'api/function_dump/' . $branch_name,

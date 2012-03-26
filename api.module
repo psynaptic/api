@@ -1613,7 +1613,7 @@ function api_search_form_submit($form, &$form_state) {
  *   JavaScript listing of all the objects in the branch.
  */
 function api_autocomplete($branch_name, $page = TRUE) {
-  $result = db_query("SELECT ad.title, ad.object_type FROM {api_documentation} ad INNER JOIN {api_branch} b ON ad.branch_id = b.branch_id LEFT JOIN {api_overrides} ao ON ao.did = ad.did WHERE b.branch_name = '%s' AND ad.object_type <> 'mainpage' AND (ao.did IS NULL OR ao.root_did = ao.did) ORDER BY LENGTH(ad.title), ad.title", $branch_name);
+  $result = db_query("SELECT ad.title, ad.object_type FROM {api_documentation} ad INNER JOIN {api_branch} b ON ad.branch_id = b.branch_id WHERE b.branch_name = '%s' AND ad.object_type <> 'mainpage' ORDER BY LENGTH(ad.title), ad.title", $branch_name);
   $objects = array();
   while ($object = db_fetch_object($result)) {
     $objects[] = $object->title;
