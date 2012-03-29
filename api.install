@@ -203,6 +203,9 @@ function api_schema() {
       ),
     ),
     'primary key' => array('did'),
+    'indexes' => array(
+      'basename' => array('basename'),
+    ),
   );
 
   $schema['api_function'] = array(
@@ -1019,6 +1022,15 @@ function api_update_6115() {
     db_query("UPDATE {api_file} f SET f.basename = SUBSTRING(f.basename FROM (POSITION('/' IN f.basename) + 1)) WHERE POSITION('/' IN f.basename) > 0");
   }
 
+  return $return;
+}
+
+/**
+ * Add basename index to {api_file} table.
+ */
+function api_update_6116() {
+  $return = array();
+  db_add_index($return, 'api_file', 'basename', array('basename'));
   return $return;
 }
 
