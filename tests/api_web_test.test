@@ -101,6 +101,10 @@ class ApiListingPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertNoRaw('hidden.php', 'Hidden file is not shown on files list page');
     $this->assertNoRaw('hidden2.php', 'Second hidden file is not shown on files list page');
     $this->assertNoLink(t('Other projects'), 'Link to other projects is not present since there are no others');
+    $this->assertText('Sample HTML file title', 'HTML file description is present');
+    $this->assertLink('htmlfile.html', 0, 'HTML file link is present');
+    $this->assertText('This is a sample text file for testing.', 'Text file description is present');
+    $this->assertLink('subdirectory/textfile.txt', 0, 'Text file link is present');
 
     // Verify file links.
     $this->assertLinkURLSubstring('classes.php', $this->branch_info['project'] . '/classes.php', 'classes.php link exists', 'classes.php link went to the right place');
@@ -301,6 +305,9 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('duplicate_function', 0, 'See also link appears on the function page');
     $this->assertLink('Samples', 0, 'Topic link appears on the function page');
     $this->assertText('A sample group.', 'Topic description appears on the function page');
+    $this->assertLink('htmlfile.html', 0, 'Link to HTML file is there');
+    $this->assertLink('textfile.txt', 0, 'Link to text file is there');
+    $this->assertLink('classes.php', 0, 'Link to php file is there');
 
     // Verify list and parameter formatting -- again the unit tests take care of
     // some of this.
@@ -595,6 +602,17 @@ class ApiComplexItemPagesTestCase extends ApiWebPagesBaseTest {
     // Now try a file with -- in the name.
     $this->drupalGet('api/' . $this->branch_info['project'] . '/sample--doubledash.tpl.php');
     $this->assertText('Displays a sample with a doubledash.', 'File description appears on double-dash page');
+
+    // Now try the HTML sample file.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/htmlfile.html/');
+    $this->assertTitleContains('Sample HTML file title', 'HTML file page has right title');
+    $this->assertText('Sample HTML file body', 'HTML file body is displayed');
+    $this->assertText('head', 'HTML file source is displayed');
+
+    // Now try the text sample file.
+    $this->drupalGet('api/' . $this->branch_info['project'] . '/subdirectory!textfile.txt/');
+    $this->assertTitleContains('textfile.txt', 'Text file page has right title');
+    $this->assertText('This is a sample text file for testing.', 'Text file page displays the text');
   }
 }
 
@@ -662,8 +680,8 @@ class ApiAdminPagesTestCase extends ApiWebPagesBaseTest {
     // Now we should be back on the listing page. Test the reparse link.
     $this->assertTrue($this->howManyToParse() == 0, 'No files are marked to parse before clicking link');
     $this->clickLink('reparse');
-    $this->assertText('8 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
-    $this->assertTrue($this->howManyToParse() == 8, '8 files are marked to parse after clicking reparse link');
+    $this->assertText('10 files in branch ' . $this->branch_info['branch_name'] . ' set to reparse, starting at next cron run', 'Confirmation found after clicking reparse link');
+    $this->assertTrue($this->howManyToParse() == 10, '10 files are marked to parse after clicking reparse link');
   }
 }
 

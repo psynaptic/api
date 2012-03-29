@@ -29,7 +29,7 @@ class ApiTestCase extends DrupalWebTestCase {
     $this->resetBranchesAndCache();
     api_update_all_branches();
     $count = $this->processApiParseQueue();
-    $this->assertEqual($count, 8, "8 files were parsed ($count)");
+    $this->assertEqual($count, 10, "10 files were parsed ($count)");
   }
 
   /**

@@ -34,7 +34,7 @@ class ApiDotDotTestCase extends ApiTestCase {
     api_update_all_branches();
 
     $count = $this->processApiParseQueue();
-    $this->assertEqual($count, 8, "8 files were parsed ($count)");
+    $this->assertEqual($count, 10, "10 files were parsed ($count)");
   }
 
   /**
@@ -44,7 +44,7 @@ class ApiDotDotTestCase extends ApiTestCase {
     // Make sure we have the right number of doc objects.
     $branch = $this->getBranch();
     $count = db_result(db_query("SELECT count(*) FROM {api_documentation} WHERE branch_id = %d", $branch->branch_id));
-    $this->assertEqual($count, 63, 'Found ' . $count . ' documentation objects.');
+    $this->assertEqual($count, 65, 'Found ' . $count . ' documentation objects.');
 
     // Verify that the top-level directory was parsed.
 

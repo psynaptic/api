@@ -195,6 +195,12 @@ function api_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'basename' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'primary key' => array('did'),
   );
@@ -986,6 +992,35 @@ function api_update_6114() {
   return _api_update_force_all_reparse($return);
 }
 
+/**
+ * Add basename field to {api_file} table.
+ */
+function api_update_6115() {
+  $return = array();
+
+  // Add the basename field.
+  db_add_field($return, 'api_file', 'basename', array(
+      'type' => 'varchar',
+      'length' => '255',
+      'not null' => TRUE,
+      'default' => '',
+    ));
+
+  // Populate this field from the existing filename field. This is a bit
+  // complicated, because PostgreSQL and MySQL do not have the same string
+  // functions available. So, start by just copying in the file name field.
+  db_query("UPDATE {api_file} f INNER JOIN {api_documentation} d ON f.did = d.did SET basename = d.file_name");
+  // Strip off leading / if there is one. Note that SQL counts strings starting
+  // from position 1.
+  db_query("UPDATE {api_file} f SET f.basename = SUBSTRING(f.basename FROM 2) WHERE SUBSTRING(f.basename FROM 1 FOR 1) = '/'");
+
+  // Now strip off parts coming before a / until we don't have any more.
+  while (db_result(db_query("SELECT COUNT(*) FROM {api_file} f WHERE POSITION('/' IN f.basename) > 0"))) {
+    db_query("UPDATE {api_file} f SET f.basename = SUBSTRING(f.basename FROM (POSITION('/' IN f.basename) + 1)) WHERE POSITION('/' IN f.basename) > 0");
+  }
+
+  return $return;
+}
 
 /**
  * Remove variables on uninstall.

@@ -1814,7 +1814,7 @@ function _api_link_documentation($documentation, $branch, $class_did = NULL, $st
     case 'file':
       // Find file names, which are an arbitrary number of strings joined with
       // '.'
-      $pattern = '%(?<=^|\s)'. API_RE_FILENAME .'(?=$|\s|[.,:;?!])%';
+      $pattern = '%(?<=^|\s|\()'. API_RE_FILENAME .'(?=$|\s|[.,:;?!\)])%';
       $type = 'file';
       break;
 
@@ -1985,8 +1985,8 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
   }
   elseif ($type == 'file') {
     // Because this needs to match files, change the query to match on
-    // object title (which is the file base name).
-    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, ad.title as match_name FROM {api_documentation} ad WHERE ad.branch_id = %d AND ad.title = '%s' AND ad.object_type = 'file'";
+    // basename field in {api_files}.
+    $query = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, af.basename as match_name FROM {api_documentation} ad INNER JOIN {api_file} af ON ad.did = af.did WHERE ad.branch_id = %d AND af.basename = '%s' AND ad.object_type = 'file'";
   }
   elseif ($type == 'constant') {
     $query .= " AND ad.object_type = 'constant'";

@@ -65,6 +65,9 @@ define('SAMPLE_CONSTANT', 7);
  *   $output .= $message;
  *   @endcode
  *
+ * Here are some references to files: (htmlfile.html), textfile.txt, classes.php
+ * in the docs. They should all be links, and just in case, put one in parens.
+ *
  * @param $parameter
  *   A generic parameter.
  * @param $complex_parameter

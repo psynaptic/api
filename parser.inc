@@ -27,12 +27,14 @@ module_load_include('inc', 'grammar_parser', 'engine/object');
  *   File name to store in the database for this file.
  */
 function api_parse_file($callback, $file_path, $branch, $file_name) {
+  $basename = strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name;
   $docblock = array(
     'object_name' => $file_name,
     'branch' => $branch,
     'object_type' => 'file',
     'file_name' => $file_name,
-    'title' => strpos($file_name, '/') ? substr($file_name, strrpos($file_name, '/') + 1) : $file_name,
+    'title' => $basename,
+    'basename' => $basename,
     'documentation' => '',
     'references' => array(),
     'modified' => filemtime($file_path),
@@ -80,6 +82,7 @@ function api_parse_html_file($docblock) {
   $title_match = array();
   if (preg_match('!<title>([^<]+)</title>!is', $docblock['source'], $title_match)) {
     $docblock['title'] = trim($title_match[1]);
+    $docblock['summary'] = $docblock['title'];
   }
   $documentation_match = array();
   if (preg_match('!<body>(.*?</h1>)?(.*)</body>!is', $docblock['source'], $documentation_match)) {
@@ -378,7 +381,10 @@ function api_save_documentation($docblocks) {
       // Format everything remaining as the main documentation.
       $docblock['documentation'] = api_format_documentation($docblock['content']);
     }
-    $docblock['summary'] = api_documentation_summary($docblock['documentation']);
+    // Grab the first line as a summary, unless already provided.
+    if (!isset($docblock['summary'])) {
+      $docblock['summary'] = api_documentation_summary($docblock['documentation']);
+    }
 
     if (!empty($docblock['class'])) {
       $docblock['class_did'] = $class_dids[$docblock['class']];
