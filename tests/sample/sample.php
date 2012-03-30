@@ -67,6 +67,10 @@ define('SAMPLE_CONSTANT', 7);
  *
  * Here are some references to files: (htmlfile.html), textfile.txt, classes.php
  * in the docs. They should all be links, and just in case, put one in parens.
+ * And here are some using link tags:
+ * - @link htmlfile.html HTML link text @endlink
+ * - @link textfile.txt Text link text @endlink
+ * - @link classes.php PHP link text @endlink
  *
  * @param $parameter
  *   A generic parameter.

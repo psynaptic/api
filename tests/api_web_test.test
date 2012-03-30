@@ -308,6 +308,9 @@ class ApiSimpleItemPagesTestCase extends ApiWebPagesBaseTest {
     $this->assertLink('htmlfile.html', 0, 'Link to HTML file is there');
     $this->assertLink('textfile.txt', 0, 'Link to text file is there');
     $this->assertLink('classes.php', 0, 'Link to php file is there');
+    $this->assertLink('HTML link text', 0, 'Link to HTML file using @link is there');
+    $this->assertLink('Text link text', 0, 'Link to text file using @link is there');
+    $this->assertLink('PHP link text', 0, 'Link to PHP file using @link is there');
 
     // Verify list and parameter formatting -- again the unit tests take care of
     // some of this.

@@ -1946,6 +1946,15 @@ function api_link_name($name, $branch, $prepend = '', $append = '', $class_did =
         return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'), 'html' => TRUE)) . $append;
       }
     }
+
+    // See if it could be a file name being linked.
+    $tmpquery = "SELECT ad.did, ad.branch_id, ad.object_name, ad.title, ad.object_type, ad.summary, ad.file_name, af.basename as match_name FROM {api_documentation} ad INNER JOIN {api_file} af ON ad.did = af.did WHERE ad.branch_id = %d AND af.basename = '%s' AND ad.object_type = 'file'";
+    $result = db_query($tmpquery, $branch->branch_id, $name);
+    while ($object = db_fetch_object($result)) {
+      if ($object->match_name == $name) {
+        return $prepend . l($text, api_url($object), array('attributes' => array('title' => api_entity_decode($object->summary), 'class' => 'local'), 'html' => TRUE)) . $append;
+      }
+    }
   }
 
   // Figure out what potential names we should match on.
